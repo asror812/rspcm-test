@@ -30,8 +30,8 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "build/libs/*.jar"
-          target: "/opt/backend/"
-          strip_components: 2                      # strips "build/libs/"
+          target: "/opt/backend/app.jar"
+          strip_components: 1
 
       - name: Restart Systemd Service
         uses: appleboy/ssh-action@v1.0.3
