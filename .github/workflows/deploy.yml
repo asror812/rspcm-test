@@ -1,4 +1,5 @@
 name: Build and Deploy to Server
+
 on:
   push:
     branches: [ "main" ]
@@ -6,6 +7,7 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -21,7 +23,7 @@ jobs:
             settings.gradle
 
       - name: Build with Gradle
-        run: ./gradlew clean build -x test
+        run: ./gradlew clean bootJar -x test
 
       - name: Copy JAR to Server
         uses: appleboy/scp-action@v0.1.7
@@ -30,8 +32,8 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "build/libs/*.jar"
-          target: "/opt/backend/app.jar"
-          strip_components: 1
+          target: "/opt/backend/upload/"
+          strip_components: 2
 
       - name: Restart Systemd Service
         uses: appleboy/ssh-action@v1.0.3
@@ -40,7 +42,21 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            mv /opt/backend/*.jar /opt/backend/app.jar
-            sudo systemctl restart api.rspcm.service
+            set -e
+
+            NEW_JAR=$(find /opt/backend/upload -maxdepth 1 -name "*.jar" | head -n 1)
+
+            if [ -z "$NEW_JAR" ]; then
+              echo "No JAR file found"
+              exit 1
+            fi
+
+            sudo systemctl stop api.rspcm.service || true
+
+            sudo rm -f /opt/backend/app.jar
+            sudo mv "$NEW_JAR" /opt/backend/app.jar
+            sudo rm -rf /opt/backend/upload
+
+            sudo systemctl start api.rspcm.service
             sleep 15
-            sudo systemctl status api.rspcm.service
+            sudo systemctl status api.rspcm.service --no-pager
