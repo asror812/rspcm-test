@@ -5,6 +5,7 @@ import org.example.rspcm.model.entity.User;
 import org.example.rspcm.exception.NotFoundException;
 import org.example.rspcm.model.entity.Exam;
 import org.example.rspcm.model.entity.StudyGroup;
+import org.example.rspcm.model.enums.RoleName;
 import org.example.rspcm.repository.UserRepository;
 import org.example.rspcm.repository.ExamRepository;
 import org.example.rspcm.repository.StudyGroupRepository;
@@ -28,11 +29,27 @@ public class ExamService {
     private final CurrentUserService currentUserService;
 
     public List<Exam> findAll() {
+        User currentUser = currentUserService.getCurrentUser();
+        if (isStudent(currentUser)) {
+            return examRepository.findDistinctByGroupsStudentsIdOrTargetStudentsId(currentUser.getId(), currentUser.getId());
+        }
         return examRepository.findAll();
     }
 
     public Exam findById(Long id) {
-        return examRepository.findById(id).orElseThrow(() -> new NotFoundException("Exam topilmadi: " + id));
+        Exam exam = examRepository.findById(id).orElseThrow(() -> new NotFoundException("Exam topilmadi: " + id));
+        User currentUser = currentUserService.getCurrentUser();
+        if (!isStudent(currentUser)) {
+            return exam;
+        }
+        boolean assignedByGroup = exam.getGroups().stream()
+                .anyMatch(group -> group.getStudents().stream().anyMatch(student -> student.getId().equals(currentUser.getId())));
+        boolean assignedDirectly = exam.getTargetStudents().stream()
+                .anyMatch(student -> student.getId().equals(currentUser.getId()));
+        if (!assignedByGroup && !assignedDirectly) {
+            throw new NotFoundException("Exam topilmadi: " + id);
+        }
+        return exam;
     }
 
     @Transactional
@@ -43,6 +60,7 @@ public class ExamService {
                 .startAt(request.startAt())
                 .endAt(request.endAt())
                 .maxScore(request.maxScore())
+                .type(request.type())
                 .groups(resolveGroups(request.groupIds()))
                 .targetStudents(resolveStudents(request.studentIds()))
                 .createdBy(currentUserService.getCurrentUser())
@@ -60,6 +78,7 @@ public class ExamService {
         exam.setStartAt(request.startAt());
         exam.setEndAt(request.endAt());
         exam.setMaxScore(request.maxScore());
+        exam.setType(request.type());
         exam.setGroups(resolveGroups(request.groupIds()));
         exam.setTargetStudents(resolveStudents(request.studentIds()));
         exam.setSubject(request.subjectId() == null ? null : subjectRepository.findById(request.subjectId())
@@ -85,5 +104,9 @@ public class ExamService {
             return new HashSet<>();
         }
         return new HashSet<>(userRepository.findAllById(studentIds));
+    }
+
+    private boolean isStudent(User user) {
+        return user.getRoles().stream().anyMatch(role -> role.getRoleName() == RoleName.ROLE_STUDENT);
     }
 }

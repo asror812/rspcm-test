@@ -21,6 +21,7 @@ public final class PracticeMapper {
                 practicalTask.getWorkMode(),
                 practicalTask.getTeamSize(),
                 practicalTask.isSchedulingRequired(),
+                practicalTask.getAllowedSubmissionTypes(),
                 createdBy
         );
     }

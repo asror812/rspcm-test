@@ -75,7 +75,7 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("Foydalanuvchi topilmadi"));
 
-        if (!user.isEnabled()) {
+        if (user.isEnabled()) {
             throw new ErrorMessageException("Bu akkaunt allaqachon tasdiqlangan", ErrorCodes.AlreadyExists);
         }
 

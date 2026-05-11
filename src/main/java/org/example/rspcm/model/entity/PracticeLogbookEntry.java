@@ -10,7 +10,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
@@ -18,11 +17,10 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.example.rspcm.model.enums.LogbookStatus;
+import org.example.rspcm.model.enums.LogbookEntryStatus;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Getter
 @Setter
@@ -31,38 +29,30 @@ import java.util.List;
 @Builder
 @Entity
 @Table(
-        name = "practice_logbooks",
+        name = "practice_logbook_entries",
         uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"practice_id", "student_id"})
+                @UniqueConstraint(columnNames = {"logbook_id", "entry_date"})
         }
 )
-public class PracticeLogbook {
+public class PracticeLogbookEntry {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "practice_id")
-    private PracticalTask practicalTask;
+    @JoinColumn(name = "logbook_id", nullable = false)
+    private PracticeLogbook logbook;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "student_id")
-    private User student;
+    @Column(name = "entry_date", nullable = false)
+    private LocalDate entryDate;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "team_id")
-    private PracticeTeam team;
-
-    private String filePath;
-
-    private LocalDateTime submittedAt;
+    @Column(length = 5000, nullable = false)
+    private String content;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private LogbookStatus status;
+    private LogbookEntryStatus status;
 
-    @Builder.Default
-    @OneToMany(mappedBy = "logbook", orphanRemoval = true)
-    private List<PracticeLogbookEntry> entries = new ArrayList<>();
+    private LocalDateTime submittedAt;
 }

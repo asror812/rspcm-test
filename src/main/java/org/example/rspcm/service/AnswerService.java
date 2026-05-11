@@ -2,11 +2,15 @@ package org.example.rspcm.service;
 
 import org.example.rspcm.dto.answer.AnswerRequest;
 import org.example.rspcm.dto.answer.AnswerScoreRequest;
+import org.example.rspcm.exception.ErrorCodes;
+import org.example.rspcm.exception.ErrorMessageException;
 import org.example.rspcm.exception.NotFoundException;
 import org.example.rspcm.model.entity.ExamQuestion;
 import org.example.rspcm.model.entity.QuestionOption;
 import org.example.rspcm.model.entity.StudentAnswer;
 import org.example.rspcm.model.entity.StudentAnswerOption;
+import org.example.rspcm.model.entity.User;
+import org.example.rspcm.model.enums.RoleName;
 import org.example.rspcm.repository.AnswerRepository;
 import org.example.rspcm.repository.ExamQuestionRepository;
 import org.example.rspcm.repository.QuestionOptionRepository;
@@ -25,13 +29,17 @@ public class AnswerService {
     private final AnswerRepository answerRepository;
     private final ExamQuestionRepository examQuestionRepository;
     private final QuestionOptionRepository questionOptionRepository;
+    private final CurrentUserService currentUserService;
 
     public List<StudentAnswer> findAll() {
         return answerRepository.findAll();
     }
 
     public StudentAnswer findById(Long id) {
-        return answerRepository.findById(id).orElseThrow(() -> new NotFoundException("Answer topilmadi: " + id));
+        StudentAnswer answer = answerRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Answer topilmadi: " + id));
+        validateCanAccess(answer);
+        return answer;
     }
 
     @Transactional
@@ -41,6 +49,7 @@ public class AnswerService {
 
         StudentAnswer answer = StudentAnswer.builder()
                 .examQuestion(examQuestion)
+                .student(currentUserService.getCurrentUser())
                 .textAnswer(request.textAnswer())
                 .answeredAt(LocalDateTime.now())
                 .build();
@@ -84,6 +93,19 @@ public class AnswerService {
             selected.setStudentAnswer(answer);
             selected.setQuestionOption(option);
             answer.getSelectedOptions().add(selected);
+        }
+    }
+
+    private void validateCanAccess(StudentAnswer answer) {
+        User currentUser = currentUserService.getCurrentUser();
+        boolean isPrivileged = currentUser.getRoles().stream()
+                .map(role -> role.getRoleName())
+                .anyMatch(roleName -> roleName == RoleName.ROLE_ADMIN || roleName == RoleName.ROLE_TEACHER);
+        if (isPrivileged) {
+            return;
+        }
+        if (!answer.getStudent().getId().equals(currentUser.getId())) {
+            throw new ErrorMessageException("Siz bu javobga kira olmaysiz", ErrorCodes.Forbidden);
         }
     }
 }

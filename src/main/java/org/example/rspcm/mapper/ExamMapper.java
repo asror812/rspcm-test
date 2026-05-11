@@ -14,10 +14,17 @@ public final class ExamMapper {
     }
 
     public static ExamResponse toResponse(Exam exam) {
-        Set<GroupSummary> groups = exam.getGroups().stream().map(SummaryMapper::toGroupSummary).collect(Collectors.toSet());
-        Set<UserSummary> students = exam.getTargetStudents().stream().map(SummaryMapper::toUserSummary).collect(Collectors.toSet());
+        Set<GroupSummary> groups = exam.getGroups().stream()
+                .map(SummaryMapper::toGroupSummary).collect(Collectors.toSet());
+
+        Set<UserSummary> students = exam.getTargetStudents().stream()
+                .map(SummaryMapper::toUserSummary).collect(Collectors.toSet());
+
         UserSummary createdBy = SummaryMapper.toUserSummary(exam.getCreatedBy());
-        SubjectSummary subject = exam.getSubject() == null ? null : SummaryMapper.toSubjectSummary(exam.getSubject());
+
+        SubjectSummary subject = exam.getSubject() == null ? null
+                : SummaryMapper.toSubjectSummary(exam.getSubject());
+
         return new ExamResponse(
                 exam.getId(),
                 exam.getTitle(),
@@ -25,6 +32,7 @@ public final class ExamMapper {
                 exam.getStartAt(),
                 exam.getEndAt(),
                 exam.getMaxScore(),
+                exam.getType(),
                 groups,
                 students,
                 createdBy,

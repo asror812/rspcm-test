@@ -1,7 +1,10 @@
 package org.example.rspcm.model.entity;
 
 import org.example.rspcm.model.enums.WorkMode;
+import org.example.rspcm.model.enums.SubmissionType;
 import jakarta.persistence.Column;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -20,6 +23,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Set;
 
 @Getter
@@ -52,14 +56,17 @@ public class PracticalTask {
     @Column(nullable = false)
     private WorkMode workMode;
 
-    private boolean allowsFileUpload;
-    private boolean allowsLinkSubmission;
-    private boolean allowsCodeEditor;
-
     private Integer teamSize;
 
     @Column(nullable = false)
     private boolean schedulingRequired;
+
+    @Builder.Default
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "practical_task_submission_types", joinColumns = @JoinColumn(name = "practical_task_id"))
+    @Column(name = "submission_type", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private Set<SubmissionType> allowedSubmissionTypes = new HashSet<>();
 
     @ManyToMany(mappedBy = "practicalTasks")
     private Set<Exam> exams;

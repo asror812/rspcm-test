@@ -1,10 +1,11 @@
 package org.example.rspcm.service;
 
 import org.example.rspcm.dto.practice.PracticeJournalRequest;
-import org.example.rspcm.exception.ErrorCodes;
-import org.example.rspcm.exception.ErrorMessageException;
 import org.example.rspcm.exception.NotFoundException;
 import org.example.rspcm.model.entity.*;
+import org.example.rspcm.model.enums.LogbookEntryStatus;
+import org.example.rspcm.model.enums.LogbookStatus;
+import org.example.rspcm.repository.PracticeLogbookEntryRepository;
 import org.example.rspcm.repository.PracticeJournalRepository;
 import org.example.rspcm.repository.PracticeRepository;
 import org.example.rspcm.repository.PracticeTeamRepository;
@@ -20,6 +21,7 @@ import java.util.List;
 public class PracticeJournalService {
 
     private final PracticeJournalRepository journalRepository;
+    private final PracticeLogbookEntryRepository entryRepository;
     private final PracticeRepository practiceRepository;
     private final PracticeTeamRepository teamRepository;
     private final CurrentUserService currentUserService;
@@ -39,31 +41,41 @@ public class PracticeJournalService {
         PracticalTask practicalTask = practiceRepository.findById(request.practiceId())
                 .orElseThrow(() -> new NotFoundException("PracticalTask topilmadi: " + request.practiceId()));
 
-        if (practicalTask.isSchedulingRequired()
-                && (isBlank(request.calendarText()) && isBlank(request.calendarFilePath()))) {
-            throw new ErrorMessageException("Bu practicalTask uchun calendar to'ldirish majburiy", ErrorCodes.BadRequest);
-        }
-
         PracticeTeam team = null;
         if (request.teamId() != null) {
             team = teamRepository.findById(request.teamId())
                     .orElseThrow(() -> new NotFoundException("PracticalTask team topilmadi: " + request.teamId()));
         }
 
-        PracticeLogbook journal = PracticeLogbook.builder()
-                .practicalTask(practicalTask)
-                .student(student)
-                .team(team)
-                .content(request.content())
-                .filePath(request.filePath())
-                .calendarText(request.calendarText())
-                .calendarFilePath(request.calendarFilePath())
-                .submittedAt(LocalDateTime.now())
-                .build();
-        return journalRepository.save(journal);
-    }
+        boolean isDraft = Boolean.TRUE.equals(request.draft());
+        LocalDateTime now = LocalDateTime.now();
 
-    private boolean isBlank(String value) {
-        return value == null || value.isBlank();
+        PracticeLogbook logbook = journalRepository
+                .findFirstByPracticalTaskIdAndStudentId(practicalTask.getId(), student.getId())
+                .orElseGet(() -> PracticeLogbook.builder()
+                        .practicalTask(practicalTask)
+                        .student(student)
+                        .build());
+
+        logbook.setTeam(team);
+        logbook.setFilePath(request.filePath());
+        logbook.setSubmittedAt(now);
+        logbook.setStatus(isDraft ? LogbookStatus.DRAFT : LogbookStatus.SUBMITTED);
+        PracticeLogbook savedLogbook = journalRepository.save(logbook);
+
+        PracticeLogbookEntry entry = entryRepository
+                .findFirstByLogbookIdAndEntryDate(savedLogbook.getId(), request.entryDate())
+                .orElseGet(() -> PracticeLogbookEntry.builder()
+                        .logbook(savedLogbook)
+                        .entryDate(request.entryDate())
+                        .build());
+
+        entry.setContent(request.content());
+        entry.setStatus(isDraft ? LogbookEntryStatus.DRAFT : LogbookEntryStatus.SUBMITTED);
+        entry.setSubmittedAt(now);
+        entryRepository.save(entry);
+
+        return journalRepository.findById(savedLogbook.getId())
+                .orElseThrow(() -> new NotFoundException("Logbook topilmadi: " + savedLogbook.getId()));
     }
 }

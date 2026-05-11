@@ -23,7 +23,7 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping({"/api/practices", "/api/practical-tasks"})
+@RequestMapping("/api/practices")
 public class PracticeController {
 
     private final PracticeService practiceService;

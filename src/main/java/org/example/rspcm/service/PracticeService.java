@@ -5,12 +5,17 @@ import org.example.rspcm.exception.ErrorCodes;
 import org.example.rspcm.exception.ErrorMessageException;
 import org.example.rspcm.exception.NotFoundException;
 import org.example.rspcm.model.entity.PracticalTask;
+import org.example.rspcm.model.entity.User;
+import org.example.rspcm.model.enums.RoleName;
+import org.example.rspcm.model.enums.SubmissionType;
 import org.example.rspcm.model.enums.WorkMode;
 import org.example.rspcm.repository.PracticeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -20,11 +25,37 @@ public class PracticeService {
     private final CurrentUserService currentUserService;
 
     public List<PracticalTask> findAll() {
-        return practiceRepository.findAll();
+        User currentUser = currentUserService.getCurrentUser();
+        if (!isStudent(currentUser)) {
+            return practiceRepository.findAll();
+        }
+        Long studentId = currentUser.getId();
+        return practiceRepository.findAll().stream()
+                .filter(practicalTask -> practicalTask.getExams() != null)
+                .filter(practicalTask -> practicalTask.getExams().stream().anyMatch(exam ->
+                        exam.getTargetStudents().stream().anyMatch(student -> Objects.equals(student.getId(), studentId)) ||
+                                exam.getGroups().stream().anyMatch(group ->
+                                        group.getStudents().stream().anyMatch(student -> Objects.equals(student.getId(), studentId)))
+                ))
+                .toList();
     }
 
     public PracticalTask findById(Long id) {
-        return practiceRepository.findById(id).orElseThrow(() -> new NotFoundException("PracticalTask topilmadi: " + id));
+        PracticalTask practicalTask = practiceRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("PracticalTask topilmadi: " + id));
+        User currentUser = currentUserService.getCurrentUser();
+        if (!isStudent(currentUser)) {
+            return practicalTask;
+        }
+        Long studentId = currentUser.getId();
+        boolean assigned = practicalTask.getExams() != null && practicalTask.getExams().stream().anyMatch(exam ->
+                exam.getTargetStudents().stream().anyMatch(student -> Objects.equals(student.getId(), studentId)) ||
+                        exam.getGroups().stream().anyMatch(group ->
+                                group.getStudents().stream().anyMatch(student -> Objects.equals(student.getId(), studentId))));
+        if (!assigned) {
+            throw new NotFoundException("PracticalTask topilmadi: " + id);
+        }
+        return practicalTask;
     }
 
     @Transactional
@@ -39,6 +70,7 @@ public class PracticeService {
                 .workMode(request.workMode())
                 .teamSize(request.teamSize())
                 .schedulingRequired(request.schedulingRequired())
+                .allowedSubmissionTypes(resolveSubmissionTypes(request.allowedSubmissionTypes()))
                 .createdBy(currentUserService.getCurrentUser())
                 .build();
         return practiceRepository.save(practicalTask);
@@ -56,6 +88,7 @@ public class PracticeService {
         practicalTask.setWorkMode(request.workMode());
         practicalTask.setTeamSize(request.teamSize());
         practicalTask.setSchedulingRequired(request.schedulingRequired());
+        practicalTask.setAllowedSubmissionTypes(resolveSubmissionTypes(request.allowedSubmissionTypes()));
         return practiceRepository.save(practicalTask);
     }
 
@@ -78,5 +111,16 @@ public class PracticeService {
         if (mode == WorkMode.INDIVIDUAL && teamSize != null) {
             throw new ErrorMessageException("INDIVIDUAL mode uchun teamSize bo'sh bo'lishi kerak", ErrorCodes.BadRequest);
         }
+    }
+
+    private boolean isStudent(User user) {
+        return user.getRoles().stream().anyMatch(role -> role.getRoleName() == RoleName.ROLE_STUDENT);
+    }
+
+    private Set<SubmissionType> resolveSubmissionTypes(Set<SubmissionType> requestedTypes) {
+        if (requestedTypes == null || requestedTypes.isEmpty()) {
+            return Set.of(SubmissionType.TEXT);
+        }
+        return requestedTypes;
     }
 }

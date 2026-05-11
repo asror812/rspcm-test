@@ -1,6 +1,8 @@
 package org.example.rspcm.service;
 
 import org.example.rspcm.dto.exam.ExamQuestionRequest;
+import org.example.rspcm.exception.ErrorCodes;
+import org.example.rspcm.exception.ErrorMessageException;
 import org.example.rspcm.exception.NotFoundException;
 import org.example.rspcm.model.entity.ExamQuestion;
 import org.example.rspcm.repository.ExamQuestionRepository;
@@ -30,6 +32,7 @@ public class ExamQuestionService {
 
     @Transactional
     public ExamQuestion create(ExamQuestionRequest request) {
+        validateRequest(request);
         ExamQuestion examQuestion = new ExamQuestion();
         examQuestion.setExam(examRepository.findById(request.examId())
                 .orElseThrow(() -> new NotFoundException("Exam topilmadi: " + request.examId())));
@@ -42,6 +45,7 @@ public class ExamQuestionService {
 
     @Transactional
     public ExamQuestion update(Long id, ExamQuestionRequest request) {
+        validateRequest(request);
         ExamQuestion examQuestion = findById(id);
         examQuestion.setExam(examRepository.findById(request.examId())
                 .orElseThrow(() -> new NotFoundException("Exam topilmadi: " + request.examId())));
@@ -55,5 +59,14 @@ public class ExamQuestionService {
     @Transactional
     public void delete(Long id) {
         examQuestionRepository.delete(findById(id));
+    }
+
+    private void validateRequest(ExamQuestionRequest request) {
+        if (request.score() <= 0) {
+            throw new ErrorMessageException("Score 0 dan katta bo'lishi kerak", ErrorCodes.BadRequest);
+        }
+        if (request.orderIndex() <= 0) {
+            throw new ErrorMessageException("orderIndex 0 dan katta bo'lishi kerak", ErrorCodes.BadRequest);
+        }
     }
 }
