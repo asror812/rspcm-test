@@ -2,11 +2,13 @@ package org.example.rspcm.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.example.rspcm.dto.user.UserCreateRequest;
+import org.example.rspcm.dto.user.UserResponse;
 import org.example.rspcm.dto.user.UserUpdateRequest;
 import org.example.rspcm.exception.ErrorCodes;
 import org.example.rspcm.exception.ErrorMessageException;
 import org.example.rspcm.exception.NotFoundException;
 import org.example.rspcm.model.entity.User;
+import org.example.rspcm.mapper.UserMapper;
 import org.example.rspcm.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -29,8 +31,16 @@ public class UserService {
         return userRepository.findAll();
     }
 
+    public List<UserResponse> findAllResponse() {
+        return findAll().stream().map(UserMapper::toResponse).toList();
+    }
+
     public User findById(Long id) {
         return userRepository.findById(id).orElseThrow(() -> new NotFoundException("User topilmadi: " + id));
+    }
+
+    public UserResponse findResponseById(Long id) {
+        return UserMapper.toResponse(findById(id));
     }
 
     @Transactional
@@ -51,6 +61,10 @@ public class UserService {
         return saved;
     }
 
+    public UserResponse createResponse(UserCreateRequest request) {
+        return UserMapper.toResponse(create(request));
+    }
+
     @Transactional
     public User update(Long id, UserUpdateRequest request) {
         User user = findById(id);
@@ -61,6 +75,10 @@ public class UserService {
         User saved = userRepository.save(user);
         userProfileSyncService.sync(saved);
         return saved;
+    }
+
+    public UserResponse updateResponse(Long id, UserUpdateRequest request) {
+        return UserMapper.toResponse(update(id, request));
     }
 
     @Transactional

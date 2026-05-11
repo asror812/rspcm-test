@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface ExamRepository extends JpaRepository<Exam, Long> {
     List<Exam> findDistinctByGroupsStudentsIdOrTargetStudentsId(Long groupStudentId, Long targetStudentId);
+    List<Exam> findByCreatedById(Long createdById);
 }

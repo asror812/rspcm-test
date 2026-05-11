@@ -2,7 +2,6 @@ package org.example.rspcm.controller;
 
 import org.example.rspcm.dto.subject.SubjectRequest;
 import org.example.rspcm.dto.subject.SubjectResponse;
-import org.example.rspcm.mapper.SubjectMapper;
 import org.example.rspcm.service.SubjectService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,19 +29,19 @@ public class SubjectController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
     public List<SubjectResponse> getAll() {
-        return subjectService.findAll().stream().map(SubjectMapper::toResponse).toList();
+        return subjectService.findAllResponse();
     }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public SubjectResponse create(@Valid @RequestBody SubjectRequest request) {
-        return SubjectMapper.toResponse(subjectService.create(request));
+        return subjectService.createResponse(request);
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public SubjectResponse update(@PathVariable Long id, @Valid @RequestBody SubjectRequest request) {
-        return SubjectMapper.toResponse(subjectService.update(id, request));
+        return subjectService.updateResponse(id, request);
     }
 
     @DeleteMapping("/{id}")

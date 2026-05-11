@@ -1,6 +1,7 @@
 package org.example.rspcm.mapper;
 
 import org.example.rspcm.dto.common.GroupSummary;
+import org.example.rspcm.dto.common.PracticeSummary;
 import org.example.rspcm.dto.common.SubjectSummary;
 import org.example.rspcm.dto.common.UserSummary;
 import org.example.rspcm.dto.exam.ExamResponse;
@@ -20,6 +21,9 @@ public final class ExamMapper {
         Set<UserSummary> students = exam.getTargetStudents().stream()
                 .map(SummaryMapper::toUserSummary).collect(Collectors.toSet());
 
+        Set<PracticeSummary> practicalTasks = exam.getPracticalTasks().stream()
+                .map(SummaryMapper::toPracticeSummary).collect(Collectors.toSet());
+
         UserSummary createdBy = SummaryMapper.toUserSummary(exam.getCreatedBy());
 
         SubjectSummary subject = exam.getSubject() == null ? null
@@ -35,6 +39,7 @@ public final class ExamMapper {
                 exam.getType(),
                 groups,
                 students,
+                practicalTasks,
                 createdBy,
                 subject
         );

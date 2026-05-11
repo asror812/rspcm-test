@@ -19,6 +19,8 @@ public final class QuestionMapper {
                 question.getId(),
                 question.getText(),
                 question.getType(),
+                SummaryMapper.toSubjectSummary(question.getSubject()),
+                SummaryMapper.toUserSummary(question.getCreatedBy()),
                 options
         );
     }

@@ -1,8 +1,12 @@
 package org.example.rspcm.service;
 
 import org.example.rspcm.dto.profile.StudentProfileUpdateRequest;
+import org.example.rspcm.dto.profile.StudentProfileResponse;
+import org.example.rspcm.dto.profile.TeacherProfileResponse;
 import org.example.rspcm.dto.profile.TeacherProfileUpdateRequest;
 import org.example.rspcm.exception.NotFoundException;
+import org.example.rspcm.mapper.StudentProfileMapper;
+import org.example.rspcm.mapper.TeacherProfileMapper;
 import org.example.rspcm.model.entity.User;
 import org.example.rspcm.model.entity.StudentProfile;
 import org.example.rspcm.model.entity.Subject;
@@ -32,9 +36,17 @@ public class ProfileService {
                 .orElseThrow(() -> new NotFoundException("Student profile topilmadi: " + userId));
     }
 
+    public StudentProfileResponse getStudentProfileResponse(Long userId) {
+        return StudentProfileMapper.toResponse(getStudentProfile(userId));
+    }
+
     public TeacherProfile getTeacherProfile(Long userId) {
         return teacherProfileRepository.findByUserId(userId)
                 .orElseThrow(() -> new NotFoundException("Teacher profile topilmadi: " + userId));
+    }
+
+    public TeacherProfileResponse getTeacherProfileResponse(Long userId) {
+        return TeacherProfileMapper.toResponse(getTeacherProfile(userId));
     }
 
     @Transactional
@@ -48,6 +60,10 @@ public class ProfileService {
         return studentProfileRepository.save(profile);
     }
 
+    public StudentProfileResponse updateStudentProfileResponse(Long userId, StudentProfileUpdateRequest request) {
+        return StudentProfileMapper.toResponse(updateStudentProfile(userId, request));
+    }
+
     @Transactional
     public TeacherProfile updateTeacherProfile(Long userId, TeacherProfileUpdateRequest request) {
         TeacherProfile profile = teacherProfileRepository.findByUserId(userId)
@@ -56,6 +72,10 @@ public class ProfileService {
         profile.setExperienceYears(request.experienceYears());
         profile.setTeachingSubjects(resolveSubjects(request.teachingSubjectIds()));
         return teacherProfileRepository.save(profile);
+    }
+
+    public TeacherProfileResponse updateTeacherProfileResponse(Long userId, TeacherProfileUpdateRequest request) {
+        return TeacherProfileMapper.toResponse(updateTeacherProfile(userId, request));
     }
 
     private User getUser(Long userId) {

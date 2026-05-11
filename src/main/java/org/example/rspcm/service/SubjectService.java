@@ -1,7 +1,9 @@
 package org.example.rspcm.service;
 
 import org.example.rspcm.dto.subject.SubjectRequest;
+import org.example.rspcm.dto.subject.SubjectResponse;
 import org.example.rspcm.exception.NotFoundException;
+import org.example.rspcm.mapper.SubjectMapper;
 import org.example.rspcm.model.entity.User;
 import org.example.rspcm.model.entity.Subject;
 import org.example.rspcm.repository.UserRepository;
@@ -25,6 +27,10 @@ public class SubjectService {
         return subjectRepository.findAll();
     }
 
+    public List<SubjectResponse> findAllResponse() {
+        return findAll().stream().map(SubjectMapper::toResponse).toList();
+    }
+
     public Subject findById(Long id) {
         return subjectRepository.findById(id).orElseThrow(() -> new NotFoundException("Subject topilmadi: " + id));
     }
@@ -39,6 +45,10 @@ public class SubjectService {
         return subjectRepository.save(subject);
     }
 
+    public SubjectResponse createResponse(SubjectRequest request) {
+        return SubjectMapper.toResponse(create(request));
+    }
+
     @Transactional
     public Subject update(Long id, SubjectRequest request) {
         Subject subject = findById(id);
@@ -46,6 +56,10 @@ public class SubjectService {
         subject.setDescription(request.description());
         subject.setTeachers(resolveUsers(request.teacherIds()));
         return subjectRepository.save(subject);
+    }
+
+    public SubjectResponse updateResponse(Long id, SubjectRequest request) {
+        return SubjectMapper.toResponse(update(id, request));
     }
 
     @Transactional

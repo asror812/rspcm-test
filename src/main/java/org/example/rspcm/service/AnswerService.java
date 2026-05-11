@@ -1,6 +1,7 @@
 package org.example.rspcm.service;
 
 import org.example.rspcm.dto.answer.AnswerRequest;
+import org.example.rspcm.dto.answer.AnswerResponse;
 import org.example.rspcm.dto.answer.AnswerScoreRequest;
 import org.example.rspcm.exception.ErrorCodes;
 import org.example.rspcm.exception.ErrorMessageException;
@@ -11,6 +12,7 @@ import org.example.rspcm.model.entity.StudentAnswer;
 import org.example.rspcm.model.entity.StudentAnswerOption;
 import org.example.rspcm.model.entity.User;
 import org.example.rspcm.model.enums.RoleName;
+import org.example.rspcm.mapper.AnswerMapper;
 import org.example.rspcm.repository.AnswerRepository;
 import org.example.rspcm.repository.ExamQuestionRepository;
 import org.example.rspcm.repository.QuestionOptionRepository;
@@ -35,11 +37,19 @@ public class AnswerService {
         return answerRepository.findAll();
     }
 
+    public List<AnswerResponse> findAllResponse() {
+        return findAll().stream().map(AnswerMapper::toResponse).toList();
+    }
+
     public StudentAnswer findById(Long id) {
         StudentAnswer answer = answerRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Answer topilmadi: " + id));
         validateCanAccess(answer);
         return answer;
+    }
+
+    public AnswerResponse findResponseById(Long id) {
+        return AnswerMapper.toResponse(findById(id));
     }
 
     @Transactional
@@ -57,6 +67,10 @@ public class AnswerService {
         return answerRepository.save(answer);
     }
 
+    public AnswerResponse createResponse(AnswerRequest request) {
+        return AnswerMapper.toResponse(create(request));
+    }
+
     @Transactional
     public StudentAnswer update(Long id, AnswerRequest request) {
         StudentAnswer answer = findById(id);
@@ -68,12 +82,20 @@ public class AnswerService {
         return answerRepository.save(answer);
     }
 
+    public AnswerResponse updateResponse(Long id, AnswerRequest request) {
+        return AnswerMapper.toResponse(update(id, request));
+    }
+
     @Transactional
     public StudentAnswer score(Long id, AnswerScoreRequest request) {
         StudentAnswer answer = findById(id);
         answer.setScore(request.score());
         answer.setCorrect(request.correct());
         return answerRepository.save(answer);
+    }
+
+    public AnswerResponse scoreResponse(Long id, AnswerScoreRequest request) {
+        return AnswerMapper.toResponse(score(id, request));
     }
 
     @Transactional

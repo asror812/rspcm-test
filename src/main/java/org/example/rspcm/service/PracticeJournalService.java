@@ -1,7 +1,9 @@
 package org.example.rspcm.service;
 
 import org.example.rspcm.dto.practice.PracticeJournalRequest;
+import org.example.rspcm.dto.practice.PracticeJournalResponse;
 import org.example.rspcm.exception.NotFoundException;
+import org.example.rspcm.mapper.PracticeJournalMapper;
 import org.example.rspcm.model.entity.*;
 import org.example.rspcm.model.enums.LogbookEntryStatus;
 import org.example.rspcm.model.enums.LogbookStatus;
@@ -31,8 +33,16 @@ public class PracticeJournalService {
         return journalRepository.findByStudentId(student.getId());
     }
 
+    public List<PracticeJournalResponse> findMineResponse() {
+        return findMine().stream().map(PracticeJournalMapper::toResponse).toList();
+    }
+
     public List<PracticeLogbook> findByPracticalTask(Long practicalTaskId) {
         return journalRepository.findByPracticalTaskId(practicalTaskId);
+    }
+
+    public List<PracticeJournalResponse> findByPracticalTaskResponse(Long practicalTaskId) {
+        return findByPracticalTask(practicalTaskId).stream().map(PracticeJournalMapper::toResponse).toList();
     }
 
     @Transactional
@@ -77,5 +87,9 @@ public class PracticeJournalService {
 
         return journalRepository.findById(savedLogbook.getId())
                 .orElseThrow(() -> new NotFoundException("Logbook topilmadi: " + savedLogbook.getId()));
+    }
+
+    public PracticeJournalResponse submitResponse(PracticeJournalRequest request) {
+        return PracticeJournalMapper.toResponse(submit(request));
     }
 }

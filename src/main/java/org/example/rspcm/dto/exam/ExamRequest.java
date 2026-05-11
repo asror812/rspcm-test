@@ -16,6 +16,7 @@ public record ExamRequest(
         @NotNull ExamType type,
         Set<Long> groupIds,
         Set<Long> studentIds,
+        Set<Long> practicalTaskIds,
         Long subjectId
 ) {
 }

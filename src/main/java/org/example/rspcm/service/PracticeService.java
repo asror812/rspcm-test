@@ -1,6 +1,7 @@
 package org.example.rspcm.service;
 
 import org.example.rspcm.dto.practice.PracticeRequest;
+import org.example.rspcm.dto.practice.PracticeResponse;
 import org.example.rspcm.exception.ErrorCodes;
 import org.example.rspcm.exception.ErrorMessageException;
 import org.example.rspcm.exception.NotFoundException;
@@ -10,6 +11,7 @@ import org.example.rspcm.model.enums.RoleName;
 import org.example.rspcm.model.enums.SubmissionType;
 import org.example.rspcm.model.enums.WorkMode;
 import org.example.rspcm.repository.PracticeRepository;
+import org.example.rspcm.mapper.PracticeMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +42,10 @@ public class PracticeService {
                 .toList();
     }
 
+    public List<PracticeResponse> findAllResponse() {
+        return findAll().stream().map(PracticeMapper::toResponse).toList();
+    }
+
     public PracticalTask findById(Long id) {
         PracticalTask practicalTask = practiceRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("PracticalTask topilmadi: " + id));
@@ -56,6 +62,10 @@ public class PracticeService {
             throw new NotFoundException("PracticalTask topilmadi: " + id);
         }
         return practicalTask;
+    }
+
+    public PracticeResponse findResponseById(Long id) {
+        return PracticeMapper.toResponse(findById(id));
     }
 
     @Transactional
@@ -76,6 +86,10 @@ public class PracticeService {
         return practiceRepository.save(practicalTask);
     }
 
+    public PracticeResponse createResponse(PracticeRequest request) {
+        return PracticeMapper.toResponse(create(request));
+    }
+
     @Transactional
     public PracticalTask update(Long id, PracticeRequest request) {
         validateTeamConfig(request.workMode(), request.teamSize());
@@ -92,10 +106,18 @@ public class PracticeService {
         return practiceRepository.save(practicalTask);
     }
 
+    public PracticeResponse updateResponse(Long id, PracticeRequest request) {
+        return PracticeMapper.toResponse(update(id, request));
+    }
+
     @Transactional
     public PracticalTask assignGroups(Long practiceId) {
         PracticalTask practicalTask = findById(practiceId);
         return practiceRepository.save(practicalTask);
+    }
+
+    public PracticeResponse assignGroupsResponse(Long practiceId) {
+        return PracticeMapper.toResponse(assignGroups(practiceId));
     }
 
     @Transactional

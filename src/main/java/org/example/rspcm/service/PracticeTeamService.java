@@ -1,6 +1,7 @@
 package org.example.rspcm.service;
 
 import org.example.rspcm.dto.practice.PracticeTeamRequest;
+import org.example.rspcm.dto.practice.PracticeTeamResponse;
 import org.example.rspcm.exception.ErrorCodes;
 import org.example.rspcm.exception.ErrorMessageException;
 import org.example.rspcm.exception.NotFoundException;
@@ -11,6 +12,7 @@ import org.example.rspcm.model.enums.WorkMode;
 import org.example.rspcm.repository.UserRepository;
 import org.example.rspcm.repository.PracticeRepository;
 import org.example.rspcm.repository.PracticeTeamRepository;
+import org.example.rspcm.mapper.PracticeTeamMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +31,10 @@ public class PracticeTeamService {
 
     public List<PracticeTeam> getByPracticeId(Long practiceId) {
         return teamRepository.findByPracticalTaskId(practiceId);
+    }
+
+    public List<PracticeTeamResponse> getByPracticeIdResponse(Long practiceId) {
+        return getByPracticeId(practiceId).stream().map(PracticeTeamMapper::toResponse).toList();
     }
 
     @Transactional
@@ -50,5 +56,9 @@ public class PracticeTeamService {
                 .members(members)
                 .build();
         return teamRepository.save(team);
+    }
+
+    public PracticeTeamResponse createResponse(PracticeTeamRequest request) {
+        return PracticeTeamMapper.toResponse(create(request));
     }
 }

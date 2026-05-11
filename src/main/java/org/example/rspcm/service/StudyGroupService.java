@@ -1,9 +1,11 @@
 package org.example.rspcm.service;
 
 import org.example.rspcm.dto.group.GroupRequest;
+import org.example.rspcm.dto.group.GroupResponse;
 import org.example.rspcm.exception.ErrorCodes;
 import org.example.rspcm.exception.ErrorMessageException;
 import org.example.rspcm.exception.NotFoundException;
+import org.example.rspcm.mapper.GroupMapper;
 import org.example.rspcm.model.entity.Subject;
 import org.example.rspcm.model.entity.User;
 import org.example.rspcm.model.entity.StudentProfile;
@@ -39,8 +41,16 @@ public class StudyGroupService {
         return groupRepository.findAll();
     }
 
+    public List<GroupResponse> findAllResponse() {
+        return findAll().stream().map(GroupMapper::toResponse).toList();
+    }
+
     public StudyGroup findById(Long id) {
         return groupRepository.findById(id).orElseThrow(() -> new NotFoundException("Group topilmadi: " + id));
+    }
+
+    public GroupResponse findResponseById(Long id) {
+        return GroupMapper.toResponse(findById(id));
     }
 
     @Transactional
@@ -56,6 +66,10 @@ public class StudyGroupService {
         return groupRepository.save(group);
     }
 
+    public GroupResponse createResponse(GroupRequest request) {
+        return GroupMapper.toResponse(create(request));
+    }
+
     @Transactional
     public StudyGroup update(Long id, GroupRequest request) {
         StudyGroup group = findById(id);
@@ -66,6 +80,10 @@ public class StudyGroupService {
         group.setTeachers(resolveUsers(request.teacherIds()));
         group.setStudents(resolveUsers(request.studentIds()));
         return groupRepository.save(group);
+    }
+
+    public GroupResponse updateResponse(Long id, GroupRequest request) {
+        return GroupMapper.toResponse(update(id, request));
     }
 
     @Transactional
@@ -137,5 +155,9 @@ public class StudyGroupService {
 
     public List<StudyGroup> findOwnGroups(User user) {
         return groupRepository.findByTeachersId(user.getId());
+    }
+
+    public List<GroupResponse> findOwnGroupsResponse(User user) {
+        return findOwnGroups(user).stream().map(GroupMapper::toResponse).toList();
     }
 }

@@ -1,10 +1,12 @@
 package org.example.rspcm.service;
 
 import org.example.rspcm.dto.exam.ExamQuestionRequest;
+import org.example.rspcm.dto.exam.ExamQuestionResponse;
 import org.example.rspcm.exception.ErrorCodes;
 import org.example.rspcm.exception.ErrorMessageException;
 import org.example.rspcm.exception.NotFoundException;
 import org.example.rspcm.model.entity.ExamQuestion;
+import org.example.rspcm.mapper.ExamQuestionMapper;
 import org.example.rspcm.repository.ExamQuestionRepository;
 import org.example.rspcm.repository.ExamRepository;
 import org.example.rspcm.repository.QuestionRepository;
@@ -26,8 +28,16 @@ public class ExamQuestionService {
         return examQuestionRepository.findAll();
     }
 
+    public List<ExamQuestionResponse> findAllResponse() {
+        return findAll().stream().map(ExamQuestionMapper::toResponse).toList();
+    }
+
     public ExamQuestion findById(Long id) {
         return examQuestionRepository.findById(id).orElseThrow(() -> new NotFoundException("ExamQuestion topilmadi: " + id));
+    }
+
+    public ExamQuestionResponse findResponseById(Long id) {
+        return ExamQuestionMapper.toResponse(findById(id));
     }
 
     @Transactional
@@ -43,6 +53,10 @@ public class ExamQuestionService {
         return examQuestionRepository.save(examQuestion);
     }
 
+    public ExamQuestionResponse createResponse(ExamQuestionRequest request) {
+        return ExamQuestionMapper.toResponse(create(request));
+    }
+
     @Transactional
     public ExamQuestion update(Long id, ExamQuestionRequest request) {
         validateRequest(request);
@@ -54,6 +68,10 @@ public class ExamQuestionService {
         examQuestion.setScore(request.score());
         examQuestion.setOrderIndex(request.orderIndex());
         return examQuestionRepository.save(examQuestion);
+    }
+
+    public ExamQuestionResponse updateResponse(Long id, ExamQuestionRequest request) {
+        return ExamQuestionMapper.toResponse(update(id, request));
     }
 
     @Transactional

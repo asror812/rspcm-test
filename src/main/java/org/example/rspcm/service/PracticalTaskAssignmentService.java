@@ -1,7 +1,9 @@
 package org.example.rspcm.service;
 
 import org.example.rspcm.dto.practice.PracticalTaskAssignmentRequest;
+import org.example.rspcm.dto.practice.PracticalTaskAssignmentResponse;
 import org.example.rspcm.exception.NotFoundException;
+import org.example.rspcm.mapper.PracticalTaskAssignmentMapper;
 import org.example.rspcm.model.entity.PracticalTaskAssignment;
 import org.example.rspcm.model.entity.PracticalTaskAssignmentStatus;
 import org.example.rspcm.repository.ExamRepository;
@@ -30,9 +32,17 @@ public class PracticalTaskAssignmentService {
         return assignmentRepository.findAll();
     }
 
+    public List<PracticalTaskAssignmentResponse> findAllResponse() {
+        return findAll().stream().map(PracticalTaskAssignmentMapper::toResponse).toList();
+    }
+
     public PracticalTaskAssignment findById(Long id) {
         return assignmentRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("PracticalTaskAssignment topilmadi: " + id));
+    }
+
+    public PracticalTaskAssignmentResponse findResponseById(Long id) {
+        return PracticalTaskAssignmentMapper.toResponse(findById(id));
     }
 
     @Transactional
@@ -54,6 +64,10 @@ public class PracticalTaskAssignmentService {
         return assignmentRepository.save(assignment);
     }
 
+    public PracticalTaskAssignmentResponse createResponse(PracticalTaskAssignmentRequest request) {
+        return PracticalTaskAssignmentMapper.toResponse(create(request));
+    }
+
     @Transactional
     public PracticalTaskAssignment update(Long id, PracticalTaskAssignmentRequest request) {
         PracticalTaskAssignment assignment = findById(id);
@@ -72,6 +86,10 @@ public class PracticalTaskAssignmentService {
             assignment.setSubmittedAt(LocalDateTime.now());
         }
         return assignmentRepository.save(assignment);
+    }
+
+    public PracticalTaskAssignmentResponse updateResponse(Long id, PracticalTaskAssignmentRequest request) {
+        return PracticalTaskAssignmentMapper.toResponse(update(id, request));
     }
 
     @Transactional
