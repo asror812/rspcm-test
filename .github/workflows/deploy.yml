@@ -29,15 +29,15 @@ jobs:
       - name: Build executable JAR with Gradle
         run: ./gradlew clean bootJar -x test --no-daemon
 
-      - name: Clean upload folder on server
+      - name: Clean backend folder on server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            sudo mkdir -p /opt/backend/upload
-            sudo rm -f /opt/backend/upload/*.jar
+            sudo mkdir -p /opt/backend
+            sudo rm -f /opt/backend/*.jar
 
       - name: Copy JAR to Server
         uses: appleboy/scp-action@v0.1.7
@@ -46,7 +46,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "build/libs/*.jar"
-          target: "/opt/backend/upload/"
+          target: "/opt/backend/"
           strip_components: 2
 
       - name: Restart Systemd Service
@@ -56,7 +56,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            JAR_FILE=$(ls /opt/backend/upload/*.jar | grep -v plain | head -n 1)
+            JAR_FILE=$(ls /opt/backend/*.jar | grep -v plain | head -n 1)
 
             if [ -z "$JAR_FILE" ]; then
               echo "No executable JAR found"
