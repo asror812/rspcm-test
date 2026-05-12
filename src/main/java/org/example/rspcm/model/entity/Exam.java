@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.example.rspcm.model.enums.ExamStatus;
 import org.example.rspcm.model.enums.ExamType;
 
 import java.time.LocalDateTime;
@@ -43,6 +44,10 @@ public class Exam {
     @Column(nullable = false)
     private ExamType type;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ExamStatus status;
+
     @Builder.Default
     @OneToMany(mappedBy = "exam", cascade = CascadeType.ALL)
     @OrderBy("orderIndex asc")
@@ -77,6 +82,9 @@ public class Exam {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "subject_id")
     private Subject subject;
+
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "created_by")

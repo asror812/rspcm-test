@@ -1,7 +1,6 @@
 package org.example.rspcm.dto.exam;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.*;
 import org.example.rspcm.model.enums.ExamType;
 
 import java.time.LocalDateTime;
@@ -11,9 +10,10 @@ public record ExamRequest(
         @NotBlank String title,
         String description,
 
-        @NotNull LocalDateTime startAt,
-        @NotNull LocalDateTime endAt,
-        @NotNull Integer maxScore,
+        @NotNull @FutureOrPresent LocalDateTime startAt,
+        @NotNull @Future LocalDateTime endAt,
+        @NotNull @Positive Integer maxScore,
+
         @NotNull ExamType type,
         Set<Long> groupIds,
         Set<Long> studentIds,

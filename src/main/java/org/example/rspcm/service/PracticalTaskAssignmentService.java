@@ -5,7 +5,7 @@ import org.example.rspcm.dto.practice.PracticalTaskAssignmentResponse;
 import org.example.rspcm.exception.NotFoundException;
 import org.example.rspcm.mapper.PracticalTaskAssignmentMapper;
 import org.example.rspcm.model.entity.PracticalTaskAssignment;
-import org.example.rspcm.model.entity.PracticalTaskAssignmentStatus;
+import org.example.rspcm.model.enums.PracticalTaskAssignmentStatus;
 import org.example.rspcm.repository.ExamRepository;
 import org.example.rspcm.repository.PracticalTaskAssignmentRepository;
 import org.example.rspcm.repository.PracticeRepository;

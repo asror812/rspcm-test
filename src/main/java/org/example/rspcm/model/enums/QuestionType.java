@@ -1,7 +1,7 @@
 package org.example.rspcm.model.enums;
 
 public enum QuestionType {
-    OPEN_TEST,
-    CLOSED_TEST,
+    OPEN,
+    CLOSED,
     MULTIPLE_CHOICE
 }

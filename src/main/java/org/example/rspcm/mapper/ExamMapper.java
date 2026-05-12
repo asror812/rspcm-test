@@ -11,15 +11,19 @@ import org.example.rspcm.model.entity.PracticalTask;
 import org.example.rspcm.model.entity.StudyGroup;
 import org.example.rspcm.model.entity.Subject;
 import org.example.rspcm.model.entity.User;
+import org.example.rspcm.model.enums.ExamStatus;
+import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@Component
 public final class ExamMapper {
     private ExamMapper() {
     }
 
-    public static ExamResponse toResponse(Exam exam) {
+    public ExamResponse toResponse(Exam exam) {
         Set<GroupSummary> groups = exam.getGroups().stream()
                 .map(SummaryMapper::toGroupSummary).collect(Collectors.toSet());
 
@@ -50,11 +54,10 @@ public final class ExamMapper {
         );
     }
 
-    public static Exam toEntity(
+    public Exam toEntity(
             ExamRequest request,
             Set<StudyGroup> groups,
             Set<User> students,
-            Set<PracticalTask> practicalTasks,
             User createdBy,
             Subject subject
     ) {
@@ -67,18 +70,18 @@ public final class ExamMapper {
                 .type(request.type())
                 .groups(groups)
                 .targetStudents(students)
-                .practicalTasks(practicalTasks)
                 .createdBy(createdBy)
                 .subject(subject)
+                .status(ExamStatus.DRAFT)
+                .createdAt(LocalDateTime.now())
                 .build();
     }
 
-    public static void updateEntity(
+    public void updateEntity(
             Exam exam,
             ExamRequest request,
             Set<StudyGroup> groups,
             Set<User> students,
-            Set<PracticalTask> practicalTasks,
             Subject subject
     ) {
         exam.setTitle(request.title());
@@ -89,7 +92,6 @@ public final class ExamMapper {
         exam.setType(request.type());
         exam.setGroups(groups);
         exam.setTargetStudents(students);
-        exam.setPracticalTasks(practicalTasks);
         exam.setSubject(subject);
     }
 }
