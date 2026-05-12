@@ -13,4 +13,9 @@ public class TestDeleteController {
     public ResponseEntity<String> testDelete() {
         return ResponseEntity.ok("success");
     }
+
+    @GetMapping("/test")
+    public ResponseEntity<String> testDelete2() {
+        return ResponseEntity.ok("success");
+    }
 }
