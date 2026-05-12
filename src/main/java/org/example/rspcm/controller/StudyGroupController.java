@@ -40,7 +40,7 @@ public class StudyGroupController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
     public ResponseEntity<List<GroupResponse>> getAll() {
-        return ResponseEntity.ok(groupService.findAllResponse());
+        return ResponseEntity.ok(groupService.findAll());
     }
 
     @GetMapping("/{id}")
@@ -58,7 +58,7 @@ public class StudyGroupController {
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<GroupResponse> update(@PathVariable Long id, @Valid @RequestBody GroupRequest request) {
-        return ResponseEntity.ok(groupService.updateResponse(id, request));
+        return ResponseEntity.ok(groupService.update(id, request));
     }
 
     @PostMapping(value = "/{id}/import-students", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

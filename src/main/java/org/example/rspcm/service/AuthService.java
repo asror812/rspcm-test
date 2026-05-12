@@ -9,9 +9,10 @@ import org.example.rspcm.dto.user.UserResponse;
 import org.example.rspcm.exception.ErrorCodes;
 import org.example.rspcm.exception.ErrorMessageException;
 import org.example.rspcm.exception.NotFoundException;
-import org.example.rspcm.model.entity.Role;
 import org.example.rspcm.model.entity.User;
 import org.example.rspcm.model.entity.OtpVerification;
+import org.example.rspcm.mapper.AuthMapper;
+import org.example.rspcm.mapper.UserMapper;
 import org.example.rspcm.repository.OtpVerificationRepository;
 import org.example.rspcm.repository.UserRepository;
 import org.example.rspcm.security.JwtService;
@@ -54,14 +55,11 @@ public class AuthService {
             throw new ErrorMessageException("Email allaqachon mavjud", ErrorCodes.AlreadyExists);
         }
 
-        User user = User.builder()
-                .firstName(request.firstName())
-                .lastName(request.lastName())
-                .email(request.email())
-                .password(passwordEncoder.encode(request.password()))
-                .enabled(false)
-                .roles(roleService.resolveRoles(request.roles()))
-                .build();
+        User user = AuthMapper.toUserEntity(
+                request,
+                passwordEncoder.encode(request.password()),
+                roleService.resolveRoles(request.roles())
+        );
 
         User saved = userRepository.save(user);
         userProfileSyncService.sync(saved);
@@ -116,7 +114,7 @@ public class AuthService {
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        return new AuthResponse(
+        return AuthMapper.toAuthResponse(
                 userDetails.getUsername(),
                 userDetails.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet()),
                 jwtService.generateToken(userDetails)
@@ -138,14 +136,6 @@ public class AuthService {
     }
 
     public UserResponse getUser(User user) {
-        return new UserResponse(
-                user.getId(),
-                user.getFirstName(),
-                user.getLastName(),
-                user.getEmail(),
-                user.isEnabled(),
-                user.isDeleted(),
-                user.getRoles().stream().map(Role::getName).collect(Collectors.toSet())
-        );
+        return UserMapper.toResponse(user);
     }
 }

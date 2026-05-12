@@ -27,12 +27,8 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final UserProfileSyncService userProfileSyncService;
 
-    public List<User> findAll() {
-        return userRepository.findAll();
-    }
-
-    public List<UserResponse> findAllResponse() {
-        return findAll().stream().map(UserMapper::toResponse).toList();
+    public List<UserResponse> findAll() {
+        return userRepository.findAll().stream().map(UserMapper::toResponse).toList();
     }
 
     public User findById(Long id) {
@@ -40,7 +36,7 @@ public class UserService {
     }
 
     public UserResponse findResponseById(Long id) {
-        return UserMapper.toResponse(findById(id));
+        return UserMapper.toResponse(userRepository.findById(id).orElseThrow(() -> new NotFoundException("User topilmadi: " + id)));
     }
 
     @Transactional
@@ -48,37 +44,37 @@ public class UserService {
         if (userRepository.existsByEmail(request.email())) {
             throw new ErrorMessageException("Email allaqachon mavjud", ErrorCodes.AlreadyExists);
         }
-        User user = User.builder()
-                .firstName(request.firstName())
-                .lastName(request.lastName())
-                .email(request.email())
-                .password(passwordEncoder.encode(request.password()))
-                .enabled(request.enabled())
-                .roles(roleService.resolveRoles(request.roles()))
-                .build();
+        User user = UserMapper.toEntity(
+                request,
+                passwordEncoder.encode(request.password()),
+                roleService.resolveRoles(request.roles())
+        );
         User saved = userRepository.save(user);
         userProfileSyncService.sync(saved);
         return saved;
     }
 
     public UserResponse createResponse(UserCreateRequest request) {
-        return UserMapper.toResponse(create(request));
+        if (userRepository.existsByEmail(request.email())) {
+            throw new ErrorMessageException("Email allaqachon mavjud", ErrorCodes.AlreadyExists);
+        }
+        User user = UserMapper.toEntity(
+                request,
+                passwordEncoder.encode(request.password()),
+                roleService.resolveRoles(request.roles())
+        );
+        User saved = userRepository.save(user);
+        userProfileSyncService.sync(saved);
+        return UserMapper.toResponse(saved);
     }
 
     @Transactional
-    public User update(Long id, UserUpdateRequest request) {
+    public UserResponse update(Long id, UserUpdateRequest request) {
         User user = findById(id);
-        user.setFirstName(request.firstName());
-        user.setLastName(request.lastName());
-        user.setEnabled(request.enabled());
-        user.setRoles(roleService.resolveRoles(request.roles()));
+        UserMapper.updateEntity(user, request, roleService.resolveRoles(request.roles()));
         User saved = userRepository.save(user);
         userProfileSyncService.sync(saved);
-        return saved;
-    }
-
-    public UserResponse updateResponse(Long id, UserUpdateRequest request) {
-        return UserMapper.toResponse(update(id, request));
+        return UserMapper.toResponse(saved);
     }
 
     @Transactional

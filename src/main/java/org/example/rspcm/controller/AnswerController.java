@@ -31,7 +31,7 @@ public class AnswerController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<List<AnswerResponse>> getAll() {
-        return ResponseEntity.ok(answerService.findAllResponse());
+        return ResponseEntity.ok(answerService.findAll());
     }
 
     @GetMapping("/{id}")
@@ -49,7 +49,7 @@ public class AnswerController {
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
     public ResponseEntity<AnswerResponse> update(@PathVariable Long id, @Valid @RequestBody AnswerRequest request) {
-        return ResponseEntity.ok(answerService.updateResponse(id, request));
+        return ResponseEntity.ok(answerService.update(id, request));
     }
 
     @PatchMapping("/{id}/score")

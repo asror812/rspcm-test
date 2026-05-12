@@ -29,13 +29,13 @@ public class ExamController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
     public ResponseEntity<List<ExamResponse>> getAll() {
-        return ResponseEntity.ok(examService.findAllResponse());
+        return ResponseEntity.ok(examService.findAll());
     }
 
     @GetMapping("/own")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<List<ExamResponse>> getOwnCreated() {
-        return ResponseEntity.ok(examService.findOwnCreatedResponse());
+        return ResponseEntity.ok(examService.findOwnCreated());
     }
 
     @GetMapping("/{id}")
@@ -47,13 +47,13 @@ public class ExamController {
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<ExamResponse> create(@Valid @RequestBody ExamRequest request) {
-        return ResponseEntity.ok(examService.createResponse(request));
+        return ResponseEntity.ok(examService.create(request));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<ExamResponse> update(@PathVariable Long id, @Valid @RequestBody ExamRequest request) {
-        return ResponseEntity.ok(examService.updateResponse(id, request));
+        return ResponseEntity.ok(examService.update(id, request));
     }
 
     @DeleteMapping("/{id}")

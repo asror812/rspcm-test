@@ -1,4 +1,4 @@
-package org.example.rspcm.model.entity;
+package org.example.rspcm.model.enums;
 
 public enum PracticalTaskAssignmentStatus {
     CHOSEN,

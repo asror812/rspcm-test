@@ -34,7 +34,8 @@ public class PracticeJournalService {
     }
 
     public List<PracticeJournalResponse> findMineResponse() {
-        return findMine().stream().map(PracticeJournalMapper::toResponse).toList();
+        User student = currentUserService.getCurrentUser();
+        return journalRepository.findByStudentId(student.getId()).stream().map(PracticeJournalMapper::toResponse).toList();
     }
 
     public List<PracticeLogbook> findByPracticalTask(Long practicalTaskId) {
@@ -42,7 +43,7 @@ public class PracticeJournalService {
     }
 
     public List<PracticeJournalResponse> findByPracticalTaskResponse(Long practicalTaskId) {
-        return findByPracticalTask(practicalTaskId).stream().map(PracticeJournalMapper::toResponse).toList();
+        return journalRepository.findByPracticalTaskId(practicalTaskId).stream().map(PracticeJournalMapper::toResponse).toList();
     }
 
     @Transactional
@@ -90,6 +91,46 @@ public class PracticeJournalService {
     }
 
     public PracticeJournalResponse submitResponse(PracticeJournalRequest request) {
-        return PracticeJournalMapper.toResponse(submit(request));
+        User student = currentUserService.getCurrentUser();
+        PracticalTask practicalTask = practiceRepository.findById(request.practiceId())
+                .orElseThrow(() -> new NotFoundException("PracticalTask topilmadi: " + request.practiceId()));
+
+        PracticeTeam team = null;
+        if (request.teamId() != null) {
+            team = teamRepository.findById(request.teamId())
+                    .orElseThrow(() -> new NotFoundException("PracticalTask team topilmadi: " + request.teamId()));
+        }
+
+        boolean isDraft = Boolean.TRUE.equals(request.draft());
+        LocalDateTime now = LocalDateTime.now();
+
+        PracticeLogbook logbook = journalRepository
+                .findFirstByPracticalTaskIdAndStudentId(practicalTask.getId(), student.getId())
+                .orElseGet(() -> PracticeLogbook.builder()
+                        .practicalTask(practicalTask)
+                        .student(student)
+                        .build());
+
+        logbook.setTeam(team);
+        logbook.setFilePath(request.filePath());
+        logbook.setSubmittedAt(now);
+        logbook.setStatus(isDraft ? LogbookStatus.DRAFT : LogbookStatus.SUBMITTED);
+        PracticeLogbook savedLogbook = journalRepository.save(logbook);
+
+        PracticeLogbookEntry entry = entryRepository
+                .findFirstByLogbookIdAndEntryDate(savedLogbook.getId(), request.entryDate())
+                .orElseGet(() -> PracticeLogbookEntry.builder()
+                        .logbook(savedLogbook)
+                        .entryDate(request.entryDate())
+                        .build());
+
+        entry.setContent(request.content());
+        entry.setStatus(isDraft ? LogbookEntryStatus.DRAFT : LogbookEntryStatus.SUBMITTED);
+        entry.setSubmittedAt(now);
+        entryRepository.save(entry);
+
+        PracticeLogbook reloaded = journalRepository.findById(savedLogbook.getId())
+                .orElseThrow(() -> new NotFoundException("Logbook topilmadi: " + savedLogbook.getId()));
+        return PracticeJournalMapper.toResponse(reloaded);
     }
 }

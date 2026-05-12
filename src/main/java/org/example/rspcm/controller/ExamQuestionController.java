@@ -28,7 +28,7 @@ public class ExamQuestionController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
     public ResponseEntity<List<ExamQuestionResponse>> getAll() {
-        return ResponseEntity.ok(examQuestionService.findAllResponse());
+        return ResponseEntity.ok(examQuestionService.findAll());
     }
 
     @GetMapping("/{id}")
@@ -46,7 +46,7 @@ public class ExamQuestionController {
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<ExamQuestionResponse> update(@PathVariable Long id, @Valid @RequestBody ExamQuestionRequest request) {
-        return ResponseEntity.ok(examQuestionService.updateResponse(id, request));
+        return ResponseEntity.ok(examQuestionService.update(id, request));
     }
 
     @DeleteMapping("/{id}")

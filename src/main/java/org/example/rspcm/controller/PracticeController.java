@@ -30,7 +30,7 @@ public class PracticeController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
     public ResponseEntity<List<PracticeResponse>> getAll() {
-        return ResponseEntity.ok(practiceService.findAllResponse());
+        return ResponseEntity.ok(practiceService.findAll());
     }
 
     @GetMapping("/{id}")
@@ -48,7 +48,7 @@ public class PracticeController {
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<PracticeResponse> update(@PathVariable Long id, @Valid @RequestBody PracticeRequest request) {
-        return ResponseEntity.ok(practiceService.updateResponse(id, request));
+        return ResponseEntity.ok(practiceService.update(id, request));
     }
 
     @PatchMapping("/{id}/assign-groups")

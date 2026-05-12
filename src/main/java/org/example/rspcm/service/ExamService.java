@@ -33,16 +33,14 @@ public class ExamService {
     private final UserRepository userRepository;
     private final CurrentUserService currentUserService;
 
-    public List<Exam> findAll() {
+    public List<ExamResponse> findAll() {
         User currentUser = currentUserService.getCurrentUser();
         if (isStudent(currentUser)) {
-            return examRepository.findDistinctByGroupsStudentsIdOrTargetStudentsId(currentUser.getId(), currentUser.getId());
+            return examRepository.findDistinctByGroupsStudentsIdOrTargetStudentsId(currentUser.getId(), currentUser.getId())
+                    .stream().map(ExamMapper::toResponse).toList();
         }
-        return examRepository.findAll();
-    }
 
-    public List<ExamResponse> findAllResponse() {
-        return findAll().stream().map(ExamMapper::toResponse).toList();
+        return examRepository.findAll().stream().map(ExamMapper::toResponse).toList();
     }
 
     public Exam findById(Long id) {
@@ -51,69 +49,71 @@ public class ExamService {
         if (!isStudent(currentUser)) {
             return exam;
         }
+
         boolean assignedByGroup = exam.getGroups().stream()
-                .anyMatch(group -> group.getStudents().stream().anyMatch(student -> student.getId().equals(currentUser.getId())));
+                .anyMatch(group -> group.getStudents()
+                        .stream().anyMatch(student -> student.getId().equals(currentUser.getId())));
+
         boolean assignedDirectly = exam.getTargetStudents().stream()
                 .anyMatch(student -> student.getId().equals(currentUser.getId()));
+
         if (!assignedByGroup && !assignedDirectly) {
             throw new NotFoundException("Exam topilmadi: " + id);
         }
+
         return exam;
     }
 
     public ExamResponse findResponseById(Long id) {
-        return ExamMapper.toResponse(findById(id));
+        Exam exam = examRepository.findById(id).orElseThrow(() -> new NotFoundException("Exam topilmadi: " + id));
+        User currentUser = currentUserService.getCurrentUser();
+        if (isStudent(currentUser)) {
+            boolean assignedByGroup = exam.getGroups().stream()
+                    .anyMatch(group -> group.getStudents().stream().anyMatch(student -> student.getId().equals(currentUser.getId())));
+            boolean assignedDirectly = exam.getTargetStudents().stream()
+                    .anyMatch(student -> student.getId().equals(currentUser.getId()));
+            if (!assignedByGroup && !assignedDirectly) {
+                throw new NotFoundException("Exam topilmadi: " + id);
+            }
+        }
+        return ExamMapper.toResponse(exam);
     }
 
-    public List<Exam> findOwnCreated() {
-        return examRepository.findByCreatedById(currentUserService.getCurrentUser().getId());
-    }
-
-    public List<ExamResponse> findOwnCreatedResponse() {
-        return findOwnCreated().stream().map(ExamMapper::toResponse).toList();
-    }
-
-    @Transactional
-    public Exam create(ExamRequest request) {
-        Exam exam = Exam.builder()
-                .title(request.title())
-                .description(request.description())
-                .startAt(request.startAt())
-                .endAt(request.endAt())
-                .maxScore(request.maxScore())
-                .type(request.type())
-                .groups(resolveGroups(request.groupIds()))
-                .targetStudents(resolveStudents(request.studentIds()))
-                .createdBy(currentUserService.getCurrentUser())
-                .subject(request.subjectId() == null ? null : subjectRepository.findById(request.subjectId())
-                        .orElseThrow(() -> new NotFoundException("Subject topilmadi: " + request.subjectId())))
-                .build();
-        return examRepository.save(exam);
-    }
-
-    public ExamResponse createResponse(ExamRequest request) {
-        return ExamMapper.toResponse(create(request));
+    public List<ExamResponse> findOwnCreated() {
+        return examRepository.findByCreatedById(currentUserService.getCurrentUser().getId())
+                .stream().map(ExamMapper::toResponse).toList();
     }
 
     @Transactional
-    public Exam update(Long id, ExamRequest request) {
+    public ExamResponse create(ExamRequest request) {
+        Exam exam = ExamMapper.toEntity(
+                request,
+                resolveGroups(request.groupIds()),
+                resolveStudents(request.studentIds()),
+                resolvePracticalTasks(request.practicalTaskIds()),
+                currentUserService.getCurrentUser(),
+                request.subjectId() == null ? null : subjectRepository.findById(request.subjectId())
+                                                     .orElseThrow(() -> new NotFoundException("Subject topilmadi: " + request.subjectId()))
+        );
+
+        Exam save = examRepository.save(exam);
+
+        return ExamMapper.toResponse(save);
+    }
+
+    @Transactional
+    public ExamResponse update(Long id, ExamRequest request) {
         Exam exam = findById(id);
-        exam.setTitle(request.title());
-        exam.setDescription(request.description());
-        exam.setStartAt(request.startAt());
-        exam.setEndAt(request.endAt());
-        exam.setMaxScore(request.maxScore());
-        exam.setType(request.type());
-        exam.setGroups(resolveGroups(request.groupIds()));
-        exam.setTargetStudents(resolveStudents(request.studentIds()));
-        exam.setPracticalTasks(resolvePracticalTasks(request.practicalTaskIds()));
-        exam.setSubject(request.subjectId() == null ? null : subjectRepository.findById(request.subjectId())
-                .orElseThrow(() -> new NotFoundException("Subject topilmadi: " + request.subjectId())));
-        return examRepository.save(exam);
-    }
-
-    public ExamResponse updateResponse(Long id, ExamRequest request) {
-        return ExamMapper.toResponse(update(id, request));
+        ExamMapper.updateEntity(
+                exam,
+                request,
+                resolveGroups(request.groupIds()),
+                resolveStudents(request.studentIds()),
+                resolvePracticalTasks(request.practicalTaskIds()),
+                request.subjectId() == null ? null : subjectRepository.findById(request.subjectId())
+                                                     .orElseThrow(() -> new NotFoundException("Subject topilmadi: " + request.subjectId()))
+        );
+        return ExamMapper.toResponse(examRepository.save(exam));
     }
 
     @Transactional

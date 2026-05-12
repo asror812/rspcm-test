@@ -10,13 +10,13 @@ import java.util.Set;
 public record ExamRequest(
         @NotBlank String title,
         String description,
-        LocalDateTime startAt,
-        LocalDateTime endAt,
-        Integer maxScore,
+
+        @NotNull LocalDateTime startAt,
+        @NotNull LocalDateTime endAt,
+        @NotNull Integer maxScore,
         @NotNull ExamType type,
         Set<Long> groupIds,
         Set<Long> studentIds,
-        Set<Long> practicalTaskIds,
         Long subjectId
 ) {
 }

@@ -29,7 +29,7 @@ public class SubjectController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
     public List<SubjectResponse> getAll() {
-        return subjectService.findAllResponse();
+        return subjectService.findAll();
     }
 
     @PostMapping
@@ -41,7 +41,7 @@ public class SubjectController {
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public SubjectResponse update(@PathVariable Long id, @Valid @RequestBody SubjectRequest request) {
-        return subjectService.updateResponse(id, request);
+        return subjectService.update(id, request);
     }
 
     @DeleteMapping("/{id}")

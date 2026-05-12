@@ -30,7 +30,7 @@ public class QuestionController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
     public ResponseEntity<List<QuestionResponse>> getAll() {
-        return ResponseEntity.ok(questionService.findAllResponse());
+        return ResponseEntity.ok(questionService.findAll());
     }
 
     @GetMapping("/by-subject")
@@ -60,7 +60,7 @@ public class QuestionController {
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<QuestionResponse> update(@PathVariable Long id, @Valid @RequestBody QuestionRequest request) {
-        return ResponseEntity.ok(questionService.updateResponse(id, request));
+        return ResponseEntity.ok(questionService.update(id, request));
     }
 
     @DeleteMapping("/{id}")

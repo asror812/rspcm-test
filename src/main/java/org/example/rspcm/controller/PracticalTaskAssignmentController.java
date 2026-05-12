@@ -28,7 +28,7 @@ public class PracticalTaskAssignmentController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
     public ResponseEntity<List<PracticalTaskAssignmentResponse>> getAll() {
-        return ResponseEntity.ok(assignmentService.findAllResponse());
+        return ResponseEntity.ok(assignmentService.findAll());
     }
 
     @GetMapping("/{id}")
@@ -46,7 +46,7 @@ public class PracticalTaskAssignmentController {
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<PracticalTaskAssignmentResponse> update(@PathVariable Long id, @Valid @RequestBody PracticalTaskAssignmentRequest request) {
-        return ResponseEntity.ok(assignmentService.updateResponse(id, request));
+        return ResponseEntity.ok(assignmentService.update(id, request));
     }
 
     @DeleteMapping("/{id}")
