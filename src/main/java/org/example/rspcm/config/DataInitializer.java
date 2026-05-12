@@ -2,12 +2,15 @@ package org.example.rspcm.config;
 
 import lombok.RequiredArgsConstructor;
 import org.example.rspcm.model.entity.Role;
+import org.example.rspcm.model.entity.Question;
+import org.example.rspcm.model.entity.QuestionOption;
 import org.example.rspcm.model.entity.User;
 import org.example.rspcm.model.entity.StudentProfile;
 import org.example.rspcm.model.entity.StudyGroup;
 import org.example.rspcm.model.entity.Subject;
 import org.example.rspcm.model.entity.TeacherProfile;
 import org.example.rspcm.model.enums.GroupLanguage;
+import org.example.rspcm.model.enums.QuestionType;
 import org.example.rspcm.model.enums.RoleName;
 import org.example.rspcm.repository.UserRepository;
 import org.example.rspcm.repository.AppRoleRepository;
@@ -15,6 +18,7 @@ import org.example.rspcm.repository.StudentProfileRepository;
 import org.example.rspcm.repository.StudyGroupRepository;
 import org.example.rspcm.repository.SubjectRepository;
 import org.example.rspcm.repository.TeacherProfileRepository;
+import org.example.rspcm.repository.QuestionRepository;
 import org.example.rspcm.service.UserProfileSyncService;
 import org.jspecify.annotations.NonNull;
 import org.springframework.boot.CommandLineRunner;
@@ -22,7 +26,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -37,6 +43,7 @@ public class DataInitializer implements CommandLineRunner {
     private final TeacherProfileRepository teacherProfileRepository;
     private final StudentProfileRepository studentProfileRepository;
     private final StudyGroupRepository studyGroupRepository;
+    private final QuestionRepository questionRepository;
     private final UserProfileSyncService userProfileSyncService;
     private final PasswordEncoder passwordEncoder;
 
@@ -141,6 +148,10 @@ public class DataInitializer implements CommandLineRunner {
                 Set.of(teacherPhysics, teacherProgramming),
                 Set.of(l1Student1, l1Student2, l1Student3, l1Student4, l1Student5)
         );
+
+        ensureMinimumQuestions(math, teacherMath, 10);
+        ensureMinimumQuestions(physics, teacherPhysics, 10);
+        ensureMinimumQuestions(programming, teacherProgramming, 10);
     }
 
     private void createOrUpdateUser(
@@ -209,6 +220,60 @@ public class DataInitializer implements CommandLineRunner {
         group.setTeachers(new HashSet<>(teachers));
         group.setStudents(new HashSet<>(students));
         studyGroupRepository.save(group);
+    }
+
+    private void ensureMinimumQuestions(Subject subject, User teacher, int minimumCount) {
+        for (int index = 1; index <= minimumCount; index++) {
+            String text = subject.getName() + " question " + index;
+            Question question = questionRepository.findBySubjectIdAndText(subject.getId(), text)
+                    .orElseGet(() -> Question.builder()
+                            .text(text)
+                            .subject(subject)
+                            .createdBy(teacher)
+                            .options(new ArrayList<>())
+                            .build());
+
+            question.setText(text);
+            question.setSubject(subject);
+            question.setCreatedBy(teacher);
+
+            if (index == 1) {
+                question.setType(QuestionType.OPEN);
+                question.setOptions(new ArrayList<>());
+            } else if (index % 2 == 0) {
+                question.setType(QuestionType.CLOSED);
+                question.setOptions(buildClosedOptions(question));
+            } else {
+                question.setType(QuestionType.MULTIPLE_CHOICE);
+                question.setOptions(buildMultipleChoiceOptions(question));
+            }
+            questionRepository.save(question);
+        }
+    }
+
+    private List<QuestionOption> buildClosedOptions(Question question) {
+        List<QuestionOption> options = new ArrayList<>();
+        options.add(option(question, "True", true, 1));
+        options.add(option(question, "False", false, 2));
+        return options;
+    }
+
+    private List<QuestionOption> buildMultipleChoiceOptions(Question question) {
+        List<QuestionOption> options = new ArrayList<>();
+        options.add(option(question, "Option A", true, 1));
+        options.add(option(question, "Option B", false, 2));
+        options.add(option(question, "Option C", true, 3));
+        options.add(option(question, "Option D", false, 4));
+        return options;
+    }
+
+    private QuestionOption option(Question question, String text, boolean correct, int orderIndex) {
+        QuestionOption option = new QuestionOption();
+        option.setQuestion(question);
+        option.setText(text);
+        option.setCorrect(correct);
+        option.setOrderIndex(orderIndex);
+        return option;
     }
 
     private User getUser(String email) {

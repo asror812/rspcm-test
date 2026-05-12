@@ -2,7 +2,6 @@ package org.example.rspcm.controller;
 
 import org.example.rspcm.dto.practice.PracticalTaskAssignmentRequest;
 import org.example.rspcm.dto.practice.PracticalTaskAssignmentResponse;
-import org.example.rspcm.mapper.PracticalTaskAssignmentMapper;
 import org.example.rspcm.service.PracticalTaskAssignmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,25 +28,25 @@ public class PracticalTaskAssignmentController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
     public ResponseEntity<List<PracticalTaskAssignmentResponse>> getAll() {
-        return ResponseEntity.ok(assignmentService.findAll().stream().map(PracticalTaskAssignmentMapper::toResponse).toList());
+        return ResponseEntity.ok(assignmentService.findAll());
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
     public ResponseEntity<PracticalTaskAssignmentResponse> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(PracticalTaskAssignmentMapper.toResponse(assignmentService.findById(id)));
+        return ResponseEntity.ok(assignmentService.findResponseById(id));
     }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<PracticalTaskAssignmentResponse> create(@Valid @RequestBody PracticalTaskAssignmentRequest request) {
-        return ResponseEntity.ok(PracticalTaskAssignmentMapper.toResponse(assignmentService.create(request)));
+        return ResponseEntity.ok(assignmentService.createResponse(request));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<PracticalTaskAssignmentResponse> update(@PathVariable Long id, @Valid @RequestBody PracticalTaskAssignmentRequest request) {
-        return ResponseEntity.ok(PracticalTaskAssignmentMapper.toResponse(assignmentService.update(id, request)));
+        return ResponseEntity.ok(assignmentService.update(id, request));
     }
 
     @DeleteMapping("/{id}")

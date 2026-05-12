@@ -2,7 +2,6 @@ package org.example.rspcm.controller;
 
 import org.example.rspcm.dto.exam.ExamQuestionRequest;
 import org.example.rspcm.dto.exam.ExamQuestionResponse;
-import org.example.rspcm.mapper.ExamQuestionMapper;
 import org.example.rspcm.service.ExamQuestionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,25 +28,25 @@ public class ExamQuestionController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
     public ResponseEntity<List<ExamQuestionResponse>> getAll() {
-        return ResponseEntity.ok(examQuestionService.findAll().stream().map(ExamQuestionMapper::toResponse).toList());
+        return ResponseEntity.ok(examQuestionService.findAll());
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
     public ResponseEntity<ExamQuestionResponse> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(ExamQuestionMapper.toResponse(examQuestionService.findById(id)));
+        return ResponseEntity.ok(examQuestionService.findResponseById(id));
     }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<ExamQuestionResponse> create(@Valid @RequestBody ExamQuestionRequest request) {
-        return ResponseEntity.ok(ExamQuestionMapper.toResponse(examQuestionService.create(request)));
+        return ResponseEntity.ok(examQuestionService.createResponse(request));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<ExamQuestionResponse> update(@PathVariable Long id, @Valid @RequestBody ExamQuestionRequest request) {
-        return ResponseEntity.ok(ExamQuestionMapper.toResponse(examQuestionService.update(id, request)));
+        return ResponseEntity.ok(examQuestionService.update(id, request));
     }
 
     @DeleteMapping("/{id}")

@@ -1,7 +1,9 @@
 package org.example.rspcm.service;
 
 import org.example.rspcm.dto.subject.SubjectRequest;
+import org.example.rspcm.dto.subject.SubjectResponse;
 import org.example.rspcm.exception.NotFoundException;
+import org.example.rspcm.mapper.SubjectMapper;
 import org.example.rspcm.model.entity.User;
 import org.example.rspcm.model.entity.Subject;
 import org.example.rspcm.repository.UserRepository;
@@ -21,8 +23,8 @@ public class SubjectService {
     private final SubjectRepository subjectRepository;
     private final UserRepository userRepository;
 
-    public List<Subject> findAll() {
-        return subjectRepository.findAll();
+    public List<SubjectResponse> findAll() {
+        return subjectRepository.findAll().stream().map(SubjectMapper::toResponse).toList();
     }
 
     public Subject findById(Long id) {
@@ -31,21 +33,20 @@ public class SubjectService {
 
     @Transactional
     public Subject create(SubjectRequest request) {
-        Subject subject = Subject.builder()
-                .name(request.name())
-                .description(request.description())
-                .teachers(resolveUsers(request.teacherIds()))
-                .build();
+        Subject subject = SubjectMapper.toEntity(request, resolveUsers(request.teacherIds()));
         return subjectRepository.save(subject);
     }
 
+    public SubjectResponse createResponse(SubjectRequest request) {
+        Subject subject = SubjectMapper.toEntity(request, resolveUsers(request.teacherIds()));
+        return SubjectMapper.toResponse(subjectRepository.save(subject));
+    }
+
     @Transactional
-    public Subject update(Long id, SubjectRequest request) {
+    public SubjectResponse update(Long id, SubjectRequest request) {
         Subject subject = findById(id);
-        subject.setName(request.name());
-        subject.setDescription(request.description());
-        subject.setTeachers(resolveUsers(request.teacherIds()));
-        return subjectRepository.save(subject);
+        SubjectMapper.updateEntity(subject, request, resolveUsers(request.teacherIds()));
+        return SubjectMapper.toResponse(subjectRepository.save(subject));
     }
 
     @Transactional

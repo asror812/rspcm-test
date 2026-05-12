@@ -26,11 +26,19 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
 
-      # Build the JAR
-      - name: Build with Gradle
+      - name: Build executable JAR with Gradle
         run: ./gradlew clean bootJar -x test --no-daemon
 
-      # Copy JAR to Server using SCP
+      - name: Clean upload folder on server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            sudo mkdir -p /opt/backend/upload
+            sudo rm -f /opt/backend/upload/*.jar
+
       - name: Copy JAR to Server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -41,7 +49,6 @@ jobs:
           target: "/opt/backend/upload/"
           strip_components: 2
 
-      # SSH into server and restart the service
       - name: Restart Systemd Service
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -49,8 +56,14 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            sudo mkdir -p /opt/backend
-            sudo cp /opt/backend/upload/*.jar /opt/backend/app.jar
+            JAR_FILE=$(ls /opt/backend/upload/*.jar | grep -v plain | head -n 1)
+
+            if [ -z "$JAR_FILE" ]; then
+              echo "No executable JAR found"
+              exit 1
+            fi
+
+            sudo cp "$JAR_FILE" /opt/backend/app.jar
             sudo systemctl restart api.rspcm.service
             sleep 15
-            sudo systemctl status api.rspcm.service
+            sudo systemctl status api.rspcm.service --no-pager

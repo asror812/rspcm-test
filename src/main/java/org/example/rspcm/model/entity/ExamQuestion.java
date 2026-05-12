@@ -11,7 +11,13 @@ import lombok.Setter;
 @NoArgsConstructor
 @Getter
 @Setter
-@Table(name = "exam_questions")
+@Table(
+        name = "exam_questions",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_exam_question_exam_question", columnNames = {"exam_id", "question_id"}),
+                @UniqueConstraint(name = "uk_exam_question_exam_order", columnNames = {"exam_id", "order_index"})
+        }
+)
 public class ExamQuestion {
 
     @Id

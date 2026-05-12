@@ -13,11 +13,10 @@ public final class PracticeJournalMapper {
                 SummaryMapper.toPracticeSummary(journal.getPracticalTask()),
                 SummaryMapper.toUserSummary(journal.getStudent()),
                 journal.getTeam() == null ? null : SummaryMapper.toPracticeTeamSummary(journal.getTeam()),
-                journal.getContent(),
                 journal.getFilePath(),
-                journal.getCalendarText(),
-                journal.getCalendarFilePath(),
-                journal.getSubmittedAt()
+                journal.getSubmittedAt(),
+                journal.getStatus(),
+                journal.getEntries().stream().map(PracticeLogbookEntryMapper::toResponse).toList()
         );
     }
 }

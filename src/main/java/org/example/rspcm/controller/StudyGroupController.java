@@ -2,7 +2,6 @@ package org.example.rspcm.controller;
 
 import org.example.rspcm.dto.group.GroupRequest;
 import org.example.rspcm.dto.group.GroupResponse;
-import org.example.rspcm.mapper.GroupMapper;
 import org.example.rspcm.model.entity.User;
 import org.example.rspcm.service.StudyGroupService;
 import jakarta.validation.Valid;
@@ -35,31 +34,31 @@ public class StudyGroupController {
     @GetMapping("/own")
     @PreAuthorize("hasAnyRole('TEACHER')")
     public ResponseEntity<List<GroupResponse>> getOwnGroups(@AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(groupService.findOwnGroups(user).stream().map(GroupMapper::toResponse).toList());
+        return ResponseEntity.ok(groupService.findOwnGroupsResponse(user));
     }
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
     public ResponseEntity<List<GroupResponse>> getAll() {
-        return ResponseEntity.ok(groupService.findAll().stream().map(GroupMapper::toResponse).toList());
+        return ResponseEntity.ok(groupService.findAll());
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
     public ResponseEntity<GroupResponse> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(GroupMapper.toResponse(groupService.findById(id)));
+        return ResponseEntity.ok(groupService.findResponseById(id));
     }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<GroupResponse> create(@Valid @RequestBody GroupRequest request) {
-        return ResponseEntity.ok(GroupMapper.toResponse(groupService.create(request)));
+        return ResponseEntity.ok(groupService.createResponse(request));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<GroupResponse> update(@PathVariable Long id, @Valid @RequestBody GroupRequest request) {
-        return ResponseEntity.ok(GroupMapper.toResponse(groupService.update(id, request)));
+        return ResponseEntity.ok(groupService.update(id, request));
     }
 
     @PostMapping(value = "/{id}/import-students", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

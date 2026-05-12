@@ -9,6 +9,7 @@ import java.util.List;
 public record QuestionRequest(
         @NotBlank String text,
         @NotNull QuestionType type,
+        @NotNull Long subjectId,
         List<QuestionOptionRequest> options
 ) {
 }

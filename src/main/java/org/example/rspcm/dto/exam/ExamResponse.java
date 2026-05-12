@@ -1,8 +1,10 @@
 package org.example.rspcm.dto.exam;
 
 import org.example.rspcm.dto.common.GroupSummary;
+import org.example.rspcm.dto.common.PracticeSummary;
 import org.example.rspcm.dto.common.SubjectSummary;
 import org.example.rspcm.dto.common.UserSummary;
+import org.example.rspcm.model.enums.ExamType;
 
 import java.time.LocalDateTime;
 import java.util.Set;
@@ -14,8 +16,10 @@ public record ExamResponse(
         LocalDateTime startAt,
         LocalDateTime endAt,
         Integer maxScore,
+        ExamType type,
         Set<GroupSummary> groups,
         Set<UserSummary> students,
+        Set<PracticeSummary> practicalTasks,
         UserSummary createdBy,
         SubjectSummary subject
 ) {

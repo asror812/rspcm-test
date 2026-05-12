@@ -2,6 +2,8 @@ package org.example.rspcm.mapper;
 
 import org.example.rspcm.dto.common.SubjectSummary;
 import org.example.rspcm.dto.profile.TeacherProfileResponse;
+import org.example.rspcm.dto.profile.TeacherProfileUpdateRequest;
+import org.example.rspcm.model.entity.Subject;
 import org.example.rspcm.model.entity.TeacherProfile;
 
 import java.util.Set;
@@ -20,5 +22,11 @@ public final class TeacherProfileMapper {
                 profile.getExperienceYears(),
                 subjects
         );
+    }
+
+    public static void updateEntity(TeacherProfile profile, TeacherProfileUpdateRequest request, Set<Subject> subjects) {
+        profile.setAcademicDegree(request.academicDegree());
+        profile.setExperienceYears(request.experienceYears());
+        profile.setTeachingSubjects(subjects);
     }
 }

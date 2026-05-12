@@ -3,7 +3,6 @@ package org.example.rspcm.controller;
 import org.example.rspcm.dto.user.UserCreateRequest;
 import org.example.rspcm.dto.user.UserResponse;
 import org.example.rspcm.dto.user.UserUpdateRequest;
-import org.example.rspcm.mapper.UserMapper;
 import org.example.rspcm.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -31,25 +30,25 @@ public class UserController {
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UserResponse>> getAll() {
-        return ResponseEntity.ok(userService.findAll().stream().map(UserMapper::toResponse).toList());
+        return ResponseEntity.ok(userService.findAll());
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<UserResponse> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(UserMapper.toResponse(userService.findById(id)));
+        return ResponseEntity.ok(userService.findResponseById(id));
     }
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserResponse> create(@Valid @RequestBody UserCreateRequest request) {
-        return ResponseEntity.ok(UserMapper.toResponse(userService.create(request)));
+        return ResponseEntity.ok(userService.createResponse(request));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserResponse> update(@PathVariable Long id, @Valid @RequestBody UserUpdateRequest request) {
-        return ResponseEntity.ok(UserMapper.toResponse(userService.update(id, request)));
+        return ResponseEntity.ok(userService.update(id, request));
     }
 
     @DeleteMapping("/{id}")

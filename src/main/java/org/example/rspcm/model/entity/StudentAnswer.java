@@ -24,6 +24,10 @@ public class StudentAnswer {
     @JoinColumn(name = "exam_question_id", nullable = false)
     private ExamQuestion examQuestion;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "student_id", nullable = false)
+    private User student;
+
 
     //FOR OPEN QUESTION
     @Column(length = 5000)

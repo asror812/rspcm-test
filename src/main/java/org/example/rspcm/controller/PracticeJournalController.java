@@ -2,7 +2,6 @@ package org.example.rspcm.controller;
 
 import org.example.rspcm.dto.practice.PracticeJournalRequest;
 import org.example.rspcm.dto.practice.PracticeJournalResponse;
-import org.example.rspcm.mapper.PracticeJournalMapper;
 import org.example.rspcm.service.PracticeJournalService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +27,7 @@ public class PracticeJournalController {
     @GetMapping("/me")
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<List<PracticeJournalResponse>> myJournals() {
-        return ResponseEntity.ok(journalService.findMine().stream().map(PracticeJournalMapper::toResponse).toList());
+        return ResponseEntity.ok(journalService.findMineResponse());
     }
 
     @GetMapping({"/practice/{practiceId}", "/practical-task/{practicalTaskId}"})
@@ -38,12 +37,12 @@ public class PracticeJournalController {
             @PathVariable(value = "practicalTaskId", required = false) Long practicalTaskId
     ) {
         Long resolvedTaskId = practicalTaskId != null ? practicalTaskId : practiceId;
-        return ResponseEntity.ok(journalService.findByPracticalTask(resolvedTaskId).stream().map(PracticeJournalMapper::toResponse).toList());
+        return ResponseEntity.ok(journalService.findByPracticalTaskResponse(resolvedTaskId));
     }
 
     @PostMapping
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<PracticeJournalResponse> submit(@Valid @RequestBody PracticeJournalRequest request) {
-        return ResponseEntity.ok(PracticeJournalMapper.toResponse(journalService.submit(request)));
+        return ResponseEntity.ok(journalService.submitResponse(request));
     }
 }

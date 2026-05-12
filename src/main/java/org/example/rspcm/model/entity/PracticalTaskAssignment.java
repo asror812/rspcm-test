@@ -3,6 +3,7 @@ package org.example.rspcm.model.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.example.rspcm.model.enums.PracticalTaskAssignmentStatus;
 
 import java.time.LocalDateTime;
 

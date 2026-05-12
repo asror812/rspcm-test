@@ -1,9 +1,11 @@
 package org.example.rspcm.service;
 
 import org.example.rspcm.dto.practice.PracticalTaskAssignmentRequest;
+import org.example.rspcm.dto.practice.PracticalTaskAssignmentResponse;
 import org.example.rspcm.exception.NotFoundException;
+import org.example.rspcm.mapper.PracticalTaskAssignmentMapper;
 import org.example.rspcm.model.entity.PracticalTaskAssignment;
-import org.example.rspcm.model.entity.PracticalTaskAssignmentStatus;
+import org.example.rspcm.model.enums.PracticalTaskAssignmentStatus;
 import org.example.rspcm.repository.ExamRepository;
 import org.example.rspcm.repository.PracticalTaskAssignmentRepository;
 import org.example.rspcm.repository.PracticeRepository;
@@ -26,8 +28,8 @@ public class PracticalTaskAssignmentService {
     private final UserRepository userRepository;
     private final PracticeTeamRepository practiceTeamRepository;
 
-    public List<PracticalTaskAssignment> findAll() {
-        return assignmentRepository.findAll();
+    public List<PracticalTaskAssignmentResponse> findAll() {
+        return assignmentRepository.findAll().stream().map(PracticalTaskAssignmentMapper::toResponse).toList();
     }
 
     public PracticalTaskAssignment findById(Long id) {
@@ -35,43 +37,63 @@ public class PracticalTaskAssignmentService {
                 .orElseThrow(() -> new NotFoundException("PracticalTaskAssignment topilmadi: " + id));
     }
 
-    @Transactional
-    public PracticalTaskAssignment create(PracticalTaskAssignmentRequest request) {
-        PracticalTaskAssignment assignment = PracticalTaskAssignment.builder()
-                .exam(examRepository.findById(request.examId())
-                        .orElseThrow(() -> new NotFoundException("Exam topilmadi: " + request.examId())))
-                .practicalTask(practicalTaskRepository.findById(request.practicalTaskId())
-                        .orElseThrow(() -> new NotFoundException("PracticalTask topilmadi: " + request.practicalTaskId())))
-                .student(request.studentId() == null ? null : userRepository.findById(request.studentId())
-                        .orElseThrow(() -> new NotFoundException("Student topilmadi: " + request.studentId())))
-                .team(request.teamId() == null ? null : practiceTeamRepository.findById(request.teamId())
-                        .orElseThrow(() -> new NotFoundException("PracticeTeam topilmadi: " + request.teamId())))
-                .status(request.status() == null ? PracticalTaskAssignmentStatus.CHOSEN : request.status())
-                .chosenAt(LocalDateTime.now())
-                .score(request.score())
-                .teacherComment(request.teacherComment())
-                .build();
-        return assignmentRepository.save(assignment);
+    public PracticalTaskAssignmentResponse findResponseById(Long id) {
+        return PracticalTaskAssignmentMapper.toResponse(assignmentRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("PracticalTaskAssignment topilmadi: " + id)));
     }
 
     @Transactional
-    public PracticalTaskAssignment update(Long id, PracticalTaskAssignmentRequest request) {
+    public PracticalTaskAssignment create(PracticalTaskAssignmentRequest request) {
+        PracticalTaskAssignment assignment = PracticalTaskAssignmentMapper.toEntity(
+                request,
+                examRepository.findById(request.examId())
+                        .orElseThrow(() -> new NotFoundException("Exam topilmadi: " + request.examId())),
+                practicalTaskRepository.findById(request.practicalTaskId())
+                        .orElseThrow(() -> new NotFoundException("PracticalTask topilmadi: " + request.practicalTaskId())),
+                request.studentId() == null ? null : userRepository.findById(request.studentId())
+                        .orElseThrow(() -> new NotFoundException("Student topilmadi: " + request.studentId())),
+                request.teamId() == null ? null : practiceTeamRepository.findById(request.teamId())
+                        .orElseThrow(() -> new NotFoundException("PracticeTeam topilmadi: " + request.teamId())),
+                LocalDateTime.now()
+        );
+        return assignmentRepository.save(assignment);
+    }
+
+    public PracticalTaskAssignmentResponse createResponse(PracticalTaskAssignmentRequest request) {
+        PracticalTaskAssignment assignment = PracticalTaskAssignmentMapper.toEntity(
+                request,
+                examRepository.findById(request.examId())
+                        .orElseThrow(() -> new NotFoundException("Exam topilmadi: " + request.examId())),
+                practicalTaskRepository.findById(request.practicalTaskId())
+                        .orElseThrow(() -> new NotFoundException("PracticalTask topilmadi: " + request.practicalTaskId())),
+                request.studentId() == null ? null : userRepository.findById(request.studentId())
+                        .orElseThrow(() -> new NotFoundException("Student topilmadi: " + request.studentId())),
+                request.teamId() == null ? null : practiceTeamRepository.findById(request.teamId())
+                        .orElseThrow(() -> new NotFoundException("PracticeTeam topilmadi: " + request.teamId())),
+                LocalDateTime.now()
+        );
+        return PracticalTaskAssignmentMapper.toResponse(assignmentRepository.save(assignment));
+    }
+
+    @Transactional
+    public PracticalTaskAssignmentResponse update(Long id, PracticalTaskAssignmentRequest request) {
         PracticalTaskAssignment assignment = findById(id);
-        assignment.setExam(examRepository.findById(request.examId())
-                .orElseThrow(() -> new NotFoundException("Exam topilmadi: " + request.examId())));
-        assignment.setPracticalTask(practicalTaskRepository.findById(request.practicalTaskId())
-                .orElseThrow(() -> new NotFoundException("PracticalTask topilmadi: " + request.practicalTaskId())));
-        assignment.setStudent(request.studentId() == null ? null : userRepository.findById(request.studentId())
-                .orElseThrow(() -> new NotFoundException("Student topilmadi: " + request.studentId())));
-        assignment.setTeam(request.teamId() == null ? null : practiceTeamRepository.findById(request.teamId())
-                .orElseThrow(() -> new NotFoundException("PracticeTeam topilmadi: " + request.teamId())));
-        assignment.setStatus(request.status() == null ? assignment.getStatus() : request.status());
-        assignment.setScore(request.score());
-        assignment.setTeacherComment(request.teacherComment());
+        PracticalTaskAssignmentMapper.updateEntity(
+                assignment,
+                request,
+                examRepository.findById(request.examId())
+                        .orElseThrow(() -> new NotFoundException("Exam topilmadi: " + request.examId())),
+                practicalTaskRepository.findById(request.practicalTaskId())
+                        .orElseThrow(() -> new NotFoundException("PracticalTask topilmadi: " + request.practicalTaskId())),
+                request.studentId() == null ? null : userRepository.findById(request.studentId())
+                        .orElseThrow(() -> new NotFoundException("Student topilmadi: " + request.studentId())),
+                request.teamId() == null ? null : practiceTeamRepository.findById(request.teamId())
+                        .orElseThrow(() -> new NotFoundException("PracticeTeam topilmadi: " + request.teamId()))
+        );
         if (request.status() == PracticalTaskAssignmentStatus.SUBMITTED && assignment.getSubmittedAt() == null) {
             assignment.setSubmittedAt(LocalDateTime.now());
         }
-        return assignmentRepository.save(assignment);
+        return PracticalTaskAssignmentMapper.toResponse(assignmentRepository.save(assignment));
     }
 
     @Transactional

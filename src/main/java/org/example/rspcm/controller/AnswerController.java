@@ -3,7 +3,6 @@ package org.example.rspcm.controller;
 import org.example.rspcm.dto.answer.AnswerRequest;
 import org.example.rspcm.dto.answer.AnswerResponse;
 import org.example.rspcm.dto.answer.AnswerScoreRequest;
-import org.example.rspcm.mapper.AnswerMapper;
 import org.example.rspcm.service.AnswerService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,31 +31,31 @@ public class AnswerController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<List<AnswerResponse>> getAll() {
-        return ResponseEntity.ok(answerService.findAll().stream().map(AnswerMapper::toResponse).toList());
+        return ResponseEntity.ok(answerService.findAll());
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
     public ResponseEntity<AnswerResponse> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(AnswerMapper.toResponse(answerService.findById(id)));
+        return ResponseEntity.ok(answerService.findResponseById(id));
     }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
     public ResponseEntity<AnswerResponse> create(@Valid @RequestBody AnswerRequest request) {
-        return ResponseEntity.ok(AnswerMapper.toResponse(answerService.create(request)));
+        return ResponseEntity.ok(answerService.createResponse(request));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
     public ResponseEntity<AnswerResponse> update(@PathVariable Long id, @Valid @RequestBody AnswerRequest request) {
-        return ResponseEntity.ok(AnswerMapper.toResponse(answerService.update(id, request)));
+        return ResponseEntity.ok(answerService.update(id, request));
     }
 
     @PatchMapping("/{id}/score")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<AnswerResponse> score(@PathVariable Long id, @Valid @RequestBody AnswerScoreRequest request) {
-        return ResponseEntity.ok(AnswerMapper.toResponse(answerService.score(id, request)));
+        return ResponseEntity.ok(answerService.scoreResponse(id, request));
     }
 
     @DeleteMapping("/{id}")
