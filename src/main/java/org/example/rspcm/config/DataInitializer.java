@@ -27,6 +27,7 @@ import org.example.rspcm.repository.SubjectRepository;
 import org.example.rspcm.repository.TeacherProfileRepository;
 import org.example.rspcm.repository.QuestionRepository;
 import org.example.rspcm.repository.ExamRepository;
+import org.example.rspcm.repository.ExamQuestionRepository;
 import org.example.rspcm.repository.PracticeRepository;
 import org.example.rspcm.service.UserProfileSyncService;
 import org.jspecify.annotations.NonNull;
@@ -55,6 +56,7 @@ public class DataInitializer implements CommandLineRunner {
     private final StudyGroupRepository studyGroupRepository;
     private final QuestionRepository questionRepository;
     private final ExamRepository examRepository;
+    private final ExamQuestionRepository examQuestionRepository;
     private final PracticeRepository practiceRepository;
     private final UserProfileSyncService userProfileSyncService;
     private final PasswordEncoder passwordEncoder;
@@ -331,10 +333,24 @@ public class DataInitializer implements CommandLineRunner {
 
     private void attachSubjectQuestionsToExam(Exam exam, Subject subject) {
         List<Question> subjectQuestions = questionRepository.findBySubjectId(subject.getId());
+        Map<Long, ExamQuestion> existingByQuestionId = examQuestionRepository.findByExamId(exam.getId()).stream()
+                .collect(Collectors.toMap(eq -> eq.getQuestion().getId(), eq -> eq));
+
+        Set<Long> desiredQuestionIds = subjectQuestions.stream()
+                .map(Question::getId)
+                .collect(Collectors.toSet());
+
+        List<ExamQuestion> staleLinks = existingByQuestionId.values().stream()
+                .filter(eq -> !desiredQuestionIds.contains(eq.getQuestion().getId()))
+                .toList();
+        if (!staleLinks.isEmpty()) {
+            examQuestionRepository.deleteAll(staleLinks);
+        }
+
         List<ExamQuestion> examQuestions = new ArrayList<>();
         int order = 1;
         for (Question question : subjectQuestions) {
-            ExamQuestion examQuestion = new ExamQuestion();
+            ExamQuestion examQuestion = existingByQuestionId.getOrDefault(question.getId(), new ExamQuestion());
             examQuestion.setExam(exam);
             examQuestion.setQuestion(question);
             examQuestion.setScore(10);

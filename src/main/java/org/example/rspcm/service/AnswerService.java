@@ -6,10 +6,7 @@ import org.example.rspcm.dto.answer.AnswerScoreRequest;
 import org.example.rspcm.exception.ErrorCodes;
 import org.example.rspcm.exception.ErrorMessageException;
 import org.example.rspcm.exception.NotFoundException;
-import org.example.rspcm.model.entity.ExamQuestion;
-import org.example.rspcm.model.entity.QuestionOption;
-import org.example.rspcm.model.entity.StudentAnswer;
-import org.example.rspcm.model.entity.User;
+import org.example.rspcm.model.entity.*;
 import org.example.rspcm.model.enums.RoleName;
 import org.example.rspcm.mapper.AnswerMapper;
 import org.example.rspcm.repository.AnswerRepository;
@@ -123,7 +120,7 @@ public class AnswerService {
     private void validateCanAccess(StudentAnswer answer) {
         User currentUser = currentUserService.getCurrentUser();
         boolean isPrivileged = currentUser.getRoles().stream()
-                .map(role -> role.getRoleName())
+                .map(Role::getRoleName)
                 .anyMatch(roleName -> roleName == RoleName.ROLE_ADMIN || roleName == RoleName.ROLE_TEACHER);
         if (isPrivileged) {
             return;
