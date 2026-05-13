@@ -5,14 +5,11 @@ import org.example.rspcm.dto.auth.LoginRequest;
 import org.example.rspcm.dto.auth.RegisterRequest;
 import org.example.rspcm.dto.auth.ResendOtpRequest;
 import org.example.rspcm.dto.auth.VerifyOtpRequest;
-import org.example.rspcm.dto.user.UserResponse;
-import org.example.rspcm.model.entity.User;
 import org.example.rspcm.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;

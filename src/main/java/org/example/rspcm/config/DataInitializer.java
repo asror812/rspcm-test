@@ -9,9 +9,16 @@ import org.example.rspcm.model.entity.StudentProfile;
 import org.example.rspcm.model.entity.StudyGroup;
 import org.example.rspcm.model.entity.Subject;
 import org.example.rspcm.model.entity.TeacherProfile;
+import org.example.rspcm.model.entity.Exam;
+import org.example.rspcm.model.entity.ExamQuestion;
+import org.example.rspcm.model.entity.PracticalTask;
 import org.example.rspcm.model.enums.GroupLanguage;
 import org.example.rspcm.model.enums.QuestionType;
 import org.example.rspcm.model.enums.RoleName;
+import org.example.rspcm.model.enums.ExamType;
+import org.example.rspcm.model.enums.ExamStatus;
+import org.example.rspcm.model.enums.WorkMode;
+import org.example.rspcm.model.enums.SubmissionType;
 import org.example.rspcm.repository.UserRepository;
 import org.example.rspcm.repository.AppRoleRepository;
 import org.example.rspcm.repository.StudentProfileRepository;
@@ -19,6 +26,8 @@ import org.example.rspcm.repository.StudyGroupRepository;
 import org.example.rspcm.repository.SubjectRepository;
 import org.example.rspcm.repository.TeacherProfileRepository;
 import org.example.rspcm.repository.QuestionRepository;
+import org.example.rspcm.repository.ExamRepository;
+import org.example.rspcm.repository.PracticeRepository;
 import org.example.rspcm.service.UserProfileSyncService;
 import org.jspecify.annotations.NonNull;
 import org.springframework.boot.CommandLineRunner;
@@ -31,6 +40,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
 @Component
@@ -44,6 +54,8 @@ public class DataInitializer implements CommandLineRunner {
     private final StudentProfileRepository studentProfileRepository;
     private final StudyGroupRepository studyGroupRepository;
     private final QuestionRepository questionRepository;
+    private final ExamRepository examRepository;
+    private final PracticeRepository practiceRepository;
     private final UserProfileSyncService userProfileSyncService;
     private final PasswordEncoder passwordEncoder;
 
@@ -152,6 +164,34 @@ public class DataInitializer implements CommandLineRunner {
         ensureMinimumQuestions(math, teacherMath, 10);
         ensureMinimumQuestions(physics, teacherPhysics, 10);
         ensureMinimumQuestions(programming, teacherProgramming, 10);
+
+        StudyGroup k1Group = getGroup("K1");
+        StudyGroup l1Group = getGroup("L1");
+
+        Exam mathExam = createOrUpdateExamForSubject(math, teacherMath, Set.of(k1Group), "Mathematics exam");
+        Exam physicsExam = createOrUpdateExamForSubject(physics, teacherPhysics, Set.of(l1Group), "Physics exam");
+        Exam programmingExam = createOrUpdateExamForSubject(programming, teacherProgramming, Set.of(k1Group, l1Group), "Programming exam");
+
+        attachSubjectQuestionsToExam(mathExam, math);
+        attachSubjectQuestionsToExam(physicsExam, physics);
+        attachSubjectQuestionsToExam(programmingExam, programming);
+
+        List<PracticalTask> practicalTasks = ensureMinimumPracticalTasks(
+                List.of(
+                        "Math practical task 1",
+                        "Physics practical task 1",
+                        "Programming practical task 1",
+                        "Programming practical task 2",
+                        "Cross-subject practical task 1"
+                ),
+                teacherProgramming
+        );
+
+        attachPracticalTasksToExams(Map.of(
+                mathExam, List.of(practicalTasks.get(0), practicalTasks.get(4)),
+                physicsExam, List.of(practicalTasks.get(1), practicalTasks.get(4)),
+                programmingExam, List.of(practicalTasks.get(2), practicalTasks.get(3), practicalTasks.get(4))
+        ));
     }
 
     private void createOrUpdateUser(
@@ -251,6 +291,94 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
+    private Exam createOrUpdateExamForSubject(
+            Subject subject,
+            User teacher,
+            Set<StudyGroup> groups,
+            String title
+    ) {
+        Exam exam = examRepository.findAll().stream()
+                .filter(existing -> title.equals(existing.getTitle()))
+                .findFirst()
+                .orElseGet(() -> Exam.builder()
+                        .title(title)
+                        .questions(new ArrayList<>())
+                        .practicalTasks(new HashSet<>())
+                        .groups(new HashSet<>())
+                        .targetStudents(new HashSet<>())
+                        .build());
+
+        exam.setDescription(subject.getName() + " uchun auto-seeded exam.");
+        exam.setSubject(subject);
+        exam.setType(ExamType.QUESTION);
+        exam.setStatus(ExamStatus.READY);
+        exam.setMaxScore(100);
+        exam.setStartAt(LocalDateTime.now().plusDays(1));
+        exam.setEndAt(LocalDateTime.now().plusDays(8));
+        exam.setGroups(new HashSet<>(groups));
+        exam.setCreatedBy(teacher);
+        if (exam.getCreatedAt() == null) {
+            exam.setCreatedAt(LocalDateTime.now());
+        }
+        if (exam.getQuestions() == null) {
+            exam.setQuestions(new ArrayList<>());
+        }
+        if (exam.getPracticalTasks() == null) {
+            exam.setPracticalTasks(new HashSet<>());
+        }
+        return examRepository.save(exam);
+    }
+
+    private void attachSubjectQuestionsToExam(Exam exam, Subject subject) {
+        List<Question> subjectQuestions = questionRepository.findBySubjectId(subject.getId());
+        List<ExamQuestion> examQuestions = new ArrayList<>();
+        int order = 1;
+        for (Question question : subjectQuestions) {
+            ExamQuestion examQuestion = new ExamQuestion();
+            examQuestion.setExam(exam);
+            examQuestion.setQuestion(question);
+            examQuestion.setScore(10);
+            examQuestion.setOrderIndex(order++);
+            examQuestions.add(examQuestion);
+        }
+        exam.setQuestions(examQuestions);
+        examRepository.save(exam);
+    }
+
+    private List<PracticalTask> ensureMinimumPracticalTasks(List<String> taskNames, User createdBy) {
+        List<PracticalTask> tasks = new ArrayList<>();
+        for (int index = 0; index < taskNames.size(); index++) {
+            String taskName = taskNames.get(index);
+            PracticalTask task = practiceRepository.findAll().stream()
+                    .filter(existing -> taskName.equals(existing.getName()))
+                    .findFirst()
+                    .orElseGet(() -> PracticalTask.builder()
+                            .name(taskName)
+                            .allowedSubmissionTypes(new HashSet<>())
+                            .build());
+
+            task.setDescription("Auto-seeded practical task: " + taskName);
+            task.setResourceUrl("https://example.com/tasks/" + (index + 1));
+            task.setRequirements("Task requirements for " + taskName);
+            task.setDeadline(LocalDateTime.now().plusDays(14 + index));
+            task.setWorkMode(index % 2 == 0 ? WorkMode.INDIVIDUAL : WorkMode.TEAM);
+            task.setTeamSize(task.getWorkMode() == WorkMode.TEAM ? 3 : null);
+            task.setSchedulingRequired(false);
+            task.setAllowedSubmissionTypes(Set.of(SubmissionType.TEXT, SubmissionType.FILE, SubmissionType.CODE));
+            task.setCreatedBy(createdBy);
+            tasks.add(practiceRepository.save(task));
+        }
+        return tasks;
+    }
+
+    private void attachPracticalTasksToExams(Map<Exam, List<PracticalTask>> mapping) {
+        for (Map.Entry<Exam, List<PracticalTask>> entry : mapping.entrySet()) {
+            Exam exam = entry.getKey();
+            exam.setPracticalTasks(new HashSet<>(entry.getValue()));
+            examRepository.save(exam);
+        }
+    }
+
     private List<QuestionOption> buildClosedOptions(Question question) {
         List<QuestionOption> options = new ArrayList<>();
         options.add(option(question, "True", true, 1));
@@ -279,6 +407,11 @@ public class DataInitializer implements CommandLineRunner {
     private User getUser(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalStateException("Seed user topilmadi: " + email));
+    }
+
+    private StudyGroup getGroup(String name) {
+        return studyGroupRepository.findByName(name)
+                .orElseThrow(() -> new IllegalStateException("Seed group topilmadi: " + name));
     }
 
     private String extractFirstName(String fullName) {
