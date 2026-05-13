@@ -3,15 +3,18 @@ package org.example.rspcm.mapper;
 import org.example.rspcm.dto.profile.StudentProfileUpdateRequest;
 import org.example.rspcm.dto.profile.StudentProfileResponse;
 import org.example.rspcm.model.entity.StudentProfile;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
-public final class StudentProfileMapper {
-    private StudentProfileMapper() {
-    }
+@Component
+@RequiredArgsConstructor
+public class StudentProfileMapper {
+    private final SummaryMapper summaryMapper;
 
-    public static StudentProfileResponse toResponse(StudentProfile profile) {
+    public StudentProfileResponse toResponse(StudentProfile profile) {
         return new StudentProfileResponse(
                 profile.getId(),
-                SummaryMapper.toUserSummary(profile.getUser()),
+                summaryMapper.toUserSummary(profile.getUser()),
                 profile.getCourse(),
                 profile.getStudentNumber(),
                 profile.getPhoneNumber(),
@@ -19,7 +22,7 @@ public final class StudentProfileMapper {
         );
     }
 
-    public static void updateEntity(StudentProfile profile, StudentProfileUpdateRequest request) {
+    public void updateEntity(StudentProfile profile, StudentProfileUpdateRequest request) {
         profile.setCourse(request.course());
         profile.setStudentNumber(request.studentNumber());
         profile.setPhoneNumber(request.phoneNumber());

@@ -2,12 +2,12 @@ package org.example.rspcm.mapper;
 
 import org.example.rspcm.dto.practice.PracticeLogbookEntryResponse;
 import org.example.rspcm.model.entity.PracticeLogbookEntry;
+import org.springframework.stereotype.Component;
 
-public final class PracticeLogbookEntryMapper {
-    private PracticeLogbookEntryMapper() {
-    }
+@Component
+public class PracticeLogbookEntryMapper {
 
-    public static PracticeLogbookEntryResponse toResponse(PracticeLogbookEntry entry) {
+    public PracticeLogbookEntryResponse toResponse(PracticeLogbookEntry entry) {
         return new PracticeLogbookEntryResponse(
                 entry.getId(),
                 entry.getEntryDate(),

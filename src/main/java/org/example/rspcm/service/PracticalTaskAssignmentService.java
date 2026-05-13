@@ -29,7 +29,7 @@ public class PracticalTaskAssignmentService {
     private final PracticeTeamRepository practiceTeamRepository;
 
     public List<PracticalTaskAssignmentResponse> findAll() {
-        return assignmentRepository.findAll().stream().map(PracticalTaskAssignmentMapper::toResponse).toList();
+        return assignmentRepository.findAll().stream().map(practicalTaskAssignmentMapper::toResponse).toList();
     }
 
     public PracticalTaskAssignment findById(Long id) {
@@ -38,13 +38,13 @@ public class PracticalTaskAssignmentService {
     }
 
     public PracticalTaskAssignmentResponse findResponseById(Long id) {
-        return PracticalTaskAssignmentMapper.toResponse(assignmentRepository.findById(id)
+        return practicalTaskAssignmentMapper.toResponse(assignmentRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("PracticalTaskAssignment topilmadi: " + id)));
     }
 
     @Transactional
     public PracticalTaskAssignment create(PracticalTaskAssignmentRequest request) {
-        PracticalTaskAssignment assignment = PracticalTaskAssignmentMapper.toEntity(
+        PracticalTaskAssignment assignment = practicalTaskAssignmentMapper.toEntity(
                 request,
                 examRepository.findById(request.examId())
                         .orElseThrow(() -> new NotFoundException("Exam topilmadi: " + request.examId())),
@@ -60,7 +60,7 @@ public class PracticalTaskAssignmentService {
     }
 
     public PracticalTaskAssignmentResponse createResponse(PracticalTaskAssignmentRequest request) {
-        PracticalTaskAssignment assignment = PracticalTaskAssignmentMapper.toEntity(
+        PracticalTaskAssignment assignment = practicalTaskAssignmentMapper.toEntity(
                 request,
                 examRepository.findById(request.examId())
                         .orElseThrow(() -> new NotFoundException("Exam topilmadi: " + request.examId())),
@@ -72,13 +72,13 @@ public class PracticalTaskAssignmentService {
                         .orElseThrow(() -> new NotFoundException("PracticeTeam topilmadi: " + request.teamId())),
                 LocalDateTime.now()
         );
-        return PracticalTaskAssignmentMapper.toResponse(assignmentRepository.save(assignment));
+        return practicalTaskAssignmentMapper.toResponse(assignmentRepository.save(assignment));
     }
 
     @Transactional
     public PracticalTaskAssignmentResponse update(Long id, PracticalTaskAssignmentRequest request) {
         PracticalTaskAssignment assignment = findById(id);
-        PracticalTaskAssignmentMapper.updateEntity(
+        practicalTaskAssignmentMapper.updateEntity(
                 assignment,
                 request,
                 examRepository.findById(request.examId())
@@ -93,7 +93,7 @@ public class PracticalTaskAssignmentService {
         if (request.status() == PracticalTaskAssignmentStatus.SUBMITTED && assignment.getSubmittedAt() == null) {
             assignment.setSubmittedAt(LocalDateTime.now());
         }
-        return PracticalTaskAssignmentMapper.toResponse(assignmentRepository.save(assignment));
+        return practicalTaskAssignmentMapper.toResponse(assignmentRepository.save(assignment));
     }
 
     @Transactional

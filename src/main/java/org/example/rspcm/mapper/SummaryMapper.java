@@ -8,36 +8,36 @@ import org.example.rspcm.dto.common.QuestionSummary;
 import org.example.rspcm.dto.common.SubjectSummary;
 import org.example.rspcm.dto.common.UserSummary;
 import org.example.rspcm.model.entity.*;
+import org.springframework.stereotype.Component;
 
-public final class SummaryMapper {
-    private SummaryMapper() {
-    }
+@Component
+public class SummaryMapper {
 
-    public static UserSummary toUserSummary(User user) {
+    public UserSummary toUserSummary(User user) {
         return new UserSummary(user.getId(), user.getFirstName(), user.getLastName(), user.getEmail());
     }
 
-    public static SubjectSummary toSubjectSummary(Subject subject) {
+    public SubjectSummary toSubjectSummary(Subject subject) {
         return new SubjectSummary(subject.getId(), subject.getName(), subject.getDescription());
     }
 
-    public static GroupSummary toGroupSummary(StudyGroup group) {
+    public GroupSummary toGroupSummary(StudyGroup group) {
         return new GroupSummary(group.getId(), group.getName(), group.getLanguage());
     }
 
-    public static PracticeSummary toPracticeSummary(PracticalTask practicalTask) {
+    public PracticeSummary toPracticeSummary(PracticalTask practicalTask) {
         return new PracticeSummary(practicalTask.getId(), practicalTask.getName(), practicalTask.getDeadline());
     }
 
-    public static ExamSummary toExamSummary(Exam exam) {
+    public ExamSummary toExamSummary(Exam exam) {
         return new ExamSummary(exam.getId(), exam.getTitle(), exam.getEndAt());
     }
 
-    public static QuestionSummary toQuestionSummary(Question question) {
+    public QuestionSummary toQuestionSummary(Question question) {
         return new QuestionSummary(question.getId(), question.getText(), question.getType());
     }
 
-    public static PracticeTeamSummary toPracticeTeamSummary(PracticeTeam team) {
+    public PracticeTeamSummary toPracticeTeamSummary(PracticeTeam team) {
         return new PracticeTeamSummary(team.getId(), team.getName());
     }
 }

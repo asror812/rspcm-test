@@ -24,11 +24,6 @@ public class AuthController {
 
     private final AuthService authService;
 
-    @GetMapping
-    public ResponseEntity<UserResponse> getUser(@AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(authService.getUser(user));
-    }
-
     @PostMapping("/register")
     public ResponseEntity<String> register(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.ok(authService.register(request));

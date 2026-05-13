@@ -38,7 +38,7 @@ public class StudyGroupService {
     private final SubjectRepository subjectRepository;
 
     public List<GroupResponse> findAll() {
-        return groupRepository.findAll().stream().map(GroupMapper::toResponse).toList();
+        return groupRepository.findAll().stream().map(groupMapper::toResponse).toList();
     }
 
     public StudyGroup findById(Long id) {
@@ -46,12 +46,12 @@ public class StudyGroupService {
     }
 
     public GroupResponse findResponseById(Long id) {
-        return GroupMapper.toResponse(groupRepository.findById(id).orElseThrow(() -> new NotFoundException("Group topilmadi: " + id)));
+        return groupMapper.toResponse(groupRepository.findById(id).orElseThrow(() -> new NotFoundException("Group topilmadi: " + id)));
     }
 
     @Transactional
     public StudyGroup create(GroupRequest request) {
-        StudyGroup group = GroupMapper.toEntity(
+        StudyGroup group = groupMapper.toEntity(
                 request,
                 resolveSubjects(request.subjectIds()),
                 resolveUsers(request.teacherIds()),
@@ -61,26 +61,26 @@ public class StudyGroupService {
     }
 
     public GroupResponse createResponse(GroupRequest request) {
-        StudyGroup group = GroupMapper.toEntity(
+        StudyGroup group = groupMapper.toEntity(
                 request,
                 resolveSubjects(request.subjectIds()),
                 resolveUsers(request.teacherIds()),
                 resolveUsers(request.studentIds())
         );
-        return GroupMapper.toResponse(groupRepository.save(group));
+        return groupMapper.toResponse(groupRepository.save(group));
     }
 
     @Transactional
     public GroupResponse update(Long id, GroupRequest request) {
         StudyGroup group = findById(id);
-        GroupMapper.updateEntity(
+        groupMapper.updateEntity(
                 group,
                 request,
                 resolveSubjects(request.subjectIds()),
                 resolveUsers(request.teacherIds()),
                 resolveUsers(request.studentIds())
         );
-        return GroupMapper.toResponse(groupRepository.save(group));
+        return groupMapper.toResponse(groupRepository.save(group));
     }
 
     @Transactional
@@ -155,6 +155,6 @@ public class StudyGroupService {
     }
 
     public List<GroupResponse> findOwnGroupsResponse(User user) {
-        return groupRepository.findByTeachersId(user.getId()).stream().map(GroupMapper::toResponse).toList();
+        return groupRepository.findByTeachersId(user.getId()).stream().map(groupMapper::toResponse).toList();
     }
 }

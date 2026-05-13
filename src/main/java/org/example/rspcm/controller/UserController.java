@@ -3,12 +3,14 @@ package org.example.rspcm.controller;
 import org.example.rspcm.dto.user.UserCreateRequest;
 import org.example.rspcm.dto.user.UserResponse;
 import org.example.rspcm.dto.user.UserUpdateRequest;
+import org.example.rspcm.model.entity.User;
 import org.example.rspcm.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -57,5 +59,10 @@ public class UserController {
     public ResponseEntity<?> delete(@PathVariable Long id) {
         userService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserResponse> getMe(@AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(userService.getMe(user));
     }
 }

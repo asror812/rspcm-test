@@ -8,19 +8,22 @@ import org.example.rspcm.model.entity.QuestionOption;
 import org.example.rspcm.model.entity.StudentAnswer;
 import org.example.rspcm.model.entity.StudentAnswerOption;
 import org.example.rspcm.model.entity.User;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class AnswerMapper {
-    private AnswerMapper() {
-    }
+@Component
+@RequiredArgsConstructor
+public class AnswerMapper {
+    private final SummaryMapper summaryMapper;
 
-    public static AnswerResponse toResponse(StudentAnswer answer) {
+    public AnswerResponse toResponse(StudentAnswer answer) {
         return new AnswerResponse(
                 answer.getId(),
-                SummaryMapper.toQuestionSummary(answer.getExamQuestion().getQuestion()),
+                summaryMapper.toQuestionSummary(answer.getExamQuestion().getQuestion()),
                 answer.getTextAnswer(),
                 answer.getSelectedOptions().stream().map(option -> option.getQuestionOption().getId()).toList(),
                 answer.getScore(),
@@ -29,7 +32,7 @@ public final class AnswerMapper {
         );
     }
 
-    public static StudentAnswer toEntity(AnswerRequest request, ExamQuestion examQuestion, User student, LocalDateTime answeredAt) {
+    public StudentAnswer toEntity(AnswerRequest request, ExamQuestion examQuestion, User student, LocalDateTime answeredAt) {
         return StudentAnswer.builder()
                 .examQuestion(examQuestion)
                 .student(student)
@@ -38,13 +41,13 @@ public final class AnswerMapper {
                 .build();
     }
 
-    public static void updateEntity(StudentAnswer answer, AnswerRequest request, ExamQuestion examQuestion, LocalDateTime answeredAt) {
+    public void updateEntity(StudentAnswer answer, AnswerRequest request, ExamQuestion examQuestion, LocalDateTime answeredAt) {
         answer.setExamQuestion(examQuestion);
         answer.setTextAnswer(request.textAnswer());
         answer.setAnsweredAt(answeredAt);
     }
 
-    public static void applySelectedOptions(StudentAnswer answer, List<QuestionOption> options) {
+    public void applySelectedOptions(StudentAnswer answer, List<QuestionOption> options) {
         answer.setSelectedOptions(new ArrayList<>());
         for (QuestionOption option : options) {
             StudentAnswerOption selected = new StudentAnswerOption();
@@ -54,7 +57,7 @@ public final class AnswerMapper {
         }
     }
 
-    public static void applyScore(StudentAnswer answer, AnswerScoreRequest request) {
+    public void applyScore(StudentAnswer answer, AnswerScoreRequest request) {
         answer.setScore(request.score());
         answer.setCorrect(request.correct());
     }

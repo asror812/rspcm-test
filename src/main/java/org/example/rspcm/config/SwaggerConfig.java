@@ -40,16 +40,17 @@ public class SwaggerConfig {
                                 %s
                                 ```
                                 
-                                # Teacher JWT token
+                                ### Teacher JWT token
                                 ```
                                 %s
                                 ```
                                 
+                                
                                 """.formatted(adminToken, teacherToken))
                 )
                 .servers(List.of(
-                        new Server().url("https://api.rspcm.uz").description("Production server"),
-                        new Server().url("http://localhost:8080").description("Local development server")
+                        new Server().url("http://localhost:8080").description("Local development server"),
+                        new Server().url("https://api.rspcm.uz").description("Production server")
                 ))
 
                 .addSecurityItem(new SecurityRequirement().addList(schemeName))

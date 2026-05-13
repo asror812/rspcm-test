@@ -24,7 +24,7 @@ public class SubjectService {
     private final UserRepository userRepository;
 
     public List<SubjectResponse> findAll() {
-        return subjectRepository.findAll().stream().map(SubjectMapper::toResponse).toList();
+        return subjectRepository.findAll().stream().map(subjectMapper::toResponse).toList();
     }
 
     public Subject findById(Long id) {
@@ -33,20 +33,20 @@ public class SubjectService {
 
     @Transactional
     public Subject create(SubjectRequest request) {
-        Subject subject = SubjectMapper.toEntity(request, resolveUsers(request.teacherIds()));
+        Subject subject = subjectMapper.toEntity(request, resolveUsers(request.teacherIds()));
         return subjectRepository.save(subject);
     }
 
     public SubjectResponse createResponse(SubjectRequest request) {
-        Subject subject = SubjectMapper.toEntity(request, resolveUsers(request.teacherIds()));
-        return SubjectMapper.toResponse(subjectRepository.save(subject));
+        Subject subject = subjectMapper.toEntity(request, resolveUsers(request.teacherIds()));
+        return subjectMapper.toResponse(subjectRepository.save(subject));
     }
 
     @Transactional
     public SubjectResponse update(Long id, SubjectRequest request) {
         Subject subject = findById(id);
-        SubjectMapper.updateEntity(subject, request, resolveUsers(request.teacherIds()));
-        return SubjectMapper.toResponse(subjectRepository.save(subject));
+        subjectMapper.updateEntity(subject, request, resolveUsers(request.teacherIds()));
+        return subjectMapper.toResponse(subjectRepository.save(subject));
     }
 
     @Transactional

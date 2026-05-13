@@ -7,22 +7,25 @@ import org.example.rspcm.model.entity.Subject;
 import org.example.rspcm.dto.group.GroupResponse;
 import org.example.rspcm.model.entity.StudyGroup;
 import org.example.rspcm.model.entity.User;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public final class GroupMapper {
-    private GroupMapper() {
-    }
+@Component
+@RequiredArgsConstructor
+public class GroupMapper {
+    private final SummaryMapper summaryMapper;
 
-    public static GroupResponse toResponse(StudyGroup group) {
-        Set<SubjectSummary> subjects = group.getSubjects().stream().map(SummaryMapper::toSubjectSummary).collect(Collectors.toSet());
-        Set<UserSummary> teachers = group.getTeachers().stream().map(SummaryMapper::toUserSummary).collect(Collectors.toSet());
-        Set<UserSummary> students = group.getStudents().stream().map(SummaryMapper::toUserSummary).collect(Collectors.toSet());
+    public GroupResponse toResponse(StudyGroup group) {
+        Set<SubjectSummary> subjects = group.getSubjects().stream().map(summaryMapper::toSubjectSummary).collect(Collectors.toSet());
+        Set<UserSummary> teachers = group.getTeachers().stream().map(summaryMapper::toUserSummary).collect(Collectors.toSet());
+        Set<UserSummary> students = group.getStudents().stream().map(summaryMapper::toUserSummary).collect(Collectors.toSet());
         return new GroupResponse(group.getId(), group.getName(), group.getDescription(), group.getLanguage(), subjects, teachers, students);
     }
 
-    public static StudyGroup toEntity(
+    public StudyGroup toEntity(
             GroupRequest request,
             Set<Subject> subjects,
             Set<User> teachers,
@@ -38,7 +41,7 @@ public final class GroupMapper {
                 .build();
     }
 
-    public static void updateEntity(
+    public void updateEntity(
             StudyGroup group,
             GroupRequest request,
             Set<Subject> subjects,

@@ -55,7 +55,7 @@ public class AuthService {
             throw new ErrorMessageException("Email allaqachon mavjud", ErrorCodes.AlreadyExists);
         }
 
-        User user = AuthMapper.toUserEntity(
+        User user = authMapper.toUserEntity(
                 request,
                 passwordEncoder.encode(request.password()),
                 roleService.resolveRoles(request.roles())
@@ -114,7 +114,7 @@ public class AuthService {
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        return AuthMapper.toAuthResponse(
+        return authMapper.toAuthResponse(
                 userDetails.getUsername(),
                 userDetails.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet()),
                 jwtService.generateToken(userDetails)
@@ -136,6 +136,6 @@ public class AuthService {
     }
 
     public UserResponse getUser(User user) {
-        return UserMapper.toResponse(user);
+        return userMapper.toResponse(user);
     }
 }

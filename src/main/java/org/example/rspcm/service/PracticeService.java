@@ -29,7 +29,7 @@ public class PracticeService {
     public List<PracticeResponse> findAll() {
         User currentUser = currentUserService.getCurrentUser();
         if (!isStudent(currentUser)) {
-            return practiceRepository.findAll().stream().map(PracticeMapper::toResponse).toList();
+            return practiceRepository.findAll().stream().map(practiceMapper::toResponse).toList();
         }
         Long studentId = currentUser.getId();
         return practiceRepository.findAll().stream()
@@ -39,7 +39,7 @@ public class PracticeService {
                                 exam.getGroups().stream().anyMatch(group ->
                                         group.getStudents().stream().anyMatch(student -> Objects.equals(student.getId(), studentId)))
                 ))
-                .map(PracticeMapper::toResponse)
+                .map(practiceMapper::toResponse)
                 .toList();
     }
 
@@ -75,13 +75,13 @@ public class PracticeService {
                 throw new NotFoundException("PracticalTask topilmadi: " + id);
             }
         }
-        return PracticeMapper.toResponse(practicalTask);
+        return practiceMapper.toResponse(practicalTask);
     }
 
     @Transactional
     public PracticalTask create(PracticeRequest request) {
         validateTeamConfig(request.workMode(), request.teamSize());
-        PracticalTask practicalTask = PracticeMapper.toEntity(
+        PracticalTask practicalTask = practiceMapper.toEntity(
                 request,
                 resolveSubmissionTypes(request.allowedSubmissionTypes()),
                 currentUserService.getCurrentUser()
@@ -91,20 +91,20 @@ public class PracticeService {
 
     public PracticeResponse createResponse(PracticeRequest request) {
         validateTeamConfig(request.workMode(), request.teamSize());
-        PracticalTask practicalTask = PracticeMapper.toEntity(
+        PracticalTask practicalTask = practiceMapper.toEntity(
                 request,
                 resolveSubmissionTypes(request.allowedSubmissionTypes()),
                 currentUserService.getCurrentUser()
         );
-        return PracticeMapper.toResponse(practiceRepository.save(practicalTask));
+        return practiceMapper.toResponse(practiceRepository.save(practicalTask));
     }
 
     @Transactional
     public PracticeResponse update(Long id, PracticeRequest request) {
         validateTeamConfig(request.workMode(), request.teamSize());
         PracticalTask practicalTask = findById(id);
-        PracticeMapper.updateEntity(practicalTask, request, resolveSubmissionTypes(request.allowedSubmissionTypes()));
-        return PracticeMapper.toResponse(practiceRepository.save(practicalTask));
+        practiceMapper.updateEntity(practicalTask, request, resolveSubmissionTypes(request.allowedSubmissionTypes()));
+        return practiceMapper.toResponse(practiceRepository.save(practicalTask));
     }
 
     @Transactional
@@ -115,7 +115,7 @@ public class PracticeService {
 
     public PracticeResponse assignGroupsResponse(Long practiceId) {
         PracticalTask practicalTask = findById(practiceId);
-        return PracticeMapper.toResponse(practiceRepository.save(practicalTask));
+        return practiceMapper.toResponse(practiceRepository.save(practicalTask));
     }
 
     @Transactional

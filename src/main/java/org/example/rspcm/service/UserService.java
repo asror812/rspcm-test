@@ -28,7 +28,7 @@ public class UserService {
     private final UserProfileSyncService userProfileSyncService;
 
     public List<UserResponse> findAll() {
-        return userRepository.findAll().stream().map(UserMapper::toResponse).toList();
+        return userRepository.findAll().stream().map(userMapper::toResponse).toList();
     }
 
     public User findById(Long id) {
@@ -36,7 +36,7 @@ public class UserService {
     }
 
     public UserResponse findResponseById(Long id) {
-        return UserMapper.toResponse(userRepository.findById(id).orElseThrow(() -> new NotFoundException("User topilmadi: " + id)));
+        return userMapper.toResponse(userRepository.findById(id).orElseThrow(() -> new NotFoundException("User topilmadi: " + id)));
     }
 
     @Transactional
@@ -44,7 +44,7 @@ public class UserService {
         if (userRepository.existsByEmail(request.email())) {
             throw new ErrorMessageException("Email allaqachon mavjud", ErrorCodes.AlreadyExists);
         }
-        User user = UserMapper.toEntity(
+        User user = userMapper.toEntity(
                 request,
                 passwordEncoder.encode(request.password()),
                 roleService.resolveRoles(request.roles())
@@ -58,28 +58,32 @@ public class UserService {
         if (userRepository.existsByEmail(request.email())) {
             throw new ErrorMessageException("Email allaqachon mavjud", ErrorCodes.AlreadyExists);
         }
-        User user = UserMapper.toEntity(
+        User user = userMapper.toEntity(
                 request,
                 passwordEncoder.encode(request.password()),
                 roleService.resolveRoles(request.roles())
         );
         User saved = userRepository.save(user);
         userProfileSyncService.sync(saved);
-        return UserMapper.toResponse(saved);
+        return userMapper.toResponse(saved);
     }
 
     @Transactional
     public UserResponse update(Long id, UserUpdateRequest request) {
         User user = findById(id);
-        UserMapper.updateEntity(user, request, roleService.resolveRoles(request.roles()));
+        userMapper.updateEntity(user, request, roleService.resolveRoles(request.roles()));
         User saved = userRepository.save(user);
         userProfileSyncService.sync(saved);
-        return UserMapper.toResponse(saved);
+        return userMapper.toResponse(saved);
     }
 
     @Transactional
     public void delete(Long id) {
         User user = findById(id);
         userRepository.delete(user);
+    }
+
+    public UserResponse getMe(User user) {
+        return userMapper.toResponse(user);
     }
 }
