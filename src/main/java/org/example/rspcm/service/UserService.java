@@ -26,6 +26,7 @@ public class UserService {
     private final RoleService roleService;
     private final PasswordEncoder passwordEncoder;
     private final UserProfileSyncService userProfileSyncService;
+    private final UserMapper userMapper;
 
     public List<UserResponse> findAll() {
         return userRepository.findAll().stream().map(userMapper::toResponse).toList();

@@ -46,6 +46,8 @@ public class AuthService {
     private final MailService mailService;
     private final AppProperties appProperties;
     private final UserProfileSyncService userProfileSyncService;
+    private final AuthMapper authMapper;
+    private final UserMapper userMapper;
     private final Random random = new Random();
     private final UserDetailsService userDetailsService;
 

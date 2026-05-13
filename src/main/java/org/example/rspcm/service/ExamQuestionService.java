@@ -23,6 +23,7 @@ public class ExamQuestionService {
     private final ExamQuestionRepository examQuestionRepository;
     private final ExamRepository examRepository;
     private final QuestionRepository questionRepository;
+    private final ExamQuestionMapper examQuestionMapper;
 
     public List<ExamQuestionResponse> findAll() {
         return examQuestionRepository.findAll().stream().map(examQuestionMapper::toResponse).toList();

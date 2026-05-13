@@ -25,6 +25,7 @@ public class PracticeService {
 
     private final PracticeRepository practiceRepository;
     private final CurrentUserService currentUserService;
+    private final PracticeMapper practiceMapper;
 
     public List<PracticeResponse> findAll() {
         User currentUser = currentUserService.getCurrentUser();

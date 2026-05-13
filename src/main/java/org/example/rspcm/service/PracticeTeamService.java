@@ -28,6 +28,7 @@ public class PracticeTeamService {
     private final PracticeTeamRepository teamRepository;
     private final PracticeRepository practiceRepository;
     private final UserRepository userRepository;
+    private final PracticeTeamMapper practiceTeamMapper;
 
     public List<PracticeTeam> getByPracticeId(Long practiceId) {
         return teamRepository.findByPracticalTaskId(practiceId);

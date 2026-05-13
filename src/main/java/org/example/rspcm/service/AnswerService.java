@@ -30,6 +30,7 @@ public class AnswerService {
     private final ExamQuestionRepository examQuestionRepository;
     private final QuestionOptionRepository questionOptionRepository;
     private final CurrentUserService currentUserService;
+    private final AnswerMapper answerMapper;
 
     public List<AnswerResponse> findAll() {
         return answerRepository.findAll().stream().map(answerMapper::toResponse).toList();

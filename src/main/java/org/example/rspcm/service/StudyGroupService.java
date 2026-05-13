@@ -36,6 +36,7 @@ public class StudyGroupService {
     private final UserRepository userRepository;
     private final StudentProfileRepository studentProfileRepository;
     private final SubjectRepository subjectRepository;
+    private final GroupMapper groupMapper;
 
     public List<GroupResponse> findAll() {
         return groupRepository.findAll().stream().map(groupMapper::toResponse).toList();

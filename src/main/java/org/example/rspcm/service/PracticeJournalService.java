@@ -27,6 +27,7 @@ public class PracticeJournalService {
     private final PracticeRepository practiceRepository;
     private final PracticeTeamRepository teamRepository;
     private final CurrentUserService currentUserService;
+    private final PracticeJournalMapper practiceJournalMapper;
 
     public List<PracticeLogbook> findMine() {
         User student = currentUserService.getCurrentUser();

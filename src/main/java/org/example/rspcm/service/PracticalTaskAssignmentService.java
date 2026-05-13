@@ -27,6 +27,7 @@ public class PracticalTaskAssignmentService {
     private final PracticeRepository practicalTaskRepository;
     private final UserRepository userRepository;
     private final PracticeTeamRepository practiceTeamRepository;
+    private final PracticalTaskAssignmentMapper practicalTaskAssignmentMapper;
 
     public List<PracticalTaskAssignmentResponse> findAll() {
         return assignmentRepository.findAll().stream().map(practicalTaskAssignmentMapper::toResponse).toList();

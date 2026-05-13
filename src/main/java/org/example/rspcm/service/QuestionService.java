@@ -20,6 +20,7 @@ public class QuestionService {
     private final QuestionRepository questionRepository;
     private final SubjectRepository subjectRepository;
     private final CurrentUserService currentUserService;
+    private final QuestionMapper questionMapper;
 
     public List<QuestionResponse> findAll() {
         return questionRepository.findAll().stream().map(questionMapper::toResponse).toList();

@@ -30,6 +30,8 @@ public class ProfileService {
     private final TeacherProfileRepository teacherProfileRepository;
     private final UserRepository userRepository;
     private final SubjectRepository subjectRepository;
+    private final StudentProfileMapper studentProfileMapper;
+    private final TeacherProfileMapper teacherProfileMapper;
 
     public StudentProfile getStudentProfile(Long userId) {
         return studentProfileRepository.findByUserId(userId)
