@@ -5,15 +5,15 @@ import org.example.rspcm.dto.user.UserResponse;
 import org.example.rspcm.dto.user.UserUpdateRequest;
 import org.example.rspcm.model.entity.Role;
 import org.example.rspcm.model.entity.User;
+import org.springframework.stereotype.Component;
 
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@Component
 public class UserMapper {
-    private UserMapper() {
-    }
 
-    public static UserResponse toResponse(User user) {
+    public UserResponse toResponse(User user) {
         Set<String> roles = user.getRoles().stream()
                 .map(Role::getName)
                 .collect(Collectors.toSet());
@@ -23,7 +23,7 @@ public class UserMapper {
                 user.getEmail(), user.isEnabled(), user.isDeleted(), roles);
     }
 
-    public static User toEntity(UserCreateRequest request, String encodedPassword, Set<Role> roles) {
+    public User toEntity(UserCreateRequest request, String encodedPassword, Set<Role> roles) {
         return User.builder()
                 .firstName(request.firstName())
                 .lastName(request.lastName())
@@ -34,7 +34,7 @@ public class UserMapper {
                 .build();
     }
 
-    public static void updateEntity(User user, UserUpdateRequest request, Set<Role> roles) {
+    public void updateEntity(User user, UserUpdateRequest request, Set<Role> roles) {
         user.setFirstName(request.firstName());
         user.setLastName(request.lastName());
         user.setEnabled(request.enabled());

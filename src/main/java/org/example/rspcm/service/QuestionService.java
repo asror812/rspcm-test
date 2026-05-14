@@ -20,9 +20,10 @@ public class QuestionService {
     private final QuestionRepository questionRepository;
     private final SubjectRepository subjectRepository;
     private final CurrentUserService currentUserService;
+    private final QuestionMapper questionMapper;
 
     public List<QuestionResponse> findAll() {
-        return questionRepository.findAll().stream().map(QuestionMapper::toResponse).toList();
+        return questionRepository.findAll().stream().map(questionMapper::toResponse).toList();
     }
 
     public List<Question> findBySubject(Long subjectId) {
@@ -30,7 +31,7 @@ public class QuestionService {
     }
 
     public List<QuestionResponse> findBySubjectResponse(Long subjectId) {
-        return questionRepository.findBySubjectId(subjectId).stream().map(QuestionMapper::toResponse).toList();
+        return questionRepository.findBySubjectId(subjectId).stream().map(questionMapper::toResponse).toList();
     }
 
     public List<Question> findOwnCreatedBySubject(Long subjectId) {
@@ -39,7 +40,7 @@ public class QuestionService {
 
     public List<QuestionResponse> findOwnCreatedBySubjectResponse(Long subjectId) {
         return questionRepository.findByCreatedByIdAndSubjectId(currentUserService.getCurrentUser().getId(), subjectId)
-                .stream().map(QuestionMapper::toResponse).toList();
+                .stream().map(questionMapper::toResponse).toList();
     }
 
     public Question findById(Long id) {
@@ -47,13 +48,13 @@ public class QuestionService {
     }
 
     public QuestionResponse findResponseById(Long id) {
-        return QuestionMapper.toResponse(questionRepository.findById(id)
+        return questionMapper.toResponse(questionRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Question topilmadi: " + id)));
     }
 
     @Transactional
     public Question create(QuestionRequest request) {
-        Question question = QuestionMapper.toEntity(
+        Question question = questionMapper.toEntity(
                 request,
                 subjectRepository.findById(request.subjectId())
                         .orElseThrow(() -> new NotFoundException("Subject topilmadi: " + request.subjectId())),
@@ -63,25 +64,25 @@ public class QuestionService {
     }
 
     public QuestionResponse createResponse(QuestionRequest request) {
-        Question question = QuestionMapper.toEntity(
+        Question question = questionMapper.toEntity(
                 request,
                 subjectRepository.findById(request.subjectId())
                         .orElseThrow(() -> new NotFoundException("Subject topilmadi: " + request.subjectId())),
                 currentUserService.getCurrentUser()
         );
-        return QuestionMapper.toResponse(questionRepository.save(question));
+        return questionMapper.toResponse(questionRepository.save(question));
     }
 
     @Transactional
     public QuestionResponse update(Long id, QuestionRequest request) {
         Question question = findById(id);
-        QuestionMapper.updateEntity(
+        questionMapper.updateEntity(
                 question,
                 request,
                 subjectRepository.findById(request.subjectId())
                         .orElseThrow(() -> new NotFoundException("Subject topilmadi: " + request.subjectId()))
         );
-        return QuestionMapper.toResponse(questionRepository.save(question));
+        return questionMapper.toResponse(questionRepository.save(question));
     }
 
     @Transactional

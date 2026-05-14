@@ -1,7 +1,10 @@
 package org.example.rspcm.service;
 
+import org.example.rspcm.dto.group.AdminGroupResponse;
 import org.example.rspcm.dto.group.GroupRequest;
 import org.example.rspcm.dto.group.GroupResponse;
+import org.example.rspcm.dto.group.StudentGroupResponse;
+import org.example.rspcm.dto.group.TeacherGroupResponse;
 import org.example.rspcm.exception.ErrorCodes;
 import org.example.rspcm.exception.ErrorMessageException;
 import org.example.rspcm.exception.NotFoundException;
@@ -36,22 +39,27 @@ public class StudyGroupService {
     private final UserRepository userRepository;
     private final StudentProfileRepository studentProfileRepository;
     private final SubjectRepository subjectRepository;
+    private final GroupMapper groupMapper;
 
-    public List<GroupResponse> findAll() {
-        return groupRepository.findAll().stream().map(GroupMapper::toResponse).toList();
+    public List<StudyGroup> findAll() {
+        return groupRepository.findAll();
+    }
+
+    public List<AdminGroupResponse> findAllForAdmin() {
+        return findAll().stream().map(groupMapper::toAdminResponse).toList();
     }
 
     public StudyGroup findById(Long id) {
         return groupRepository.findById(id).orElseThrow(() -> new NotFoundException("Group topilmadi: " + id));
     }
 
-    public GroupResponse findResponseById(Long id) {
-        return GroupMapper.toResponse(groupRepository.findById(id).orElseThrow(() -> new NotFoundException("Group topilmadi: " + id)));
+    public AdminGroupResponse findAdminResponseById(Long id) {
+        return groupMapper.toAdminResponse(groupRepository.findById(id).orElseThrow(() -> new NotFoundException("Group topilmadi: " + id)));
     }
 
     @Transactional
     public StudyGroup create(GroupRequest request) {
-        StudyGroup group = GroupMapper.toEntity(
+        StudyGroup group = groupMapper.toEntity(
                 request,
                 resolveSubjects(request.subjectIds()),
                 resolveUsers(request.teacherIds()),
@@ -61,26 +69,26 @@ public class StudyGroupService {
     }
 
     public GroupResponse createResponse(GroupRequest request) {
-        StudyGroup group = GroupMapper.toEntity(
+        StudyGroup group = groupMapper.toEntity(
                 request,
                 resolveSubjects(request.subjectIds()),
                 resolveUsers(request.teacherIds()),
                 resolveUsers(request.studentIds())
         );
-        return GroupMapper.toResponse(groupRepository.save(group));
+        return groupMapper.toResponse(groupRepository.save(group));
     }
 
     @Transactional
     public GroupResponse update(Long id, GroupRequest request) {
         StudyGroup group = findById(id);
-        GroupMapper.updateEntity(
+        groupMapper.updateEntity(
                 group,
                 request,
                 resolveSubjects(request.subjectIds()),
                 resolveUsers(request.teacherIds()),
                 resolveUsers(request.studentIds())
         );
-        return GroupMapper.toResponse(groupRepository.save(group));
+        return groupMapper.toResponse(groupRepository.save(group));
     }
 
     @Transactional
@@ -150,11 +158,19 @@ public class StudyGroupService {
                 .orElse(null);
     }
 
-    public List<StudyGroup> findOwnGroups(User user) {
-        return groupRepository.findByTeachersId(user.getId());
+    public List<TeacherGroupResponse> findOwnTeacherGroups(User user) {
+        return groupRepository.findByTeachersId(user.getId()).stream()
+                .map(groupMapper::toTeacherResponse).toList();
     }
 
-    public List<GroupResponse> findOwnGroupsResponse(User user) {
-        return groupRepository.findByTeachersId(user.getId()).stream().map(GroupMapper::toResponse).toList();
+    public TeacherGroupResponse findOwnTeacherGroupById(Long groupId, User user) {
+        StudyGroup group = groupRepository.findByIdAndTeacherId(groupId, user.getId())
+                .orElseThrow(() -> new NotFoundException("Group topilmadi: " + groupId));
+        return groupMapper.toTeacherResponse(group);
+    }
+
+    public List<StudentGroupResponse> findOwnStudentGroups(User user) {
+        return groupRepository.findByStudentsId(user.getId()).stream()
+                .map(groupMapper::toStudentResponse).toList();
     }
 }

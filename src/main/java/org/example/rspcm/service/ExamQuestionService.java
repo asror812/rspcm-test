@@ -23,9 +23,10 @@ public class ExamQuestionService {
     private final ExamQuestionRepository examQuestionRepository;
     private final ExamRepository examRepository;
     private final QuestionRepository questionRepository;
+    private final ExamQuestionMapper examQuestionMapper;
 
     public List<ExamQuestionResponse> findAll() {
-        return examQuestionRepository.findAll().stream().map(ExamQuestionMapper::toResponse).toList();
+        return examQuestionRepository.findAll().stream().map(examQuestionMapper::toResponse).toList();
     }
 
     public ExamQuestion findById(Long id) {
@@ -33,14 +34,14 @@ public class ExamQuestionService {
     }
 
     public ExamQuestionResponse findResponseById(Long id) {
-        return ExamQuestionMapper.toResponse(examQuestionRepository.findById(id)
+        return examQuestionMapper.toResponse(examQuestionRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("ExamQuestion topilmadi: " + id)));
     }
 
     @Transactional
     public ExamQuestion create(ExamQuestionRequest request) {
         validateRequest(request);
-        ExamQuestion examQuestion = ExamQuestionMapper.toEntity(
+        ExamQuestion examQuestion = examQuestionMapper.toEntity(
                 request,
                 examRepository.findById(request.examId())
                         .orElseThrow(() -> new NotFoundException("Exam topilmadi: " + request.examId())),
@@ -52,21 +53,21 @@ public class ExamQuestionService {
 
     public ExamQuestionResponse createResponse(ExamQuestionRequest request) {
         validateRequest(request);
-        ExamQuestion examQuestion = ExamQuestionMapper.toEntity(
+        ExamQuestion examQuestion = examQuestionMapper.toEntity(
                 request,
                 examRepository.findById(request.examId())
                         .orElseThrow(() -> new NotFoundException("Exam topilmadi: " + request.examId())),
                 questionRepository.findById(request.questionId())
                         .orElseThrow(() -> new NotFoundException("Question topilmadi: " + request.questionId()))
         );
-        return ExamQuestionMapper.toResponse(examQuestionRepository.save(examQuestion));
+        return examQuestionMapper.toResponse(examQuestionRepository.save(examQuestion));
     }
 
     @Transactional
     public ExamQuestionResponse update(Long id, ExamQuestionRequest request) {
         validateRequest(request);
         ExamQuestion examQuestion = findById(id);
-        ExamQuestionMapper.updateEntity(
+        examQuestionMapper.updateEntity(
                 examQuestion,
                 request,
                 examRepository.findById(request.examId())
@@ -74,7 +75,7 @@ public class ExamQuestionService {
                 questionRepository.findById(request.questionId())
                         .orElseThrow(() -> new NotFoundException("Question topilmadi: " + request.questionId()))
         );
-        return ExamQuestionMapper.toResponse(examQuestionRepository.save(examQuestion));
+        return examQuestionMapper.toResponse(examQuestionRepository.save(examQuestion));
     }
 
     @Transactional

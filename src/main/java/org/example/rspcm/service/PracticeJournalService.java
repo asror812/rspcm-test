@@ -27,6 +27,7 @@ public class PracticeJournalService {
     private final PracticeRepository practiceRepository;
     private final PracticeTeamRepository teamRepository;
     private final CurrentUserService currentUserService;
+    private final PracticeJournalMapper practiceJournalMapper;
 
     public List<PracticeLogbook> findMine() {
         User student = currentUserService.getCurrentUser();
@@ -35,7 +36,7 @@ public class PracticeJournalService {
 
     public List<PracticeJournalResponse> findMineResponse() {
         User student = currentUserService.getCurrentUser();
-        return journalRepository.findByStudentId(student.getId()).stream().map(PracticeJournalMapper::toResponse).toList();
+        return journalRepository.findByStudentId(student.getId()).stream().map(practiceJournalMapper::toResponse).toList();
     }
 
     public List<PracticeLogbook> findByPracticalTask(Long practicalTaskId) {
@@ -43,7 +44,7 @@ public class PracticeJournalService {
     }
 
     public List<PracticeJournalResponse> findByPracticalTaskResponse(Long practicalTaskId) {
-        return journalRepository.findByPracticalTaskId(practicalTaskId).stream().map(PracticeJournalMapper::toResponse).toList();
+        return journalRepository.findByPracticalTaskId(practicalTaskId).stream().map(practiceJournalMapper::toResponse).toList();
     }
 
     @Transactional
@@ -131,6 +132,6 @@ public class PracticeJournalService {
 
         PracticeLogbook reloaded = journalRepository.findById(savedLogbook.getId())
                 .orElseThrow(() -> new NotFoundException("Logbook topilmadi: " + savedLogbook.getId()));
-        return PracticeJournalMapper.toResponse(reloaded);
+        return practiceJournalMapper.toResponse(reloaded);
     }
 }

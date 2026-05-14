@@ -22,9 +22,19 @@ public class SubjectService {
 
     private final SubjectRepository subjectRepository;
     private final UserRepository userRepository;
+    private final CurrentUserService currentUserService;
+    private final SubjectMapper subjectMapper;
 
     public List<SubjectResponse> findAll() {
-        return subjectRepository.findAll().stream().map(SubjectMapper::toResponse).toList();
+        return subjectRepository.findAll().stream().map(subjectMapper::toResponse).toList();
+    }
+
+    public List<SubjectResponse> findOwn() {
+        Long teacherId = currentUserService.getCurrentUser().getId();
+        return subjectRepository.findDistinctByTeachersId(teacherId)
+                .stream()
+                .map(subjectMapper::toResponse)
+                .toList();
     }
 
     public Subject findById(Long id) {
@@ -33,20 +43,20 @@ public class SubjectService {
 
     @Transactional
     public Subject create(SubjectRequest request) {
-        Subject subject = SubjectMapper.toEntity(request, resolveUsers(request.teacherIds()));
+        Subject subject = subjectMapper.toEntity(request, resolveUsers(request.teacherIds()));
         return subjectRepository.save(subject);
     }
 
     public SubjectResponse createResponse(SubjectRequest request) {
-        Subject subject = SubjectMapper.toEntity(request, resolveUsers(request.teacherIds()));
-        return SubjectMapper.toResponse(subjectRepository.save(subject));
+        Subject subject = subjectMapper.toEntity(request, resolveUsers(request.teacherIds()));
+        return subjectMapper.toResponse(subjectRepository.save(subject));
     }
 
     @Transactional
     public SubjectResponse update(Long id, SubjectRequest request) {
         Subject subject = findById(id);
-        SubjectMapper.updateEntity(subject, request, resolveUsers(request.teacherIds()));
-        return SubjectMapper.toResponse(subjectRepository.save(subject));
+        subjectMapper.updateEntity(subject, request, resolveUsers(request.teacherIds()));
+        return subjectMapper.toResponse(subjectRepository.save(subject));
     }
 
     @Transactional

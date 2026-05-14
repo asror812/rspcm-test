@@ -22,7 +22,7 @@ public class StudentDashboardService {
         User student = currentUserService.getCurrentUser();
 
         return new StudentDashboardResponse(
-                subjectRepository.findDistinctByGroupsStudentsId(student.getId()).stream().map(SubjectMapper::toResponse).toList(),
+                subjectRepository.findDistinctByGroupsStudentsId(student.getId()).stream().map(subjectMapper::toResponse).toList(),
                 practiceRepository.findDistinctByGroupsStudentsIdOrTargetStudentsId(student.getId(), student.getId()).stream()
                         .map(this::toPracticeTask)
                         .toList(),

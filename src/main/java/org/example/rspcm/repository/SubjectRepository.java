@@ -10,5 +10,6 @@ import java.util.Optional;
 @Repository
 public interface SubjectRepository extends JpaRepository<Subject, Long> {
     List<Subject> findDistinctByGroupsStudentsId(Long studentId);
+    List<Subject> findDistinctByTeachersId(Long teacherId);
     Optional<Subject> findByName(String name);
 }

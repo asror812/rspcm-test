@@ -2,21 +2,25 @@ package org.example.rspcm.mapper;
 
 import org.example.rspcm.dto.practice.PracticeJournalResponse;
 import org.example.rspcm.model.entity.PracticeLogbook;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
-public final class PracticeJournalMapper {
-    private PracticeJournalMapper() {
-    }
+@Component
+@RequiredArgsConstructor
+public class PracticeJournalMapper {
+    private final SummaryMapper summaryMapper;
+    private final PracticeLogbookEntryMapper practiceLogbookEntryMapper;
 
-    public static PracticeJournalResponse toResponse(PracticeLogbook journal) {
+    public PracticeJournalResponse toResponse(PracticeLogbook journal) {
         return new PracticeJournalResponse(
                 journal.getId(),
-                SummaryMapper.toPracticeSummary(journal.getPracticalTask()),
-                SummaryMapper.toUserSummary(journal.getStudent()),
-                journal.getTeam() == null ? null : SummaryMapper.toPracticeTeamSummary(journal.getTeam()),
+                summaryMapper.toPracticeSummary(journal.getPracticalTask()),
+                summaryMapper.toUserSummary(journal.getStudent()),
+                journal.getTeam() == null ? null : summaryMapper.toPracticeTeamSummary(journal.getTeam()),
                 journal.getFilePath(),
                 journal.getSubmittedAt(),
                 journal.getStatus(),
-                journal.getEntries().stream().map(PracticeLogbookEntryMapper::toResponse).toList()
+                journal.getEntries().stream().map(practiceLogbookEntryMapper::toResponse).toList()
         );
     }
 }

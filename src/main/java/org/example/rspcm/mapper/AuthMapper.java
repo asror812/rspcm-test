@@ -4,14 +4,14 @@ import org.example.rspcm.dto.auth.AuthResponse;
 import org.example.rspcm.dto.auth.RegisterRequest;
 import org.example.rspcm.model.entity.Role;
 import org.example.rspcm.model.entity.User;
+import org.springframework.stereotype.Component;
 
 import java.util.Set;
 
-public final class AuthMapper {
-    private AuthMapper() {
-    }
+@Component
+public class AuthMapper {
 
-    public static User toUserEntity(RegisterRequest request, String encodedPassword, Set<Role> roles) {
+    public User toUserEntity(RegisterRequest request, String encodedPassword, Set<Role> roles) {
         return User.builder()
                 .firstName(request.firstName())
                 .lastName(request.lastName())
@@ -22,7 +22,7 @@ public final class AuthMapper {
                 .build();
     }
 
-    public static AuthResponse toAuthResponse(String email, Set<String> roles, String token) {
+    public AuthResponse toAuthResponse(String email, Set<String> roles, String token) {
         return new AuthResponse(email, roles, token);
     }
 }

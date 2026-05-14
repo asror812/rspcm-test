@@ -6,10 +6,7 @@ import org.example.rspcm.dto.answer.AnswerScoreRequest;
 import org.example.rspcm.exception.ErrorCodes;
 import org.example.rspcm.exception.ErrorMessageException;
 import org.example.rspcm.exception.NotFoundException;
-import org.example.rspcm.model.entity.ExamQuestion;
-import org.example.rspcm.model.entity.QuestionOption;
-import org.example.rspcm.model.entity.StudentAnswer;
-import org.example.rspcm.model.entity.User;
+import org.example.rspcm.model.entity.*;
 import org.example.rspcm.model.enums.RoleName;
 import org.example.rspcm.mapper.AnswerMapper;
 import org.example.rspcm.repository.AnswerRepository;
@@ -30,9 +27,10 @@ public class AnswerService {
     private final ExamQuestionRepository examQuestionRepository;
     private final QuestionOptionRepository questionOptionRepository;
     private final CurrentUserService currentUserService;
+    private final AnswerMapper answerMapper;
 
     public List<AnswerResponse> findAll() {
-        return answerRepository.findAll().stream().map(AnswerMapper::toResponse).toList();
+        return answerRepository.findAll().stream().map(answerMapper::toResponse).toList();
     }
 
     public StudentAnswer findById(Long id) {
@@ -46,7 +44,7 @@ public class AnswerService {
         StudentAnswer answer = answerRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Answer topilmadi: " + id));
         validateCanAccess(answer);
-        return AnswerMapper.toResponse(answer);
+        return answerMapper.toResponse(answer);
     }
 
     @Transactional
@@ -54,7 +52,7 @@ public class AnswerService {
         ExamQuestion examQuestion = examQuestionRepository.findById(request.examQuestionId())
                 .orElseThrow(() -> new NotFoundException("ExamQuestion topilmadi: " + request.examQuestionId()));
 
-        StudentAnswer answer = AnswerMapper.toEntity(
+        StudentAnswer answer = answerMapper.toEntity(
                 request,
                 examQuestion,
                 currentUserService.getCurrentUser(),
@@ -67,20 +65,20 @@ public class AnswerService {
     public AnswerResponse createResponse(AnswerRequest request) {
         ExamQuestion examQuestion = examQuestionRepository.findById(request.examQuestionId())
                 .orElseThrow(() -> new NotFoundException("ExamQuestion topilmadi: " + request.examQuestionId()));
-        StudentAnswer answer = AnswerMapper.toEntity(
+        StudentAnswer answer = answerMapper.toEntity(
                 request,
                 examQuestion,
                 currentUserService.getCurrentUser(),
                 LocalDateTime.now()
         );
         applySelectedOptions(answer, request.selectedOptionIds());
-        return AnswerMapper.toResponse(answerRepository.save(answer));
+        return answerMapper.toResponse(answerRepository.save(answer));
     }
 
     @Transactional
     public AnswerResponse update(Long id, AnswerRequest request) {
         StudentAnswer answer = findById(id);
-        AnswerMapper.updateEntity(
+        answerMapper.updateEntity(
                 answer,
                 request,
                 examQuestionRepository.findById(request.examQuestionId())
@@ -88,20 +86,20 @@ public class AnswerService {
                 LocalDateTime.now()
         );
         applySelectedOptions(answer, request.selectedOptionIds());
-        return AnswerMapper.toResponse(answerRepository.save(answer));
+        return answerMapper.toResponse(answerRepository.save(answer));
     }
 
     @Transactional
     public StudentAnswer score(Long id, AnswerScoreRequest request) {
         StudentAnswer answer = findById(id);
-        AnswerMapper.applyScore(answer, request);
+        answerMapper.applyScore(answer, request);
         return answerRepository.save(answer);
     }
 
     public AnswerResponse scoreResponse(Long id, AnswerScoreRequest request) {
         StudentAnswer answer = findById(id);
-        AnswerMapper.applyScore(answer, request);
-        return AnswerMapper.toResponse(answerRepository.save(answer));
+        answerMapper.applyScore(answer, request);
+        return answerMapper.toResponse(answerRepository.save(answer));
     }
 
     @Transactional
@@ -112,17 +110,17 @@ public class AnswerService {
 
     private void applySelectedOptions(StudentAnswer answer, List<Long> optionIds) {
         if (optionIds == null || optionIds.isEmpty()) {
-            AnswerMapper.applySelectedOptions(answer, List.of());
+            answerMapper.applySelectedOptions(answer, List.of());
             return;
         }
         List<QuestionOption> options = questionOptionRepository.findAllById(optionIds);
-        AnswerMapper.applySelectedOptions(answer, options);
+        answerMapper.applySelectedOptions(answer, options);
     }
 
     private void validateCanAccess(StudentAnswer answer) {
         User currentUser = currentUserService.getCurrentUser();
         boolean isPrivileged = currentUser.getRoles().stream()
-                .map(role -> role.getRoleName())
+                .map(Role::getRoleName)
                 .anyMatch(roleName -> roleName == RoleName.ROLE_ADMIN || roleName == RoleName.ROLE_TEACHER);
         if (isPrivileged) {
             return;

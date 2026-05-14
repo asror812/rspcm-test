@@ -30,6 +30,8 @@ public class ProfileService {
     private final TeacherProfileRepository teacherProfileRepository;
     private final UserRepository userRepository;
     private final SubjectRepository subjectRepository;
+    private final StudentProfileMapper studentProfileMapper;
+    private final TeacherProfileMapper teacherProfileMapper;
 
     public StudentProfile getStudentProfile(Long userId) {
         return studentProfileRepository.findByUserId(userId)
@@ -37,7 +39,7 @@ public class ProfileService {
     }
 
     public StudentProfileResponse getStudentProfileResponse(Long userId) {
-        return StudentProfileMapper.toResponse(studentProfileRepository.findByUserId(userId)
+        return studentProfileMapper.toResponse(studentProfileRepository.findByUserId(userId)
                 .orElseThrow(() -> new NotFoundException("Student profile topilmadi: " + userId)));
     }
 
@@ -47,7 +49,7 @@ public class ProfileService {
     }
 
     public TeacherProfileResponse getTeacherProfileResponse(Long userId) {
-        return TeacherProfileMapper.toResponse(teacherProfileRepository.findByUserId(userId)
+        return teacherProfileMapper.toResponse(teacherProfileRepository.findByUserId(userId)
                 .orElseThrow(() -> new NotFoundException("Teacher profile topilmadi: " + userId)));
     }
 
@@ -55,30 +57,30 @@ public class ProfileService {
     public StudentProfile updateStudentProfile(Long userId, StudentProfileUpdateRequest request) {
         StudentProfile profile = studentProfileRepository.findByUserId(userId)
                 .orElseGet(() -> studentProfileRepository.save(StudentProfile.builder().user(getUser(userId)).build()));
-        StudentProfileMapper.updateEntity(profile, request);
+        studentProfileMapper.updateEntity(profile, request);
         return studentProfileRepository.save(profile);
     }
 
     public StudentProfileResponse updateStudentProfileResponse(Long userId, StudentProfileUpdateRequest request) {
         StudentProfile profile = studentProfileRepository.findByUserId(userId)
                 .orElseGet(() -> studentProfileRepository.save(StudentProfile.builder().user(getUser(userId)).build()));
-        StudentProfileMapper.updateEntity(profile, request);
-        return StudentProfileMapper.toResponse(studentProfileRepository.save(profile));
+        studentProfileMapper.updateEntity(profile, request);
+        return studentProfileMapper.toResponse(studentProfileRepository.save(profile));
     }
 
     @Transactional
     public TeacherProfile updateTeacherProfile(Long userId, TeacherProfileUpdateRequest request) {
         TeacherProfile profile = teacherProfileRepository.findByUserId(userId)
                 .orElseGet(() -> teacherProfileRepository.save(TeacherProfile.builder().user(getUser(userId)).build()));
-        TeacherProfileMapper.updateEntity(profile, request, resolveSubjects(request.teachingSubjectIds()));
+        teacherProfileMapper.updateEntity(profile, request, resolveSubjects(request.teachingSubjectIds()));
         return teacherProfileRepository.save(profile);
     }
 
     public TeacherProfileResponse updateTeacherProfileResponse(Long userId, TeacherProfileUpdateRequest request) {
         TeacherProfile profile = teacherProfileRepository.findByUserId(userId)
                 .orElseGet(() -> teacherProfileRepository.save(TeacherProfile.builder().user(getUser(userId)).build()));
-        TeacherProfileMapper.updateEntity(profile, request, resolveSubjects(request.teachingSubjectIds()));
-        return TeacherProfileMapper.toResponse(teacherProfileRepository.save(profile));
+        teacherProfileMapper.updateEntity(profile, request, resolveSubjects(request.teachingSubjectIds()));
+        return teacherProfileMapper.toResponse(teacherProfileRepository.save(profile));
     }
 
     private User getUser(Long userId) {

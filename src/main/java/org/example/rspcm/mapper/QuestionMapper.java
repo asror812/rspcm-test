@@ -7,33 +7,36 @@ import org.example.rspcm.model.entity.Question;
 import org.example.rspcm.model.entity.QuestionOption;
 import org.example.rspcm.model.entity.Subject;
 import org.example.rspcm.model.entity.User;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public final class QuestionMapper {
-    private QuestionMapper() {
-    }
+@Component
+@RequiredArgsConstructor
+public class QuestionMapper {
+    private final SummaryMapper summaryMapper;
 
-    public static QuestionResponse toResponse(Question question) {
+    public QuestionResponse toResponse(Question question) {
         List<QuestionOptionResponse> options = question.getOptions() == null ? List.of() : question.getOptions().stream()
-                .map(QuestionMapper::toOptionResponse)
+                .map(this::toOptionResponse)
                 .toList();
         return new QuestionResponse(
                 question.getId(),
                 question.getText(),
                 question.getType(),
-                SummaryMapper.toSubjectSummary(question.getSubject()),
-                SummaryMapper.toUserSummary(question.getCreatedBy()),
+                summaryMapper.toSubjectSummary(question.getSubject()),
+                summaryMapper.toUserSummary(question.getCreatedBy()),
                 options
         );
     }
 
-    public static QuestionOptionResponse toOptionResponse(QuestionOption option) {
+    public QuestionOptionResponse toOptionResponse(QuestionOption option) {
         return new QuestionOptionResponse(option.getId(), option.getText(), option.isCorrect(), option.getOrderIndex());
     }
 
-    public static Question toEntity(QuestionRequest request, Subject subject, User createdBy) {
+    public Question toEntity(QuestionRequest request, Subject subject, User createdBy) {
         Question question = Question.builder()
                 .text(request.text())
                 .type(request.type())
@@ -45,14 +48,14 @@ public final class QuestionMapper {
         return question;
     }
 
-    public static void updateEntity(Question question, QuestionRequest request, Subject subject) {
+    public void updateEntity(Question question, QuestionRequest request, Subject subject) {
         question.setText(request.text());
         question.setType(request.type());
         question.setSubject(subject);
         applyOptions(question, request);
     }
 
-    public static void applyOptions(Question question, QuestionRequest request) {
+    public void applyOptions(Question question, QuestionRequest request) {
         question.getOptions().clear();
         if (request.options() == null || request.options().isEmpty()) {
             return;
