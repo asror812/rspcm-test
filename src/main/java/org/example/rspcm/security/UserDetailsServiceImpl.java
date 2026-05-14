@@ -37,10 +37,6 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                 .authorities(user.getRoles().stream()
                         .map(role -> new SimpleGrantedAuthority(role.getName()))
                         .toList())
-                .accountExpired(false)
-                .accountLocked(false)
-                .credentialsExpired(false)
-                .disabled(!user.isEnabled())
                 .build();
     }
 

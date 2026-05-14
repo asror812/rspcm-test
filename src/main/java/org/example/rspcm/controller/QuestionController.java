@@ -2,12 +2,14 @@ package org.example.rspcm.controller;
 
 import org.example.rspcm.dto.question.QuestionRequest;
 import org.example.rspcm.dto.question.QuestionResponse;
+import org.example.rspcm.model.entity.User;
 import org.example.rspcm.service.QuestionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,8 +43,10 @@ public class QuestionController {
 
     @GetMapping("/own/by-subject")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
-    public ResponseEntity<List<QuestionResponse>> getOwnBySubject(@RequestParam Long subjectId) {
-        return ResponseEntity.ok(questionService.findOwnCreatedBySubjectResponse(subjectId));
+    public ResponseEntity<List<QuestionResponse>> getOwnBySubject(
+            @RequestParam Long subjectId,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(questionService.findOwnCreatedBySubjectResponse(user, subjectId));
     }
 
     @GetMapping("/{id}")
@@ -53,8 +57,11 @@ public class QuestionController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
-    public ResponseEntity<QuestionResponse> create(@Valid @RequestBody QuestionRequest request) {
-        return ResponseEntity.ok(questionService.createResponse(request));
+    public ResponseEntity<QuestionResponse> create(
+            @Valid @RequestBody QuestionRequest request,
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(questionService.createResponse(request, user));
     }
 
     @PutMapping("/{id}")

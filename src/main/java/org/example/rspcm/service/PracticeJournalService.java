@@ -12,6 +12,8 @@ import org.example.rspcm.repository.PracticeJournalRepository;
 import org.example.rspcm.repository.PracticeRepository;
 import org.example.rspcm.repository.PracticeTeamRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,16 +28,15 @@ public class PracticeJournalService {
     private final PracticeLogbookEntryRepository entryRepository;
     private final PracticeRepository practiceRepository;
     private final PracticeTeamRepository teamRepository;
-    private final CurrentUserService currentUserService;
     private final PracticeJournalMapper practiceJournalMapper;
 
     public List<PracticeLogbook> findMine() {
-        User student = currentUserService.getCurrentUser();
+        User student = currentUser();
         return journalRepository.findByStudentId(student.getId());
     }
 
     public List<PracticeJournalResponse> findMineResponse() {
-        User student = currentUserService.getCurrentUser();
+        User student = currentUser();
         return journalRepository.findByStudentId(student.getId()).stream().map(practiceJournalMapper::toResponse).toList();
     }
 
@@ -49,7 +50,7 @@ public class PracticeJournalService {
 
     @Transactional
     public PracticeLogbook submit(PracticeJournalRequest request) {
-        User student = currentUserService.getCurrentUser();
+        User student = currentUser();
         PracticalTask practicalTask = practiceRepository.findById(request.practiceId())
                 .orElseThrow(() -> new NotFoundException("PracticalTask topilmadi: " + request.practiceId()));
 
@@ -92,7 +93,7 @@ public class PracticeJournalService {
     }
 
     public PracticeJournalResponse submitResponse(PracticeJournalRequest request) {
-        User student = currentUserService.getCurrentUser();
+        User student = currentUser();
         PracticalTask practicalTask = practiceRepository.findById(request.practiceId())
                 .orElseThrow(() -> new NotFoundException("PracticalTask topilmadi: " + request.practiceId()));
 
@@ -133,5 +134,10 @@ public class PracticeJournalService {
         PracticeLogbook reloaded = journalRepository.findById(savedLogbook.getId())
                 .orElseThrow(() -> new NotFoundException("Logbook topilmadi: " + savedLogbook.getId()));
         return practiceJournalMapper.toResponse(reloaded);
+    }
+
+    private User currentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return (User) authentication.getPrincipal();
     }
 }

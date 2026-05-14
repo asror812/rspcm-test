@@ -18,6 +18,8 @@ import org.example.rspcm.mapper.ExamMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,12 +36,11 @@ public class ExamService {
     private final SubjectRepository subjectRepository;
     private final PracticeRepository practiceRepository;
     private final UserRepository userRepository;
-    private final CurrentUserService currentUserService;
     private final ExamMapper examMapper;
 
 
     public Page<ExamResponse> findAll(String query, ExamType examType, boolean own, Long subjectId, Pageable pageable) {
-        User user = currentUserService.getCurrentUser();
+        User user = currentUser();
 
         if (isStudent(user)) {
             return examRepository.findStudentExams(user.getId(), examType, subjectId, query, pageable)
@@ -52,7 +53,7 @@ public class ExamService {
 
     public Exam findById(Long id) {
         Exam exam = examRepository.findById(id).orElseThrow(() -> new NotFoundException("Exam topilmadi: " + id));
-        User currentUser = currentUserService.getCurrentUser();
+        User currentUser = currentUser();
         if (!isStudent(currentUser)) {
             return exam;
         }
@@ -73,7 +74,7 @@ public class ExamService {
 
     public ExamResponse findResponseById(Long id) {
         Exam exam = examRepository.findById(id).orElseThrow(() -> new NotFoundException("Exam topilmadi: " + id));
-        User currentUser = currentUserService.getCurrentUser();
+        User currentUser = currentUser();
         if (isStudent(currentUser)) {
 
             boolean assignedByGroup = exam.getGroups().stream()
@@ -91,7 +92,7 @@ public class ExamService {
     }
 
     public List<ExamResponse> findOwnCreated() {
-        return examRepository.findByCreatedById(currentUserService.getCurrentUser().getId())
+        return examRepository.findByCreatedById(currentUser().getId())
                 .stream().map(examMapper::toResponse).toList();
     }
 
@@ -101,7 +102,7 @@ public class ExamService {
                 request,
                 resolveGroups(request.groupIds()),
                 resolveStudents(request.studentIds()),
-                currentUserService.getCurrentUser(),
+                currentUser(),
                 request.subjectId() == null ? null :
                         subjectRepository.findById(request.subjectId()).orElseThrow(
                                 () -> new NotFoundException("Subject topilmadi: " + request.subjectId()))
@@ -157,5 +158,10 @@ public class ExamService {
     private boolean isStudent(User user) {
         return user.getRoles().stream()
                 .anyMatch(role -> role.getRoleName() == RoleName.ROLE_STUDENT);
+    }
+
+    private User currentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return (User) authentication.getPrincipal();
     }
 }

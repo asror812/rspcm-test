@@ -4,13 +4,14 @@ import org.example.rspcm.dto.profile.StudentProfileResponse;
 import org.example.rspcm.dto.profile.StudentProfileUpdateRequest;
 import org.example.rspcm.dto.profile.TeacherProfileResponse;
 import org.example.rspcm.dto.profile.TeacherProfileUpdateRequest;
-import org.example.rspcm.service.CurrentUserService;
+import org.example.rspcm.model.entity.User;
 import org.example.rspcm.service.ProfileService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -24,7 +25,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class ProfileController {
 
     private final ProfileService profileService;
-    private final CurrentUserService currentUserService;
 
     @GetMapping("/students/{userId}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
@@ -41,16 +41,17 @@ public class ProfileController {
 
     @GetMapping("/students/me")
     @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<StudentProfileResponse> myStudentProfile() {
-        Long userId = currentUserService.getCurrentUser().getId();
-        return ResponseEntity.ok(profileService.getStudentProfileResponse(userId));
+    public ResponseEntity<StudentProfileResponse> myStudentProfile(@AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(profileService.getStudentProfileResponse(user.getId()));
     }
 
     @PutMapping("/students/me")
     @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<StudentProfileResponse> updateMyStudentProfile(@Valid @RequestBody StudentProfileUpdateRequest request) {
-        Long userId = currentUserService.getCurrentUser().getId();
-        return ResponseEntity.ok(profileService.updateStudentProfileResponse(userId, request));
+    public ResponseEntity<StudentProfileResponse> updateMyStudentProfile(
+            @AuthenticationPrincipal User user,
+            @Valid @RequestBody StudentProfileUpdateRequest request
+    ) {
+        return ResponseEntity.ok(profileService.updateStudentProfileResponse(user.getId(), request));
     }
 
     @GetMapping("/teachers/{userId}")
@@ -68,15 +69,16 @@ public class ProfileController {
 
     @GetMapping("/teachers/me")
     @PreAuthorize("hasRole('ROLE_TEACHER')")
-    public ResponseEntity<TeacherProfileResponse> myTeacherProfile() {
-        Long userId = currentUserService.getCurrentUser().getId();
-        return ResponseEntity.ok(profileService.getTeacherProfileResponse(userId));
+    public ResponseEntity<TeacherProfileResponse> myTeacherProfile(@AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(profileService.getTeacherProfileResponse(user.getId()));
     }
 
     @PutMapping("/teachers/me")
     @PreAuthorize("hasRole('TEACHER')")
-    public ResponseEntity<TeacherProfileResponse> updateMyTeacherProfile(@Valid @RequestBody TeacherProfileUpdateRequest request) {
-        Long userId = currentUserService.getCurrentUser().getId();
-        return ResponseEntity.ok(profileService.updateTeacherProfileResponse(userId, request));
+    public ResponseEntity<TeacherProfileResponse> updateMyTeacherProfile(
+            @AuthenticationPrincipal User user,
+            @Valid @RequestBody TeacherProfileUpdateRequest request
+    ) {
+        return ResponseEntity.ok(profileService.updateTeacherProfileResponse(user.getId(), request));
     }
 }

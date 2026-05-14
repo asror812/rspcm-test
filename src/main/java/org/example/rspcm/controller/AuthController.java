@@ -2,7 +2,6 @@ package org.example.rspcm.controller;
 
 import org.example.rspcm.dto.auth.AuthResponse;
 import org.example.rspcm.dto.auth.LoginRequest;
-import org.example.rspcm.dto.auth.RegisterRequest;
 import org.example.rspcm.dto.auth.ResendOtpRequest;
 import org.example.rspcm.dto.auth.VerifyOtpRequest;
 import org.example.rspcm.service.AuthService;
@@ -20,11 +19,6 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
-
-    @PostMapping("/register")
-    public ResponseEntity<String> register(@Valid @RequestBody RegisterRequest request) {
-        return ResponseEntity.ok(authService.register(request));
-    }
 
     @PostMapping("/verify-otp")
     public ResponseEntity<Map<String, String>> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {

@@ -13,24 +13,9 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class StudentDashboardService {
 
-    private final CurrentUserService currentUserService;
     private final SubjectRepository subjectRepository;
     private final PracticeRepository practiceRepository;
     private final ExamRepository examRepository;
-
-/*    public StudentDashboardResponse getMyDashboard() {
-        User student = currentUserService.getCurrentUser();
-
-        return new StudentDashboardResponse(
-                subjectRepository.findDistinctByGroupsStudentsId(student.getId()).stream().map(subjectMapper::toResponse).toList(),
-                practiceRepository.findDistinctByGroupsStudentsIdOrTargetStudentsId(student.getId(), student.getId()).stream()
-                        .map(this::toPracticeTask)
-                        .toList(),
-                examRepository.findDistinctByGroupsStudentsIdOrTargetStudentsId(student.getId(), student.getId()).stream()
-                        .map(this::toExamTask)
-                        .toList()
-        );
-    }*/
 
     private StudentTaskItem toPracticeTask(PracticalTask practicalTask) {
         return new StudentTaskItem(practicalTask.getId(), practicalTask.getName(), practicalTask.getDeadline(), "PRACTICE");

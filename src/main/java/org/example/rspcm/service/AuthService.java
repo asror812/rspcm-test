@@ -3,7 +3,6 @@ package org.example.rspcm.service;
 import org.example.rspcm.config.AppProperties;
 import org.example.rspcm.dto.auth.AuthResponse;
 import org.example.rspcm.dto.auth.LoginRequest;
-import org.example.rspcm.dto.auth.RegisterRequest;
 import org.example.rspcm.dto.auth.VerifyOtpRequest;
 import org.example.rspcm.dto.user.UserResponse;
 import org.example.rspcm.exception.ErrorCodes;
@@ -38,37 +37,16 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final OtpVerificationRepository otpRepository;
-    private final RoleService roleService;
-    private final PasswordEncoder passwordEncoder;
 
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final MailService mailService;
     private final AppProperties appProperties;
-    private final UserProfileSyncService userProfileSyncService;
     private final AuthMapper authMapper;
     private final UserMapper userMapper;
     private final Random random = new Random();
     private final UserDetailsService userDetailsService;
-
-    @Transactional
-    public String register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.email())) {
-            throw new ErrorMessageException("Email allaqachon mavjud", ErrorCodes.AlreadyExists);
-        }
-
-        User user = authMapper.toUserEntity(
-                request,
-                passwordEncoder.encode(request.password()),
-                roleService.resolveRoles(request.roles())
-        );
-
-        User saved = userRepository.save(user);
-        userProfileSyncService.sync(saved);
-        sendOtp(request.email());
-
-        return "Ro'yxatdan o'tish yakunlandi. OTP emailingizga yuborildi.";
-    }
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public String resendOtp(String email) {
