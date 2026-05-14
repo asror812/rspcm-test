@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.rspcm.model.entity.User;
 import org.example.rspcm.repository.UserRepository;
 import org.jspecify.annotations.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -49,7 +50,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
                 if (jwtService.isTokenValid(token, userDetails.getUsername())) {
-                    UserDetails user = userDetailsService.loadUserByUsername(userDetails.getUsername());
+                    User user = userRepository.findByEmailAndEnabledTrueAndDeletedFalse(userDetails.getUsername())
+                            .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
 
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             user,
