@@ -26,6 +26,12 @@ public class SubjectController {
 
     private final SubjectService subjectService;
 
+    @GetMapping("/own")
+    @PreAuthorize("hasRole('TEACHER')")
+    public List<SubjectResponse> getOwn() {
+        return subjectService.findOwn();
+    }
+
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
     public List<SubjectResponse> getAll() {

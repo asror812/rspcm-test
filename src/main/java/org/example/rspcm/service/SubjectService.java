@@ -22,10 +22,19 @@ public class SubjectService {
 
     private final SubjectRepository subjectRepository;
     private final UserRepository userRepository;
+    private final CurrentUserService currentUserService;
     private final SubjectMapper subjectMapper;
 
     public List<SubjectResponse> findAll() {
         return subjectRepository.findAll().stream().map(subjectMapper::toResponse).toList();
+    }
+
+    public List<SubjectResponse> findOwn() {
+        Long teacherId = currentUserService.getCurrentUser().getId();
+        return subjectRepository.findDistinctByTeachersId(teacherId)
+                .stream()
+                .map(subjectMapper::toResponse)
+                .toList();
     }
 
     public Subject findById(Long id) {

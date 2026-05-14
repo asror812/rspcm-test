@@ -1,7 +1,10 @@
 package org.example.rspcm.controller;
 
+import org.example.rspcm.dto.group.AdminGroupResponse;
 import org.example.rspcm.dto.group.GroupRequest;
 import org.example.rspcm.dto.group.GroupResponse;
+import org.example.rspcm.dto.group.StudentGroupResponse;
+import org.example.rspcm.dto.group.TeacherGroupResponse;
 import org.example.rspcm.model.entity.User;
 import org.example.rspcm.service.StudyGroupService;
 import jakarta.validation.Valid;
@@ -33,20 +36,26 @@ public class StudyGroupController {
 
     @GetMapping("/own")
     @PreAuthorize("hasAnyRole('TEACHER')")
-    public ResponseEntity<List<GroupResponse>> getOwnGroups(@AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(groupService.findOwnGroupsResponse(user));
+    public ResponseEntity<List<TeacherGroupResponse>> getOwnGroups(@AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(groupService.findOwnTeacherGroups(user));
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
-    public ResponseEntity<List<GroupResponse>> getAll() {
-        return ResponseEntity.ok(groupService.findAll());
+    @PreAuthorize("hasAnyRole('ADMIN')")
+    public ResponseEntity<List<AdminGroupResponse>> getAll() {
+        return ResponseEntity.ok(groupService.findAllForAdmin());
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
-    public ResponseEntity<GroupResponse> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(groupService.findResponseById(id));
+    @PreAuthorize("hasAnyRole('ADMIN')")
+    public ResponseEntity<AdminGroupResponse> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(groupService.findAdminResponseById(id));
+    }
+
+    @GetMapping("/student/own")
+    @PreAuthorize("hasAnyRole('STUDENT')")
+    public ResponseEntity<List<StudentGroupResponse>> getStudentOwnGroups(@AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(groupService.findOwnStudentGroups(user));
     }
 
     @PostMapping

@@ -1,7 +1,10 @@
 package org.example.rspcm.service;
 
+import org.example.rspcm.dto.group.AdminGroupResponse;
 import org.example.rspcm.dto.group.GroupRequest;
 import org.example.rspcm.dto.group.GroupResponse;
+import org.example.rspcm.dto.group.StudentGroupResponse;
+import org.example.rspcm.dto.group.TeacherGroupResponse;
 import org.example.rspcm.exception.ErrorCodes;
 import org.example.rspcm.exception.ErrorMessageException;
 import org.example.rspcm.exception.NotFoundException;
@@ -42,12 +45,20 @@ public class StudyGroupService {
         return groupRepository.findAll().stream().map(groupMapper::toResponse).toList();
     }
 
+    public List<AdminGroupResponse> findAllForAdmin() {
+        return groupRepository.findAll().stream().map(groupMapper::toAdminResponse).toList();
+    }
+
     public StudyGroup findById(Long id) {
         return groupRepository.findById(id).orElseThrow(() -> new NotFoundException("Group topilmadi: " + id));
     }
 
     public GroupResponse findResponseById(Long id) {
         return groupMapper.toResponse(groupRepository.findById(id).orElseThrow(() -> new NotFoundException("Group topilmadi: " + id)));
+    }
+
+    public AdminGroupResponse findAdminResponseById(Long id) {
+        return groupMapper.toAdminResponse(groupRepository.findById(id).orElseThrow(() -> new NotFoundException("Group topilmadi: " + id)));
     }
 
     @Transactional
@@ -151,11 +162,18 @@ public class StudyGroupService {
                 .orElse(null);
     }
 
-    public List<StudyGroup> findOwnGroups(User user) {
-        return groupRepository.findByTeachersId(user.getId());
+    public List<GroupResponse> findOwnGroups(User user) {
+        return groupRepository.findByTeachersId(user.getId()).stream()
+                .map(groupMapper::toResponse).toList();
     }
 
-    public List<GroupResponse> findOwnGroupsResponse(User user) {
-        return groupRepository.findByTeachersId(user.getId()).stream().map(groupMapper::toResponse).toList();
+    public List<TeacherGroupResponse> findOwnTeacherGroups(User user) {
+        return groupRepository.findByTeachersId(user.getId()).stream()
+                .map(groupMapper::toTeacherResponse).toList();
+    }
+
+    public List<StudentGroupResponse> findOwnStudentGroups(User user) {
+        return groupRepository.findByStudentsId(user.getId()).stream()
+                .map(groupMapper::toStudentResponse).toList();
     }
 }

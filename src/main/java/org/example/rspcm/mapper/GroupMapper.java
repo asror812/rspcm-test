@@ -2,9 +2,12 @@ package org.example.rspcm.mapper;
 
 import org.example.rspcm.dto.common.SubjectSummary;
 import org.example.rspcm.dto.common.UserSummary;
+import org.example.rspcm.dto.group.AdminGroupResponse;
 import org.example.rspcm.dto.group.GroupRequest;
-import org.example.rspcm.model.entity.Subject;
 import org.example.rspcm.dto.group.GroupResponse;
+import org.example.rspcm.dto.group.StudentGroupResponse;
+import org.example.rspcm.dto.group.TeacherGroupResponse;
+import org.example.rspcm.model.entity.Subject;
 import org.example.rspcm.model.entity.StudyGroup;
 import org.example.rspcm.model.entity.User;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +26,24 @@ public class GroupMapper {
         Set<UserSummary> teachers = group.getTeachers().stream().map(summaryMapper::toUserSummary).collect(Collectors.toSet());
         Set<UserSummary> students = group.getStudents().stream().map(summaryMapper::toUserSummary).collect(Collectors.toSet());
         return new GroupResponse(group.getId(), group.getName(), group.getDescription(), group.getLanguage(), subjects, teachers, students);
+    }
+
+    public AdminGroupResponse toAdminResponse(StudyGroup group) {
+        Set<SubjectSummary> subjects = group.getSubjects().stream().map(summaryMapper::toSubjectSummary).collect(Collectors.toSet());
+        Set<UserSummary> teachers = group.getTeachers().stream().map(summaryMapper::toUserSummary).collect(Collectors.toSet());
+        Set<UserSummary> students = group.getStudents().stream().map(summaryMapper::toUserSummary).collect(Collectors.toSet());
+        return new AdminGroupResponse(group.getId(), group.getName(), group.getDescription(), group.getLanguage(), subjects, teachers, students);
+    }
+
+    public TeacherGroupResponse toTeacherResponse(StudyGroup group) {
+        Set<UserSummary> students = group.getStudents().stream().map(summaryMapper::toUserSummary).collect(Collectors.toSet());
+        return new TeacherGroupResponse(group.getId(), group.getName(), group.getDescription(), group.getLanguage(), students);
+    }
+
+    public StudentGroupResponse toStudentResponse(StudyGroup group) {
+        Set<SubjectSummary> subjects = group.getSubjects().stream().map(summaryMapper::toSubjectSummary).collect(Collectors.toSet());
+        Set<UserSummary> teachers = group.getTeachers().stream().map(summaryMapper::toUserSummary).collect(Collectors.toSet());
+        return new StudentGroupResponse(group.getId(), group.getName(), group.getDescription(), group.getLanguage(), subjects, teachers);
     }
 
     public StudyGroup toEntity(
