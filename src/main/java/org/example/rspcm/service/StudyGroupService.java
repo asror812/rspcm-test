@@ -41,20 +41,16 @@ public class StudyGroupService {
     private final SubjectRepository subjectRepository;
     private final GroupMapper groupMapper;
 
-    public List<GroupResponse> findAll() {
-        return groupRepository.findAll().stream().map(groupMapper::toResponse).toList();
+    public List<StudyGroup> findAll() {
+        return groupRepository.findAll();
     }
 
     public List<AdminGroupResponse> findAllForAdmin() {
-        return groupRepository.findAll().stream().map(groupMapper::toAdminResponse).toList();
+        return findAll().stream().map(groupMapper::toAdminResponse).toList();
     }
 
     public StudyGroup findById(Long id) {
         return groupRepository.findById(id).orElseThrow(() -> new NotFoundException("Group topilmadi: " + id));
-    }
-
-    public GroupResponse findResponseById(Long id) {
-        return groupMapper.toResponse(groupRepository.findById(id).orElseThrow(() -> new NotFoundException("Group topilmadi: " + id)));
     }
 
     public AdminGroupResponse findAdminResponseById(Long id) {
@@ -162,14 +158,15 @@ public class StudyGroupService {
                 .orElse(null);
     }
 
-    public List<GroupResponse> findOwnGroups(User user) {
-        return groupRepository.findByTeachersId(user.getId()).stream()
-                .map(groupMapper::toResponse).toList();
-    }
-
     public List<TeacherGroupResponse> findOwnTeacherGroups(User user) {
         return groupRepository.findByTeachersId(user.getId()).stream()
                 .map(groupMapper::toTeacherResponse).toList();
+    }
+
+    public TeacherGroupResponse findOwnTeacherGroupById(Long groupId, User user) {
+        StudyGroup group = groupRepository.findByIdAndTeacherId(groupId, user.getId())
+                .orElseThrow(() -> new NotFoundException("Group topilmadi: " + groupId));
+        return groupMapper.toTeacherResponse(group);
     }
 
     public List<StudentGroupResponse> findOwnStudentGroups(User user) {
