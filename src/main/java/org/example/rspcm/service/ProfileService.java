@@ -3,7 +3,10 @@ package org.example.rspcm.service;
 import org.example.rspcm.dto.profile.StudentProfileUpdateRequest;
 import org.example.rspcm.dto.profile.StudentProfileResponse;
 import org.example.rspcm.dto.profile.TeacherProfileResponse;
+import org.example.rspcm.dto.profile.TeacherSelfProfileUpdateRequest;
 import org.example.rspcm.dto.profile.TeacherProfileUpdateRequest;
+import org.example.rspcm.exception.ErrorCodes;
+import org.example.rspcm.exception.ErrorMessageException;
 import org.example.rspcm.exception.NotFoundException;
 import org.example.rspcm.mapper.StudentProfileMapper;
 import org.example.rspcm.mapper.TeacherProfileMapper;
@@ -16,6 +19,7 @@ import org.example.rspcm.repository.StudentProfileRepository;
 import org.example.rspcm.repository.SubjectRepository;
 import org.example.rspcm.repository.TeacherProfileRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +36,7 @@ public class ProfileService {
     private final SubjectRepository subjectRepository;
     private final StudentProfileMapper studentProfileMapper;
     private final TeacherProfileMapper teacherProfileMapper;
+    private final PasswordEncoder passwordEncoder;
 
     public StudentProfile getStudentProfile(Long userId) {
         return studentProfileRepository.findByUserId(userId)
@@ -78,8 +83,28 @@ public class ProfileService {
 
     public TeacherProfileResponse updateTeacherProfileResponse(Long userId, TeacherProfileUpdateRequest request) {
         TeacherProfile profile = teacherProfileRepository.findByUserId(userId)
-                .orElseGet(() -> teacherProfileRepository.save(TeacherProfile.builder().user(getUser(userId)).build()));
+                .orElseGet(() -> teacherProfileRepository.save(
+                        TeacherProfile.builder()
+                                .user(getUser(userId))
+                                .build()));
+
         teacherProfileMapper.updateEntity(profile, request, resolveSubjects(request.teachingSubjectIds()));
+        return teacherProfileMapper.toResponse(teacherProfileRepository.save(profile));
+    }
+
+    @Transactional
+    public TeacherProfileResponse updateMyTeacherProfileResponse(Long userId, TeacherSelfProfileUpdateRequest request) {
+        TeacherProfile profile = teacherProfileRepository.findByUserId(userId)
+                .orElseGet(() -> teacherProfileRepository.save(
+                        TeacherProfile.builder()
+                                .user(getUser(userId))
+                                .build()));
+
+        User user = profile.getUser();
+        updateSelfEditableUserFields(user, request);
+        teacherProfileMapper.updateSelfEditableFields(profile, request.academicDegree(), request.experienceYears());
+
+        userRepository.save(user);
         return teacherProfileMapper.toResponse(teacherProfileRepository.save(profile));
     }
 
@@ -92,5 +117,26 @@ public class ProfileService {
             return new HashSet<>();
         }
         return new HashSet<>(subjectRepository.findAllById(ids));
+    }
+
+    private void updateSelfEditableUserFields(User user, TeacherSelfProfileUpdateRequest request) {
+        if (request.email() != null && !request.email().equals(user.getEmail())) {
+            if (userRepository.existsByEmail(request.email())) {
+                throw new ErrorMessageException("Bu email allaqachon mavjud", ErrorCodes.AlreadyExists);
+            }
+            user.setEmail(request.email());
+        }
+
+        if (request.phoneNumber() != null) {
+            user.setPhoneNumber(request.phoneNumber());
+        }
+
+        if (request.newPassword() != null) {
+            if (request.currentPassword() == null
+                    || !passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
+                throw new ErrorMessageException("Joriy parol noto'g'ri", ErrorCodes.InvalidParams);
+            }
+            user.setPassword(passwordEncoder.encode(request.newPassword()));
+        }
     }
 }

@@ -3,6 +3,7 @@ package org.example.rspcm.controller;
 import org.example.rspcm.dto.profile.StudentProfileResponse;
 import org.example.rspcm.dto.profile.StudentProfileUpdateRequest;
 import org.example.rspcm.dto.profile.TeacherProfileResponse;
+import org.example.rspcm.dto.profile.TeacherSelfProfileUpdateRequest;
 import org.example.rspcm.dto.profile.TeacherProfileUpdateRequest;
 import org.example.rspcm.model.entity.User;
 import org.example.rspcm.service.ProfileService;
@@ -61,14 +62,15 @@ public class ProfileController {
     }
 
     @PutMapping("/teachers/{userId}")
-    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
-    public ResponseEntity<TeacherProfileResponse> updateTeacherProfile(@PathVariable Long userId,
-                                                                       @Valid @RequestBody TeacherProfileUpdateRequest request) {
+    @PreAuthorize("hasAnyRole('ADMIN')")
+    public ResponseEntity<TeacherProfileResponse> updateTeacherProfile(
+            @PathVariable Long userId,
+            @Valid @RequestBody TeacherProfileUpdateRequest request) {
         return ResponseEntity.ok(profileService.updateTeacherProfileResponse(userId, request));
     }
 
     @GetMapping("/teachers/me")
-    @PreAuthorize("hasRole('ROLE_TEACHER')")
+    @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<TeacherProfileResponse> myTeacherProfile(@AuthenticationPrincipal User user) {
         return ResponseEntity.ok(profileService.getTeacherProfileResponse(user.getId()));
     }
@@ -77,8 +79,8 @@ public class ProfileController {
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<TeacherProfileResponse> updateMyTeacherProfile(
             @AuthenticationPrincipal User user,
-            @Valid @RequestBody TeacherProfileUpdateRequest request
+            @Valid @RequestBody TeacherSelfProfileUpdateRequest request
     ) {
-        return ResponseEntity.ok(profileService.updateTeacherProfileResponse(user.getId(), request));
+        return ResponseEntity.ok(profileService.updateMyTeacherProfileResponse(user.getId(), request));
     }
 }

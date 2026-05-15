@@ -30,7 +30,6 @@ import org.example.rspcm.repository.ExamRepository;
 import org.example.rspcm.repository.ExamQuestionRepository;
 import org.example.rspcm.repository.PracticeRepository;
 import org.example.rspcm.service.UserProfileSyncService;
-import org.jspecify.annotations.NonNull;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -62,7 +61,7 @@ public class DataInitializer implements CommandLineRunner {
     private final PasswordEncoder passwordEncoder;
 
     @Override
-    public void run(String @NonNull ... args) {
+    public void run(String ... args) {
         Map<RoleName, Role> roles = Arrays.stream(RoleName.values())
                 .map(roleName -> 
                     roleRepository.findByName(roleName)

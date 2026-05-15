@@ -82,15 +82,14 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest request) {
-
-        UserDetails userDetails = userDetailsService.loadUserByUsername(request.email());
+        UserDetails userDetails = userDetailsService.loadUserByUsername(request.identifier());
 
         if(!passwordEncoder.matches(request.password(), userDetails.getPassword())) {
             throw new ErrorMessageException("Email yoki parol noto'g'ri", ErrorCodes.InvalidParams);
         }
 
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.email(), request.password()));
+                new UsernamePasswordAuthenticationToken(request.identifier(), request.password()));
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 

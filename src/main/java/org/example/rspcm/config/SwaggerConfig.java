@@ -68,12 +68,14 @@ public class SwaggerConfig {
 
     private String generateTeacherToken() {
         Optional<User> existingUser = userRepository.findByEmail("math.teacher@rspcm.local");
-        return existingUser.map(this::toUserDetails).map(jwtService::generateToken).orElse(null);
+        return existingUser.map(this::toUserDetails)
+                .map(jwtService::generateToken).orElse(null);
     }
 
     private String generateAdminToken() {
         Optional<User> existingUser = userRepository.findByEmail("admin@rspcm.local");
-        return existingUser.map(this::toUserDetails).map(jwtService::generateToken).orElse(null);
+        return existingUser.map(this::toUserDetails)
+                .map(jwtService::generateToken).orElse(null);
     }
 
     private UserDetails toUserDetails(User user) {

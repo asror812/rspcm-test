@@ -32,4 +32,9 @@ public class TeacherProfileMapper {
         profile.setExperienceYears(request.experienceYears());
         profile.setTeachingSubjects(subjects);
     }
+
+    public void updateSelfEditableFields(TeacherProfile profile, String academicDegree, Integer experienceYears) {
+        profile.setAcademicDegree(academicDegree);
+        profile.setExperienceYears(experienceYears);
+    }
 }
