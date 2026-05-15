@@ -11,10 +11,8 @@ import org.example.rspcm.exception.NotFoundException;
 import org.example.rspcm.mapper.GroupMapper;
 import org.example.rspcm.model.entity.Subject;
 import org.example.rspcm.model.entity.User;
-import org.example.rspcm.model.entity.StudentProfile;
 import org.example.rspcm.model.entity.StudyGroup;
 import org.example.rspcm.repository.UserRepository;
-import org.example.rspcm.repository.StudentProfileRepository;
 import org.example.rspcm.repository.SubjectRepository;
 import org.example.rspcm.repository.StudyGroupRepository;
 import lombok.RequiredArgsConstructor;
@@ -37,7 +35,6 @@ public class StudyGroupService {
 
     private final StudyGroupRepository groupRepository;
     private final UserRepository userRepository;
-    private final StudentProfileRepository studentProfileRepository;
     private final SubjectRepository subjectRepository;
     private final GroupMapper groupMapper;
 
@@ -153,8 +150,7 @@ public class StudyGroupService {
         if (value.contains("@")) {
             return userRepository.findByEmail(value).orElse(null);
         }
-        return studentProfileRepository.findByStudentNumber(value)
-                .map(StudentProfile::getUser)
+        return userRepository.findByUniversityIdAndEnabledTrueAndDeletedFalse(value)
                 .orElse(null);
     }
 

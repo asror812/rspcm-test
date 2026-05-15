@@ -125,16 +125,16 @@ public class DataInitializer implements CommandLineRunner {
         assignTeacherProfile(teacherPhysics, "MSc", 6, Set.of(physics));
         assignTeacherProfile(teacherProgramming, "MSc", 5, Set.of(programming));
 
-        assignStudentProfile(k1Student1, 1, "K1-1001");
-        assignStudentProfile(k1Student2, 1, "K1-1002");
-        assignStudentProfile(k1Student3, 1, "K1-1003");
-        assignStudentProfile(k1Student4, 1, "K1-1004");
-        assignStudentProfile(k1Student5, 1, "K1-1005");
-        assignStudentProfile(l1Student1, 1, "L1-1001");
-        assignStudentProfile(l1Student2, 1, "L1-1002");
-        assignStudentProfile(l1Student3, 1, "L1-1003");
-        assignStudentProfile(l1Student4, 1, "L1-1004");
-        assignStudentProfile(l1Student5, 1, "L1-1005");
+        assignStudentProfile(k1Student1, 1);
+        assignStudentProfile(k1Student2, 1);
+        assignStudentProfile(k1Student3, 1);
+        assignStudentProfile(k1Student4, 1);
+        assignStudentProfile(k1Student5, 1);
+        assignStudentProfile(l1Student1, 1);
+        assignStudentProfile(l1Student2, 1);
+        assignStudentProfile(l1Student3, 1);
+        assignStudentProfile(l1Student4, 1);
+        assignStudentProfile(l1Student5, 1);
 
         math.setTeachers(Set.of(teacherMath));
         subjectRepository.save(math);
@@ -239,11 +239,10 @@ public class DataInitializer implements CommandLineRunner {
         teacherProfileRepository.save(profile);
     }
 
-    private void assignStudentProfile(User student, Integer course, String studentNumber) {
+    private void assignStudentProfile(User student, Integer course) {
         StudentProfile profile = studentProfileRepository.findByUserId(student.getId())
                 .orElseGet(() -> StudentProfile.builder().user(student).build());
         profile.setCourse(course);
-        profile.setStudentNumber(studentNumber);
         studentProfileRepository.save(profile);
     }
 

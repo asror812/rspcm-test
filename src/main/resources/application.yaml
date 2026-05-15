@@ -3,7 +3,7 @@ spring:
     name: rspcm
 
   profiles:
-    active: local
+    active: prod
 
 springdoc:
   api-docs:
