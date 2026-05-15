@@ -13,6 +13,8 @@ import org.example.rspcm.model.enums.WorkMode;
 import org.example.rspcm.repository.PracticeRepository;
 import org.example.rspcm.mapper.PracticeMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
@@ -24,11 +26,10 @@ import java.util.Set;
 public class PracticeService {
 
     private final PracticeRepository practiceRepository;
-    private final CurrentUserService currentUserService;
     private final PracticeMapper practiceMapper;
 
     public List<PracticeResponse> findAll() {
-        User currentUser = currentUserService.getCurrentUser();
+        User currentUser = currentUser();
         if (!isStudent(currentUser)) {
             return practiceRepository.findAll().stream().map(practiceMapper::toResponse).toList();
         }
@@ -47,7 +48,7 @@ public class PracticeService {
     public PracticalTask findById(Long id) {
         PracticalTask practicalTask = practiceRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("PracticalTask topilmadi: " + id));
-        User currentUser = currentUserService.getCurrentUser();
+        User currentUser = currentUser();
         if (!isStudent(currentUser)) {
             return practicalTask;
         }
@@ -65,7 +66,7 @@ public class PracticeService {
     public PracticeResponse findResponseById(Long id) {
         PracticalTask practicalTask = practiceRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("PracticalTask topilmadi: " + id));
-        User currentUser = currentUserService.getCurrentUser();
+        User currentUser = currentUser();
         if (isStudent(currentUser)) {
             Long studentId = currentUser.getId();
             boolean assigned = practicalTask.getExams() != null && practicalTask.getExams().stream().anyMatch(exam ->
@@ -85,7 +86,7 @@ public class PracticeService {
         PracticalTask practicalTask = practiceMapper.toEntity(
                 request,
                 resolveSubmissionTypes(request.allowedSubmissionTypes()),
-                currentUserService.getCurrentUser()
+                currentUser()
         );
         return practiceRepository.save(practicalTask);
     }
@@ -95,7 +96,7 @@ public class PracticeService {
         PracticalTask practicalTask = practiceMapper.toEntity(
                 request,
                 resolveSubmissionTypes(request.allowedSubmissionTypes()),
-                currentUserService.getCurrentUser()
+                currentUser()
         );
         return practiceMapper.toResponse(practiceRepository.save(practicalTask));
     }
@@ -143,5 +144,10 @@ public class PracticeService {
             return Set.of(SubmissionType.TEXT);
         }
         return requestedTypes;
+    }
+
+    private User currentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return (User) authentication.getPrincipal();
     }
 }

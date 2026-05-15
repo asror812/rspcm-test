@@ -34,12 +34,6 @@ public class StudentProfile {
 
     private Integer course;
 
-    @Column(length = 128)
-    private String studentNumber;
-
     @Column(length = 32)
     private String phoneNumber;
-
-    @Column(length = 512)
-    private String notes;
 }

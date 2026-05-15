@@ -6,8 +6,6 @@ public record StudentProfileResponse(
         Long id,
         UserSummary user,
         Integer course,
-        String studentNumber,
-        String phoneNumber,
-        String notes
+        String phoneNumber
 ) {
 }

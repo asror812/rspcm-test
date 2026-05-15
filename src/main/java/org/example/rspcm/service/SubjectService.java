@@ -9,6 +9,8 @@ import org.example.rspcm.model.entity.Subject;
 import org.example.rspcm.repository.UserRepository;
 import org.example.rspcm.repository.SubjectRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,7 +24,6 @@ public class SubjectService {
 
     private final SubjectRepository subjectRepository;
     private final UserRepository userRepository;
-    private final CurrentUserService currentUserService;
     private final SubjectMapper subjectMapper;
 
     public List<SubjectResponse> findAll() {
@@ -30,7 +31,7 @@ public class SubjectService {
     }
 
     public List<SubjectResponse> findOwn() {
-        Long teacherId = currentUserService.getCurrentUser().getId();
+        Long teacherId = currentUser().getId();
         return subjectRepository.findDistinctByTeachersId(teacherId)
                 .stream()
                 .map(subjectMapper::toResponse)
@@ -69,5 +70,10 @@ public class SubjectService {
             return new HashSet<>();
         }
         return new HashSet<>(userRepository.findAllById(ids));
+    }
+
+    private User currentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return (User) authentication.getPrincipal();
     }
 }

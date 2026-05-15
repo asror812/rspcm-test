@@ -16,16 +16,12 @@ public class StudentProfileMapper {
                 profile.getId(),
                 summaryMapper.toUserSummary(profile.getUser()),
                 profile.getCourse(),
-                profile.getStudentNumber(),
-                profile.getPhoneNumber(),
-                profile.getNotes()
+                profile.getPhoneNumber()
         );
     }
 
     public void updateEntity(StudentProfile profile, StudentProfileUpdateRequest request) {
         profile.setCourse(request.course());
-        profile.setStudentNumber(request.studentNumber());
         profile.setPhoneNumber(request.phoneNumber());
-        profile.setNotes(request.notes());
     }
 }

@@ -13,6 +13,8 @@ import org.example.rspcm.repository.AnswerRepository;
 import org.example.rspcm.repository.ExamQuestionRepository;
 import org.example.rspcm.repository.QuestionOptionRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,7 +28,6 @@ public class AnswerService {
     private final AnswerRepository answerRepository;
     private final ExamQuestionRepository examQuestionRepository;
     private final QuestionOptionRepository questionOptionRepository;
-    private final CurrentUserService currentUserService;
     private final AnswerMapper answerMapper;
 
     public List<AnswerResponse> findAll() {
@@ -48,14 +49,14 @@ public class AnswerService {
     }
 
     @Transactional
-    public StudentAnswer create(AnswerRequest request) {
+    public StudentAnswer create(AnswerRequest request, User user) {
         ExamQuestion examQuestion = examQuestionRepository.findById(request.examQuestionId())
                 .orElseThrow(() -> new NotFoundException("ExamQuestion topilmadi: " + request.examQuestionId()));
 
         StudentAnswer answer = answerMapper.toEntity(
                 request,
                 examQuestion,
-                currentUserService.getCurrentUser(),
+                user,
                 LocalDateTime.now()
         );
         applySelectedOptions(answer, request.selectedOptionIds());
@@ -68,7 +69,7 @@ public class AnswerService {
         StudentAnswer answer = answerMapper.toEntity(
                 request,
                 examQuestion,
-                currentUserService.getCurrentUser(),
+                currentUser(),
                 LocalDateTime.now()
         );
         applySelectedOptions(answer, request.selectedOptionIds());
@@ -118,7 +119,7 @@ public class AnswerService {
     }
 
     private void validateCanAccess(StudentAnswer answer) {
-        User currentUser = currentUserService.getCurrentUser();
+        User currentUser = currentUser();
         boolean isPrivileged = currentUser.getRoles().stream()
                 .map(Role::getRoleName)
                 .anyMatch(roleName -> roleName == RoleName.ROLE_ADMIN || roleName == RoleName.ROLE_TEACHER);
@@ -128,5 +129,10 @@ public class AnswerService {
         if (!answer.getStudent().getId().equals(currentUser.getId())) {
             throw new ErrorMessageException("Siz bu javobga kira olmaysiz", ErrorCodes.Forbidden);
         }
+    }
+
+    private User currentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return (User) authentication.getPrincipal();
     }
 }

@@ -20,17 +20,12 @@ public class TeacherGroupController {
     private final StudyGroupService groupService;
 
     @GetMapping
-    public ResponseEntity<List<TeacherGroupResponse>> getOwnGroups(
-            @AuthenticationPrincipal User user
-    ) {
+    public ResponseEntity<List<TeacherGroupResponse>> getOwnGroups(@AuthenticationPrincipal User user) {
         return ResponseEntity.ok(groupService.findOwnTeacherGroups(user));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<TeacherGroupResponse> getOwnGroupById(
-            @PathVariable Long id,
-            @AuthenticationPrincipal User user
-    ) {
+    public ResponseEntity<TeacherGroupResponse> getOwnGroupById(@PathVariable Long id, @AuthenticationPrincipal User user) {
         return ResponseEntity.ok(groupService.findOwnTeacherGroupById(id, user));
     }
 }

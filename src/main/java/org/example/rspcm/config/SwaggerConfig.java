@@ -12,6 +12,8 @@ import org.example.rspcm.repository.UserRepository;
 import org.example.rspcm.security.JwtService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.List;
 import java.util.Optional;
@@ -66,11 +68,27 @@ public class SwaggerConfig {
 
     private String generateTeacherToken() {
         Optional<User> existingUser = userRepository.findByEmail("math.teacher@rspcm.local");
-        return existingUser.map(jwtService::generateToken).orElse(null);
+        return existingUser.map(this::toUserDetails)
+                .map(jwtService::generateToken).orElse(null);
     }
 
     private String generateAdminToken() {
         Optional<User> existingUser = userRepository.findByEmail("admin@rspcm.local");
-        return existingUser.map(jwtService::generateToken).orElse(null);
+        return existingUser.map(this::toUserDetails)
+                .map(jwtService::generateToken).orElse(null);
+    }
+
+    private UserDetails toUserDetails(User user) {
+        return org.springframework.security.core.userdetails.User
+                .withUsername(user.getEmail())
+                .password(user.getPassword())
+                .authorities(user.getRoles().stream()
+                        .map(role -> new SimpleGrantedAuthority(role.getName()))
+                        .toList())
+                .accountExpired(false)
+                .accountLocked(false)
+                .credentialsExpired(false)
+                .disabled(!user.isEnabled())
+                .build();
     }
 }

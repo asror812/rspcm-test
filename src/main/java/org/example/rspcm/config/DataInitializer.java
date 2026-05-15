@@ -30,7 +30,6 @@ import org.example.rspcm.repository.ExamRepository;
 import org.example.rspcm.repository.ExamQuestionRepository;
 import org.example.rspcm.repository.PracticeRepository;
 import org.example.rspcm.service.UserProfileSyncService;
-import org.jspecify.annotations.NonNull;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -62,7 +61,7 @@ public class DataInitializer implements CommandLineRunner {
     private final PasswordEncoder passwordEncoder;
 
     @Override
-    public void run(String @NonNull ... args) {
+    public void run(String ... args) {
         Map<RoleName, Role> roles = Arrays.stream(RoleName.values())
                 .map(roleName -> 
                     roleRepository.findByName(roleName)
@@ -78,26 +77,26 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void seedUsers(Map<RoleName, Role> roles) {
-        createOrUpdateUser("admin@rspcm.local", "System Admin", "123", Set.of(RoleName.ROLE_ADMIN), roles);
+        createOrUpdateUser("admin@rspcm.local", "202400001", "System Admin", "123", Set.of(RoleName.ROLE_ADMIN), roles);
 
         // K1 group students (first five)
-        createOrUpdateUser("k1.anvar.rasulov@rspcm.local", "Anvar Rasulov", "123", Set.of(RoleName.ROLE_STUDENT), roles);
-        createOrUpdateUser("k1.alisher.nazarov@rspcm.local", "Alisher Nazarov", "123", Set.of(RoleName.ROLE_STUDENT), roles);
-        createOrUpdateUser("k1.axror.karimov@rspcm.local", "Axror Karimov", "123", Set.of(RoleName.ROLE_STUDENT), roles);
-        createOrUpdateUser("k1.asror.abdullayeva@rspcm.local", "Asror Abdullayeva", "123", Set.of(RoleName.ROLE_STUDENT), roles);
-        createOrUpdateUser("k1.abror.rahimov@rspcm.local", "Abror Rahimov", "123", Set.of(RoleName.ROLE_STUDENT), roles);
+        createOrUpdateUser("k1.anvar.rasulov@rspcm.local", "202400101", "Anvar Rasulov", "123", Set.of(RoleName.ROLE_STUDENT), roles);
+        createOrUpdateUser("k1.alisher.nazarov@rspcm.local", "202400102", "Alisher Nazarov", "123", Set.of(RoleName.ROLE_STUDENT), roles);
+        createOrUpdateUser("k1.axror.karimov@rspcm.local", "202400103", "Axror Karimov", "123", Set.of(RoleName.ROLE_STUDENT), roles);
+        createOrUpdateUser("k1.asror.abdullayeva@rspcm.local", "202400104", "Asror Abdullayeva", "123", Set.of(RoleName.ROLE_STUDENT), roles);
+        createOrUpdateUser("k1.abror.rahimov@rspcm.local", "202400105", "Abror Rahimov", "123", Set.of(RoleName.ROLE_STUDENT), roles);
 
         // L1 group students (second five)
-        createOrUpdateUser("l1.bahrom.rasulov@rspcm.local", "Bahrom Rasulov", "123", Set.of(RoleName.ROLE_STUDENT), roles);
-        createOrUpdateUser("l1.bahodir.nazarov@rspcm.local", "Bahodir Nazarov", "123", Set.of(RoleName.ROLE_STUDENT), roles);
-        createOrUpdateUser("l1.bobur.karimov@rspcm.local", "Bobur Karimov", "123", Set.of(RoleName.ROLE_STUDENT), roles);
-        createOrUpdateUser("l1.botir.abdullayeva@rspcm.local", "Botir Abdullayeva", "123", Set.of(RoleName.ROLE_STUDENT), roles);
-        createOrUpdateUser("l1.bekzod.rahimov@rspcm.local", "Bekzod Rahimov", "123", Set.of(RoleName.ROLE_STUDENT), roles);
+        createOrUpdateUser("l1.bahrom.rasulov@rspcm.local", "202400201", "Bahrom Rasulov", "123", Set.of(RoleName.ROLE_STUDENT), roles);
+        createOrUpdateUser("l1.bahodir.nazarov@rspcm.local", "202400202", "Bahodir Nazarov", "123", Set.of(RoleName.ROLE_STUDENT), roles);
+        createOrUpdateUser("l1.bobur.karimov@rspcm.local", "202400203", "Bobur Karimov", "123", Set.of(RoleName.ROLE_STUDENT), roles);
+        createOrUpdateUser("l1.botir.abdullayeva@rspcm.local", "202400204", "Botir Abdullayeva", "123", Set.of(RoleName.ROLE_STUDENT), roles);
+        createOrUpdateUser("l1.bekzod.rahimov@rspcm.local", "202400205", "Bekzod Rahimov", "123", Set.of(RoleName.ROLE_STUDENT), roles);
 
         // Subject teachers (three users)
-        createOrUpdateUser("math.teacher@rspcm.local", "Math Teacher", "123", Set.of(RoleName.ROLE_TEACHER), roles);
-        createOrUpdateUser("physics.teacher@rspcm.local", "Physics Teacher", "123", Set.of(RoleName.ROLE_TEACHER), roles);
-        createOrUpdateUser("programming.teacher@rspcm.local", "Programming Teacher", "123", Set.of(RoleName.ROLE_TEACHER), roles);
+        createOrUpdateUser("math.teacher@rspcm.local", "202400301", "Math Teacher", "123", Set.of(RoleName.ROLE_TEACHER), roles);
+        createOrUpdateUser("physics.teacher@rspcm.local", "202400302", "Physics Teacher", "123", Set.of(RoleName.ROLE_TEACHER), roles);
+        createOrUpdateUser("programming.teacher@rspcm.local", "202400303", "Programming Teacher", "123", Set.of(RoleName.ROLE_TEACHER), roles);
     }
 
     private void seedAcademicRelations() {
@@ -126,16 +125,16 @@ public class DataInitializer implements CommandLineRunner {
         assignTeacherProfile(teacherPhysics, "MSc", 6, Set.of(physics));
         assignTeacherProfile(teacherProgramming, "MSc", 5, Set.of(programming));
 
-        assignStudentProfile(k1Student1, 1, "K1-1001");
-        assignStudentProfile(k1Student2, 1, "K1-1002");
-        assignStudentProfile(k1Student3, 1, "K1-1003");
-        assignStudentProfile(k1Student4, 1, "K1-1004");
-        assignStudentProfile(k1Student5, 1, "K1-1005");
-        assignStudentProfile(l1Student1, 1, "L1-1001");
-        assignStudentProfile(l1Student2, 1, "L1-1002");
-        assignStudentProfile(l1Student3, 1, "L1-1003");
-        assignStudentProfile(l1Student4, 1, "L1-1004");
-        assignStudentProfile(l1Student5, 1, "L1-1005");
+        assignStudentProfile(k1Student1, 1);
+        assignStudentProfile(k1Student2, 1);
+        assignStudentProfile(k1Student3, 1);
+        assignStudentProfile(k1Student4, 1);
+        assignStudentProfile(k1Student5, 1);
+        assignStudentProfile(l1Student1, 1);
+        assignStudentProfile(l1Student2, 1);
+        assignStudentProfile(l1Student3, 1);
+        assignStudentProfile(l1Student4, 1);
+        assignStudentProfile(l1Student5, 1);
 
         math.setTeachers(Set.of(teacherMath));
         subjectRepository.save(math);
@@ -198,6 +197,7 @@ public class DataInitializer implements CommandLineRunner {
 
     private void createOrUpdateUser(
             String email,
+            String universityId,
             String fullName,
             String passwordRaw,
             Set<RoleName> roleNames,
@@ -216,6 +216,7 @@ public class DataInitializer implements CommandLineRunner {
 
         user.setFirstName(extractFirstName(fullName));
         user.setLastName(extractLastName(fullName));
+        user.setUniversityId(universityId);
         user.setEnabled(true);
         user.setRoles(new HashSet<>(resolvedRoles));
         User saved = userRepository.save(user);
@@ -238,11 +239,10 @@ public class DataInitializer implements CommandLineRunner {
         teacherProfileRepository.save(profile);
     }
 
-    private void assignStudentProfile(User student, Integer course, String studentNumber) {
+    private void assignStudentProfile(User student, Integer course) {
         StudentProfile profile = studentProfileRepository.findByUserId(student.getId())
                 .orElseGet(() -> StudentProfile.builder().user(student).build());
         profile.setCourse(course);
-        profile.setStudentNumber(studentNumber);
         studentProfileRepository.save(profile);
     }
 

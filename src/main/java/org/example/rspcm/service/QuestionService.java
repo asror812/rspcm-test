@@ -5,6 +5,7 @@ import org.example.rspcm.dto.question.QuestionResponse;
 import org.example.rspcm.exception.NotFoundException;
 import org.example.rspcm.mapper.QuestionMapper;
 import org.example.rspcm.model.entity.Question;
+import org.example.rspcm.model.entity.User;
 import org.example.rspcm.repository.SubjectRepository;
 import org.example.rspcm.repository.QuestionRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +20,6 @@ public class QuestionService {
 
     private final QuestionRepository questionRepository;
     private final SubjectRepository subjectRepository;
-    private final CurrentUserService currentUserService;
     private final QuestionMapper questionMapper;
 
     public List<QuestionResponse> findAll() {
@@ -34,12 +34,12 @@ public class QuestionService {
         return questionRepository.findBySubjectId(subjectId).stream().map(questionMapper::toResponse).toList();
     }
 
-    public List<Question> findOwnCreatedBySubject(Long subjectId) {
-        return questionRepository.findByCreatedByIdAndSubjectId(currentUserService.getCurrentUser().getId(), subjectId);
+    public List<Question> findOwnCreatedBySubject(User user, Long subjectId) {
+        return questionRepository.findByCreatedByIdAndSubjectId(user.getId(), subjectId);
     }
 
-    public List<QuestionResponse> findOwnCreatedBySubjectResponse(Long subjectId) {
-        return questionRepository.findByCreatedByIdAndSubjectId(currentUserService.getCurrentUser().getId(), subjectId)
+    public List<QuestionResponse> findOwnCreatedBySubjectResponse(User user, Long subjectId) {
+        return questionRepository.findByCreatedByIdAndSubjectId(user.getId(), subjectId)
                 .stream().map(questionMapper::toResponse).toList();
     }
 
@@ -53,22 +53,23 @@ public class QuestionService {
     }
 
     @Transactional
-    public Question create(QuestionRequest request) {
+    public Question create(QuestionRequest request, User user) {
         Question question = questionMapper.toEntity(
                 request,
                 subjectRepository.findById(request.subjectId())
                         .orElseThrow(() -> new NotFoundException("Subject topilmadi: " + request.subjectId())),
-                currentUserService.getCurrentUser()
+                user
         );
+
         return questionRepository.save(question);
     }
 
-    public QuestionResponse createResponse(QuestionRequest request) {
+    public QuestionResponse createResponse(QuestionRequest request, User user) {
         Question question = questionMapper.toEntity(
                 request,
                 subjectRepository.findById(request.subjectId())
                         .orElseThrow(() -> new NotFoundException("Subject topilmadi: " + request.subjectId())),
-                currentUserService.getCurrentUser()
+                user
         );
         return questionMapper.toResponse(questionRepository.save(question));
     }
