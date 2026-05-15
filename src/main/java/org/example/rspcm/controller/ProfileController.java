@@ -52,7 +52,7 @@ public class ProfileController {
             @AuthenticationPrincipal User user,
             @Valid @RequestBody StudentProfileUpdateRequest request
     ) {
-        return ResponseEntity.ok(profileService.updateStudentProfileResponse(user.getId(), request));
+        return ResponseEntity.ok(profileService.updateMyStudentProfileResponse(user.getId(), request));
     }
 
     @GetMapping("/teachers/{userId}")
