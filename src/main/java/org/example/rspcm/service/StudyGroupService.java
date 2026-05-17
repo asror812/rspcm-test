@@ -22,6 +22,8 @@ import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -38,12 +40,8 @@ public class StudyGroupService {
     private final SubjectRepository subjectRepository;
     private final GroupMapper groupMapper;
 
-    public List<StudyGroup> findAll() {
-        return groupRepository.findAll();
-    }
-
-    public List<AdminGroupResponse> findAllForAdmin() {
-        return findAll().stream().map(groupMapper::toAdminResponse).toList();
+    public Page<AdminGroupResponse> findAllForAdmin(Pageable pageable) {
+        return groupRepository.findAllBy(pageable).map(groupMapper::toAdminResponse);
     }
 
     public StudyGroup findById(Long id) {

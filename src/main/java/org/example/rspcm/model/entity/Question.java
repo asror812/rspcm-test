@@ -41,4 +41,7 @@ public class Question {
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("orderIndex ASC")
     private List<QuestionOption> options;
+
+    @Builder.Default
+    private boolean deleted = false;
 }

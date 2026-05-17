@@ -1,7 +1,11 @@
 package org.example.rspcm.repository;
 
+import org.example.rspcm.dto.question.QuestionResponse;
 import org.example.rspcm.model.entity.Question;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -9,9 +13,26 @@ import java.util.Optional;
 
 @Repository
 public interface QuestionRepository extends JpaRepository<Question, Long> {
-    List<Question> findBySubjectId(Long subjectId);
-    List<Question> findByCreatedByIdAndSubjectId(Long createdById, Long subjectId);
+    List<Question> findBySubjectIdAndDeletedFalse(Long subjectId);
+    List<Question> findByCreatedByIdAndSubjectIdAndDeletedFalse(Long createdById, Long subjectId);
     long countBySubjectId(Long subjectId);
     boolean existsBySubjectIdAndText(Long subjectId, String text);
     Optional<Question> findBySubjectIdAndText(Long subjectId, String text);
+    Optional<Question> findByIdAndDeletedFalse(Long id);
+
+    @Query("""
+            SELECT q FROM Question q
+            WHERE (:subjectId IS NULL OR q.subject.id = :subjectId)
+                AND q.deleted = false
+    """)
+    Page<Question> findAllBySubjectId(Long subjectId, Pageable pageable);
+
+
+    @Query("""
+        SELECT q FROM Question q
+        WHERE (:subjectId IS NULL OR q.subject.id = :subjectId)
+            AND (:createdBy IS NULL OR q.createdBy.id = :createdBy)
+            AND q.deleted = false
+    """)
+    Page<Question> findAllOwnQuestionsBySubjectId(Long subjectId, Long createdBy, Pageable pageable);
 }

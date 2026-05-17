@@ -332,7 +332,7 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void attachSubjectQuestionsToExam(Exam exam, Subject subject) {
-        List<Question> subjectQuestions = questionRepository.findBySubjectId(subject.getId());
+        List<Question> subjectQuestions = questionRepository.findBySubjectIdAndDeletedFalse(subject.getId());
         Map<Long, ExamQuestion> existingByQuestionId = examQuestionRepository.findByExamId(exam.getId()).stream()
                 .collect(Collectors.toMap(eq -> eq.getQuestion().getId(), eq -> eq));
 
