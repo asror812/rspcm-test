@@ -22,6 +22,7 @@ public class AuthController {
 
     @PostMapping("/verify-otp")
     public ResponseEntity<Map<String, String>> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
+
         return ResponseEntity.ok(Map.of("message", authService.verifyOtp(request)));
     }
 
