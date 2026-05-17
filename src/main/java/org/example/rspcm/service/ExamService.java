@@ -108,11 +108,6 @@ public class ExamService {
         return examMapper.toResponse(exam);
     }
 
-    public List<ExamResponse> findOwnCreated() {
-        return examRepository.findByCreatedById(currentUser().getId())
-                .stream().map(examMapper::toResponse).toList();
-    }
-
     @Transactional
     public ExamResponse create(ExamRequest request) {
         Exam exam = examMapper.toEntity(
