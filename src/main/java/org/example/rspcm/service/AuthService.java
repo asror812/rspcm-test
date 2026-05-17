@@ -4,14 +4,12 @@ import org.example.rspcm.config.AppProperties;
 import org.example.rspcm.dto.auth.AuthResponse;
 import org.example.rspcm.dto.auth.LoginRequest;
 import org.example.rspcm.dto.auth.VerifyOtpRequest;
-import org.example.rspcm.dto.user.UserResponse;
 import org.example.rspcm.exception.ErrorCodes;
 import org.example.rspcm.exception.ErrorMessageException;
 import org.example.rspcm.exception.NotFoundException;
 import org.example.rspcm.model.entity.User;
 import org.example.rspcm.model.entity.OtpVerification;
 import org.example.rspcm.mapper.AuthMapper;
-import org.example.rspcm.mapper.UserMapper;
 import org.example.rspcm.repository.OtpVerificationRepository;
 import org.example.rspcm.repository.UserRepository;
 import org.example.rspcm.security.JwtService;
@@ -43,7 +41,6 @@ public class AuthService {
     private final MailService mailService;
     private final AppProperties appProperties;
     private final AuthMapper authMapper;
-    private final UserMapper userMapper;
     private final Random random = new Random();
     private final UserDetailsService userDetailsService;
     private final PasswordEncoder passwordEncoder;
@@ -114,7 +111,4 @@ public class AuthService {
         mailService.sendOtp(email, code);
     }
 
-    public UserResponse getUser(User user) {
-        return userMapper.toResponse(user);
-    }
 }

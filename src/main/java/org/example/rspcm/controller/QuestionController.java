@@ -7,6 +7,8 @@ import org.example.rspcm.service.QuestionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -21,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -29,24 +32,25 @@ public class QuestionController {
 
     private final QuestionService questionService;
 
-    @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
-    public ResponseEntity<List<QuestionResponse>> getAll() {
-        return ResponseEntity.ok(questionService.findAll());
-    }
-
-    @GetMapping("/by-subject")
-    @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
-    public ResponseEntity<List<QuestionResponse>> getBySubject(@RequestParam Long subjectId) {
-        return ResponseEntity.ok(questionService.findBySubjectResponse(subjectId));
-    }
-
-    @GetMapping("/own/by-subject")
+    @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
-    public ResponseEntity<List<QuestionResponse>> getOwnBySubject(
-            @RequestParam Long subjectId,
-            @AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(questionService.findOwnCreatedBySubjectResponse(user, subjectId));
+    public ResponseEntity<Map<String, String>> create(
+            @Valid @RequestBody QuestionRequest request,
+            @AuthenticationPrincipal User user
+    ) {
+        questionService.create(request, user);
+        return ResponseEntity.ok(Map.of("message", "Savol muvaffaqiyatli yaratildi"));
+    }
+
+    @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    public ResponseEntity<Page<QuestionResponse>> getAll(
+            @RequestParam(required = false) Long subjectId,
+            @RequestParam(required = false, defaultValue = "false") boolean own,
+            Pageable pageable,
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(questionService.findAll(subjectId, own, user, pageable));
     }
 
     @GetMapping("/{id}")
@@ -55,25 +59,20 @@ public class QuestionController {
         return ResponseEntity.ok(questionService.findResponseById(id));
     }
 
-    @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
-    public ResponseEntity<QuestionResponse> create(
-            @Valid @RequestBody QuestionRequest request,
-            @AuthenticationPrincipal User user
-    ) {
-        return ResponseEntity.ok(questionService.createResponse(request, user));
-    }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
-    public ResponseEntity<QuestionResponse> update(@PathVariable Long id, @Valid @RequestBody QuestionRequest request) {
-        return ResponseEntity.ok(questionService.update(id, request));
+    public ResponseEntity<Map<String, String>> update(@PathVariable Long id, @Valid @RequestBody QuestionRequest request) {
+        questionService.update(id, request);
+        return ResponseEntity.ok(Map.of("message", "Savol muvaffaqiyatli yangilandi"));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        questionService.delete(id);
+    public ResponseEntity<Void> delete(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user) {
+        questionService.delete(id, user);
         return ResponseEntity.noContent().build();
     }
 }

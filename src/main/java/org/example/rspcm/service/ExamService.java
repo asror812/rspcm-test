@@ -2,6 +2,8 @@ package org.example.rspcm.service;
 
 import org.example.rspcm.dto.exam.ExamRequest;
 import org.example.rspcm.dto.exam.ExamResponse;
+import org.example.rspcm.exception.ErrorCodes;
+import org.example.rspcm.exception.ErrorMessageException;
 import org.example.rspcm.model.entity.User;
 import org.example.rspcm.exception.NotFoundException;
 import org.example.rspcm.model.entity.Exam;
@@ -9,11 +11,7 @@ import org.example.rspcm.model.entity.PracticalTask;
 import org.example.rspcm.model.entity.StudyGroup;
 import org.example.rspcm.model.enums.ExamType;
 import org.example.rspcm.model.enums.RoleName;
-import org.example.rspcm.repository.UserRepository;
-import org.example.rspcm.repository.ExamRepository;
-import org.example.rspcm.repository.PracticeRepository;
-import org.example.rspcm.repository.StudyGroupRepository;
-import org.example.rspcm.repository.SubjectRepository;
+import org.example.rspcm.repository.*;
 import org.example.rspcm.mapper.ExamMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -23,6 +21,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -37,23 +36,41 @@ public class ExamService {
     private final PracticeRepository practiceRepository;
     private final UserRepository userRepository;
     private final ExamMapper examMapper;
+    private final TeacherProfileRepository teacherProfileRepository;
+    private final ExamQuestionRepository examQuestionRepository;
 
 
     public Page<ExamResponse> findAll(String query, ExamType examType, boolean own, Long subjectId, Pageable pageable) {
         User user = currentUser();
 
-        if (isStudent(user)) {
-            return examRepository.findStudentExams(user.getId(), examType, subjectId, query, pageable)
+        boolean isAdmin = user.getRoles().stream()
+                .anyMatch(role -> role.getRoleName().equals(RoleName.ROLE_ADMIN));
+
+        if (isAdmin) {
+            return examRepository.searchAll(user.getId(), examType, own, subjectId, query, pageable)
                     .map(examMapper::toResponse);
         }
 
-        return examRepository.searchAll(user.getId(), examType, own, subjectId, query, pageable)
+        if (subjectId != null) {
+            throw new ErrorMessageException("Foydalanuvchi  faqat ozining faniga bogliq savollarni olaladi", ErrorCodes.Forbidden);
+        }
+
+        boolean teachesSubject = teacherProfileRepository
+                .existsByUserIdAndTeachingSubjectsId(user.getId(), subjectId);
+
+        if (!teachesSubject) {
+            throw new ErrorMessageException("Foydalanuvchi faqat ozining faniga bogliq savollarni olaladi", ErrorCodes.Forbidden);
+        }
+
+        return examRepository.searchAll(
+                        user.getId(), examType, own, subjectId, query, pageable)
                 .map(examMapper::toResponse);
     }
 
     public Exam findById(Long id) {
         Exam exam = examRepository.findById(id).orElseThrow(() -> new NotFoundException("Exam topilmadi: " + id));
         User currentUser = currentUser();
+
         if (!isStudent(currentUser)) {
             return exam;
         }
@@ -109,6 +126,8 @@ public class ExamService {
         );
 
         Exam save = examRepository.save(exam);
+        normalizeExamByType(save);
+        save = examRepository.save(save);
 
         return examMapper.toResponse(save);
     }
@@ -124,6 +143,7 @@ public class ExamService {
                 request.subjectId() == null ? null : subjectRepository.findById(request.subjectId())
                                                      .orElseThrow(() -> new NotFoundException("Subject topilmadi: " + request.subjectId()))
         );
+        normalizeExamByType(exam);
         return examMapper.toResponse(examRepository.save(exam));
     }
 
@@ -163,5 +183,19 @@ public class ExamService {
     private User currentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return (User) authentication.getPrincipal();
+    }
+
+    private void normalizeExamByType(Exam exam) {
+        if (exam.getType() == ExamType.QUESTION) {
+            exam.setPracticalTasks(new HashSet<>());
+            return;
+        }
+        if (exam.getType() == ExamType.PRACTICAL_TASK) {
+            var examQuestions = examQuestionRepository.findByExamId(exam.getId());
+            if (!examQuestions.isEmpty()) {
+                examQuestionRepository.deleteAll(examQuestions);
+            }
+            exam.setQuestions(new ArrayList<>());
+        }
     }
 }

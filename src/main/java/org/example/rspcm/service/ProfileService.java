@@ -12,10 +12,12 @@ import org.example.rspcm.mapper.StudentProfileMapper;
 import org.example.rspcm.mapper.TeacherProfileMapper;
 import org.example.rspcm.model.entity.User;
 import org.example.rspcm.model.entity.StudentProfile;
+import org.example.rspcm.model.entity.StudyGroup;
 import org.example.rspcm.model.entity.Subject;
 import org.example.rspcm.model.entity.TeacherProfile;
 import org.example.rspcm.repository.UserRepository;
 import org.example.rspcm.repository.StudentProfileRepository;
+import org.example.rspcm.repository.StudyGroupRepository;
 import org.example.rspcm.repository.SubjectRepository;
 import org.example.rspcm.repository.TeacherProfileRepository;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +35,7 @@ public class ProfileService {
     private final StudentProfileRepository studentProfileRepository;
     private final TeacherProfileRepository teacherProfileRepository;
     private final UserRepository userRepository;
+    private final StudyGroupRepository studyGroupRepository;
     private final SubjectRepository subjectRepository;
     private final StudentProfileMapper studentProfileMapper;
     private final TeacherProfileMapper teacherProfileMapper;
@@ -63,10 +66,22 @@ public class ProfileService {
         StudentProfile profile = studentProfileRepository.findByUserId(userId)
                 .orElseGet(() -> studentProfileRepository.save(StudentProfile.builder().user(getUser(userId)).build()));
         studentProfileMapper.updateEntity(profile, request);
+        profile.setGroup(resolveGroup(request.groupId()));
         return studentProfileRepository.save(profile);
     }
 
     public StudentProfileResponse updateStudentProfileResponse(Long userId, StudentProfileUpdateRequest request) {
+        StudentProfile profile = studentProfileRepository.findByUserId(userId)
+                .orElseGet(() -> studentProfileRepository.save(StudentProfile.builder().user(getUser(userId)).build()));
+        studentProfileMapper.updateEntity(profile, request);
+        profile.setGroup(resolveGroup(request.groupId()));
+        return studentProfileMapper.toResponse(studentProfileRepository.save(profile));
+    }
+
+    public StudentProfileResponse updateMyStudentProfileResponse(Long userId, StudentProfileUpdateRequest request) {
+        if (request.groupId() != null) {
+            throw new ErrorMessageException("Talaba o'z guruhini o'zgartira olmaydi", ErrorCodes.InvalidParams);
+        }
         StudentProfile profile = studentProfileRepository.findByUserId(userId)
                 .orElseGet(() -> studentProfileRepository.save(StudentProfile.builder().user(getUser(userId)).build()));
         studentProfileMapper.updateEntity(profile, request);
@@ -102,7 +117,6 @@ public class ProfileService {
 
         User user = profile.getUser();
         updateSelfEditableUserFields(user, request);
-        teacherProfileMapper.updateSelfEditableFields(profile, request.academicDegree(), request.experienceYears());
 
         userRepository.save(user);
         return teacherProfileMapper.toResponse(teacherProfileRepository.save(profile));
@@ -117,6 +131,14 @@ public class ProfileService {
             return new HashSet<>();
         }
         return new HashSet<>(subjectRepository.findAllById(ids));
+    }
+
+    private StudyGroup resolveGroup(Long groupId) {
+        if (groupId == null) {
+            return null;
+        }
+        return studyGroupRepository.findById(groupId)
+                .orElseThrow(() -> new NotFoundException("Group topilmadi: " + groupId));
     }
 
     private void updateSelfEditableUserFields(User user, TeacherSelfProfileUpdateRequest request) {

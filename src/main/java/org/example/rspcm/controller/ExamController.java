@@ -22,7 +22,7 @@ public class ExamController {
     private final ExamService examService;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<Page<ExamResponse>> getAll(
             @RequestParam(required = false) String query,
             @RequestParam(required = false) ExamType type,
@@ -36,7 +36,7 @@ public class ExamController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<ExamResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(examService.findResponseById(id));
     }

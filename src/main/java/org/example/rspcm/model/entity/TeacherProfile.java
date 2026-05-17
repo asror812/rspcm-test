@@ -40,8 +40,6 @@ public class TeacherProfile {
     @Column(length = 128)
     private String academicDegree;
 
-    private Integer experienceYears;
-
     @Builder.Default
     @ManyToMany
     @JoinTable(

@@ -9,7 +9,6 @@ public record TeacherProfileResponse(
         Long id,
         UserSummary user,
         String academicDegree,
-        Integer experienceYears,
         Set<SubjectSummary> teachingSubjects
 ) {
 }

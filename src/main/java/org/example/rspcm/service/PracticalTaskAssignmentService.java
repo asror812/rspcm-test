@@ -6,6 +6,9 @@ import org.example.rspcm.exception.NotFoundException;
 import org.example.rspcm.mapper.PracticalTaskAssignmentMapper;
 import org.example.rspcm.model.entity.PracticalTaskAssignment;
 import org.example.rspcm.model.enums.PracticalTaskAssignmentStatus;
+import org.example.rspcm.model.enums.ExamType;
+import org.example.rspcm.exception.ErrorCodes;
+import org.example.rspcm.exception.ErrorMessageException;
 import org.example.rspcm.repository.ExamRepository;
 import org.example.rspcm.repository.PracticalTaskAssignmentRepository;
 import org.example.rspcm.repository.PracticeRepository;
@@ -45,6 +48,7 @@ public class PracticalTaskAssignmentService {
 
     @Transactional
     public PracticalTaskAssignment create(PracticalTaskAssignmentRequest request) {
+        validateExamTypeForPracticalTask(request.examId());
         PracticalTaskAssignment assignment = practicalTaskAssignmentMapper.toEntity(
                 request,
                 examRepository.findById(request.examId())
@@ -61,6 +65,7 @@ public class PracticalTaskAssignmentService {
     }
 
     public PracticalTaskAssignmentResponse createResponse(PracticalTaskAssignmentRequest request) {
+        validateExamTypeForPracticalTask(request.examId());
         PracticalTaskAssignment assignment = practicalTaskAssignmentMapper.toEntity(
                 request,
                 examRepository.findById(request.examId())
@@ -78,6 +83,7 @@ public class PracticalTaskAssignmentService {
 
     @Transactional
     public PracticalTaskAssignmentResponse update(Long id, PracticalTaskAssignmentRequest request) {
+        validateExamTypeForPracticalTask(request.examId());
         PracticalTaskAssignment assignment = findById(id);
         practicalTaskAssignmentMapper.updateEntity(
                 assignment,
@@ -100,5 +106,13 @@ public class PracticalTaskAssignmentService {
     @Transactional
     public void delete(Long id) {
         assignmentRepository.delete(findById(id));
+    }
+
+    private void validateExamTypeForPracticalTask(Long examId) {
+        var exam = examRepository.findById(examId)
+                .orElseThrow(() -> new NotFoundException("Exam topilmadi: " + examId));
+        if (exam.getType() != ExamType.PRACTICAL_TASK) {
+            throw new ErrorMessageException("Faqat PRACTICAL_TASK turidagi imtihonga amaliy topshiriq biriktirish mumkin", ErrorCodes.BadRequest);
+        }
     }
 }

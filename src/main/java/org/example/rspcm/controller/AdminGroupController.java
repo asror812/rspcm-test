@@ -6,13 +6,14 @@ import org.example.rspcm.dto.group.AdminGroupResponse;
 import org.example.rspcm.dto.group.GroupRequest;
 import org.example.rspcm.dto.group.GroupResponse;
 import org.example.rspcm.service.StudyGroupService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -24,8 +25,8 @@ public class AdminGroupController {
     private final StudyGroupService groupService;
 
     @GetMapping
-    public ResponseEntity<List<AdminGroupResponse>> getAll() {
-        return ResponseEntity.ok(groupService.findAllForAdmin());
+    public ResponseEntity<Page<AdminGroupResponse>> getAll(Pageable pageable) {
+        return ResponseEntity.ok(groupService.findAllForAdmin(pageable));
     }
 
     @GetMapping("/{id}")

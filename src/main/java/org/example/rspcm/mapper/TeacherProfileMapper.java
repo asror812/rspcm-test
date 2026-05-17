@@ -22,19 +22,11 @@ public class TeacherProfileMapper {
                 profile.getId(),
                 summaryMapper.toUserSummary(profile.getUser()),
                 profile.getAcademicDegree(),
-                profile.getExperienceYears(),
                 subjects
         );
     }
 
     public void updateEntity(TeacherProfile profile, TeacherProfileUpdateRequest request, Set<Subject> subjects) {
-        profile.setAcademicDegree(request.academicDegree());
-        profile.setExperienceYears(request.experienceYears());
         profile.setTeachingSubjects(subjects);
-    }
-
-    public void updateSelfEditableFields(TeacherProfile profile, String academicDegree, Integer experienceYears) {
-        profile.setAcademicDegree(academicDegree);
-        profile.setExperienceYears(experienceYears);
     }
 }

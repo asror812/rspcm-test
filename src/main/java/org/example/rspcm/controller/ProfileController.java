@@ -34,7 +34,7 @@ public class ProfileController {
     }
 
     @PutMapping("/students/{userId}")
-    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<StudentProfileResponse> updateStudentProfile(@PathVariable Long userId,
                                                                        @Valid @RequestBody StudentProfileUpdateRequest request) {
         return ResponseEntity.ok(profileService.updateStudentProfileResponse(userId, request));
@@ -52,7 +52,7 @@ public class ProfileController {
             @AuthenticationPrincipal User user,
             @Valid @RequestBody StudentProfileUpdateRequest request
     ) {
-        return ResponseEntity.ok(profileService.updateStudentProfileResponse(user.getId(), request));
+        return ResponseEntity.ok(profileService.updateMyStudentProfileResponse(user.getId(), request));
     }
 
     @GetMapping("/teachers/{userId}")

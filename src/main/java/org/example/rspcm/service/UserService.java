@@ -11,6 +11,8 @@ import org.example.rspcm.model.entity.User;
 import org.example.rspcm.mapper.UserMapper;
 import org.example.rspcm.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,8 +30,8 @@ public class UserService {
     private final UserProfileSyncService userProfileSyncService;
     private final UserMapper userMapper;
 
-    public List<UserResponse> findAll() {
-        return userRepository.findAll().stream().map(userMapper::toResponse).toList();
+    public Page<UserResponse> findAll(Pageable pageable) {
+        return userRepository.findAllBy(pageable).map(userMapper::toResponse);
     }
 
     public User findById(Long id) {
@@ -40,30 +42,17 @@ public class UserService {
         return userMapper.toResponse(userRepository.findById(id).orElseThrow(() -> new NotFoundException("User topilmadi: " + id)));
     }
 
-    @Transactional
-    public User create(UserCreateRequest request) {
-        if (userRepository.existsByEmail(request.email())) {
-            throw new ErrorMessageException("Email allaqachon mavjud", ErrorCodes.AlreadyExists);
-        }
-        User user = userMapper.toEntity(
-                request,
-                passwordEncoder.encode(request.password()),
-                roleService.resolveRoles(request.roles())
-        );
-        User saved = userRepository.save(user);
-        userProfileSyncService.sync(saved);
-        return saved;
-    }
-
     public UserResponse createResponse(UserCreateRequest request) {
         if (userRepository.existsByEmail(request.email())) {
             throw new ErrorMessageException("Email allaqachon mavjud", ErrorCodes.AlreadyExists);
         }
+
         User user = userMapper.toEntity(
                 request,
                 passwordEncoder.encode(request.password()),
                 roleService.resolveRoles(request.roles())
         );
+
         User saved = userRepository.save(user);
         userProfileSyncService.sync(saved);
         return userMapper.toResponse(saved);

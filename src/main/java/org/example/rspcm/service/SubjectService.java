@@ -1,14 +1,18 @@
 package org.example.rspcm.service;
 
+import org.example.rspcm.dto.common.SubjectSummary;
 import org.example.rspcm.dto.subject.SubjectRequest;
 import org.example.rspcm.dto.subject.SubjectResponse;
 import org.example.rspcm.exception.NotFoundException;
+import org.example.rspcm.mapper.SummaryMapper;
 import org.example.rspcm.mapper.SubjectMapper;
 import org.example.rspcm.model.entity.User;
 import org.example.rspcm.model.entity.Subject;
 import org.example.rspcm.repository.UserRepository;
 import org.example.rspcm.repository.SubjectRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -25,27 +29,27 @@ public class SubjectService {
     private final SubjectRepository subjectRepository;
     private final UserRepository userRepository;
     private final SubjectMapper subjectMapper;
+    private final SummaryMapper summaryMapper;
 
-    public List<SubjectResponse> findAll() {
-        return subjectRepository.findAll().stream().map(subjectMapper::toResponse).toList();
+    public Page<SubjectResponse> findAll(Pageable pageable) {
+        return subjectRepository.findAllBy(pageable).map(subjectMapper::toResponse);
     }
 
-    public List<SubjectResponse> findOwn() {
+    public List<SubjectSummary> findOwnSummaries() {
         Long teacherId = currentUser().getId();
         return subjectRepository.findDistinctByTeachersId(teacherId)
                 .stream()
-                .map(subjectMapper::toResponse)
+                .map(summaryMapper::toSubjectSummary)
                 .toList();
     }
 
     public Subject findById(Long id) {
-        return subjectRepository.findById(id).orElseThrow(() -> new NotFoundException("Subject topilmadi: " + id));
+        return subjectRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Subject topilmadi: " + id));
     }
 
-    @Transactional
-    public Subject create(SubjectRequest request) {
-        Subject subject = subjectMapper.toEntity(request, resolveUsers(request.teacherIds()));
-        return subjectRepository.save(subject);
+    public SubjectResponse findByIdResponse(Long id) {
+        return subjectMapper.toResponse(findById(id));
     }
 
     public SubjectResponse createResponse(SubjectRequest request) {
