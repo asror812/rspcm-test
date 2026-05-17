@@ -22,9 +22,10 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     @Query("""
             SELECT q FROM Question q
             WHERE (:subjectId IS NULL OR q.subject.id = :subjectId)
+                AND (:createdById IS NULL OR q.createdBy.id = :createdById)
                 AND q.deleted = false
     """)
-    Page<Question> findAllBySubjectId(Long subjectId, Pageable pageable);
+    Page<Question> searchAll(Long subjectId, Long createdById, Pageable pageable);
 
 
     @Query("""

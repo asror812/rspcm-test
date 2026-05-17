@@ -40,6 +40,9 @@ public class Exam {
 
     private Integer maxScore;
 
+    @Column(nullable = false)
+    private Integer itemLimit;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ExamType type;

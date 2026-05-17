@@ -336,6 +336,7 @@ public class DataInitializer implements CommandLineRunner {
         exam.setType(examType);
         exam.setStatus(ExamStatus.READY);
         exam.setMaxScore(100);
+        exam.setItemLimit(10);
         exam.setStartAt(LocalDateTime.now().plusDays(1));
         exam.setEndAt(LocalDateTime.now().plusDays(8));
         exam.setGroups(new HashSet<>(groups));

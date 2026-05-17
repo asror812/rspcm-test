@@ -13,6 +13,7 @@ public record ExamRequest(
         @NotNull @FutureOrPresent LocalDateTime startAt,
         @NotNull @Future LocalDateTime endAt,
         @NotNull @Positive Integer maxScore,
+        @NotNull @Positive Integer itemLimit,
 
         @NotNull ExamType type,
         Set<Long> groupIds,

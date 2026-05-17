@@ -8,7 +8,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -46,14 +48,16 @@ public class QuestionController {
     public ResponseEntity<Page<QuestionResponse>> getAll(
             @RequestParam(required = false) Long subjectId,
             @RequestParam(required = false, defaultValue = "false") boolean own,
-            Pageable pageable,
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "10") int size,
             @AuthenticationPrincipal User user
     ) {
+        Pageable pageable = PageRequest.of(page, size);
         return ResponseEntity.ok(questionService.findAll(subjectId, own, user, pageable));
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<QuestionResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(questionService.findResponseById(id));
     }
@@ -61,8 +65,11 @@ public class QuestionController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
-    public ResponseEntity<Map<String, String>> update(@PathVariable Long id, @Valid @RequestBody QuestionRequest request) {
-        questionService.update(id, request);
+    public ResponseEntity<Map<String, String>> update(
+            @PathVariable Long id,
+            @Valid @RequestBody QuestionRequest request,
+            @AuthenticationPrincipal User user) {
+        questionService.update(id, request, user);
         return ResponseEntity.ok(Map.of("message", "Savol muvaffaqiyatli yangilandi"));
     }
 

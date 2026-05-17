@@ -7,7 +7,9 @@ import org.example.rspcm.exception.ErrorMessageException;
 import org.example.rspcm.exception.NotFoundException;
 import org.example.rspcm.mapper.QuestionMapper;
 import org.example.rspcm.model.entity.Question;
+import org.example.rspcm.model.entity.Subject;
 import org.example.rspcm.model.entity.User;
+import org.example.rspcm.model.enums.RoleName;
 import org.example.rspcm.repository.QuestionRepository;
 import org.example.rspcm.repository.SubjectRepository;
 import lombok.RequiredArgsConstructor;
@@ -30,41 +32,6 @@ public class QuestionService {
     private final QuestionMapper questionMapper;
     private final TeacherProfileRepository teacherProfileRepository;
 
-    public Page<QuestionResponse> findAll(Long subjectId, boolean own, User createdBy, Pageable pageable) {
-        if (own) {
-            return questionRepository.findAllOwnQuestionsBySubjectId(subjectId, createdBy.getId(), pageable)
-                    .map(questionMapper::toResponse);
-        }
-        return questionRepository.findAllBySubjectId(subjectId, pageable).map(questionMapper::toResponse);
-    }
-
-    public List<Question> findBySubject(Long subjectId) {
-        return questionRepository.findBySubjectIdAndDeletedFalse(subjectId);
-    }
-
-    public List<QuestionResponse> findBySubjectResponse(Long subjectId) {
-        return questionRepository.findBySubjectIdAndDeletedFalse(subjectId).stream().map(questionMapper::toResponse).toList();
-    }
-
-    public List<Question> findOwnCreatedBySubject(User user, Long subjectId) {
-        return questionRepository.findByCreatedByIdAndSubjectIdAndDeletedFalse(user.getId(), subjectId);
-    }
-
-    public List<QuestionResponse> findOwnCreatedBySubjectResponse(User user, Long subjectId) {
-        return questionRepository.findByCreatedByIdAndSubjectIdAndDeletedFalse(user.getId(), subjectId)
-                .stream().map(questionMapper::toResponse).toList();
-    }
-
-    public Question findById(Long id) {
-        return questionRepository.findByIdAndDeletedFalse(id)
-                .orElseThrow(() -> new NotFoundException("Question topilmadi: " + id));
-    }
-
-    public QuestionResponse findResponseById(Long id) {
-        return questionMapper.toResponse(questionRepository.findByIdAndDeletedFalse(id)
-                .orElseThrow(() -> new NotFoundException("Question topilmadi: " + id)));
-    }
-
     @Transactional
     public Question create(QuestionRequest request, User user) {
         boolean isAdmin = user.getRoles().stream()
@@ -82,6 +49,9 @@ public class QuestionService {
             return question;
         }
 
+        Subject subject = subjectRepository.findById(request.subjectId())
+                .orElseThrow(() -> new NotFoundException("Subject topilmadi: " + request.subjectId()));
+
         boolean teachesSubject = teacherProfileRepository
                 .existsByUserIdAndTeachingSubjectsId(user.getId(), request.subjectId());
 
@@ -91,17 +61,49 @@ public class QuestionService {
 
         Question question = questionMapper.toEntity(
                 request,
-                subjectRepository.findById(request.subjectId())
-                        .orElseThrow(() -> new NotFoundException("Subject topilmadi: " + request.subjectId())),
+                subject,
                 user
         );
 
         return questionRepository.save(question);
     }
 
+    public Page<QuestionResponse> findAll(Long subjectId, boolean own, User createdBy, Pageable pageable) {
+        Long createdById = own ? createdBy.getId() : null;
+
+        return questionRepository.searchAll(subjectId, createdById, pageable)
+                .map(questionMapper::toResponse);
+    }
+
+    public Question findById(Long id) {
+        return questionRepository.findByIdAndDeletedFalse(id)
+                .orElseThrow(() -> new NotFoundException("Question topilmadi: " + id));
+    }
+
+    public QuestionResponse findResponseById(Long id) {
+        return questionMapper.toResponse(findById(id));
+    }
+
     @Transactional
-    public QuestionResponse update(Long id, QuestionRequest request) {
+    public QuestionResponse update(Long id, QuestionRequest request, User user) {
         Question question = findById(id);
+
+        if (isAdmin(user)) {
+            questionMapper.updateEntity(
+                    question,
+                    request,
+                    subjectRepository.findById(request.subjectId())
+                            .orElseThrow(() -> new NotFoundException("Subject topilmadi: " + request.subjectId()))
+            );
+        }
+
+        boolean teachesSubject = teacherProfileRepository
+                .existsByUserIdAndTeachingSubjectsId(user.getId(), request.subjectId());
+
+        if (!teachesSubject) {
+            throw new ErrorMessageException("O'qituvchi faqat o'zi dars beradigan fan uchun savol yarata oladi", ErrorCodes.Forbidden);
+        }
+
         questionMapper.updateEntity(
                 question,
                 request,
@@ -112,14 +114,22 @@ public class QuestionService {
         return questionMapper.toResponse(questionRepository.save(question));
     }
 
+    private void validateTeacherSubjectAccess(Long userId, Long subjectId) {
+        if (subjectId == null) {
+            throw new ErrorMessageException("Fan bo'yicha filtr kiritilishi shart", ErrorCodes.BadRequest);
+        }
+
+        boolean teachesSubject = teacherProfileRepository.existsByUserIdAndTeachingSubjectsId(userId, subjectId);
+        if (!teachesSubject) {
+            throw new ErrorMessageException("Faqat o'zingizga biriktirilgan fan imtihonlarini ko'ra olasiz", ErrorCodes.Forbidden);
+        }
+    }
+
     @Transactional
     public void delete(Long id, User user) {
         Question question = findById(id);
 
-        boolean isAdmin = user.getRoles().stream()
-                .anyMatch(role -> role.getRoleName().equals(ROLE_ADMIN));
-
-        if (isAdmin) {
+        if (isAdmin(user)) {
             question.setDeleted(true);
             questionRepository.save(question);
             return;
@@ -139,4 +149,20 @@ public class QuestionService {
         questionRepository.save(question);
     }
 
+
+    private boolean hasRole(User user, RoleName roleName) {
+        return user.getRoles().stream().anyMatch(role -> role.getRoleName() == roleName);
+    }
+
+    private boolean isAdmin(User user) {
+        return hasRole(user, RoleName.ROLE_ADMIN);
+    }
+
+    private boolean isTeacher(User user) {
+        return hasRole(user, RoleName.ROLE_TEACHER);
+    }
+
+    private boolean isStudent(User user) {
+        return hasRole(user, RoleName.ROLE_STUDENT);
+    }
 }

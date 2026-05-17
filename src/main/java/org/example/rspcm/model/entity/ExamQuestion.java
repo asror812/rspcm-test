@@ -37,4 +37,8 @@ public class ExamQuestion {
 
     @Column(nullable = false)
     private Integer orderIndex;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "created_by", nullable = false)
+    private User createdBy;
 }

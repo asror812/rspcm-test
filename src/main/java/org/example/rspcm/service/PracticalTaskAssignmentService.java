@@ -4,6 +4,7 @@ import org.example.rspcm.dto.practice.PracticalTaskAssignmentRequest;
 import org.example.rspcm.dto.practice.PracticalTaskAssignmentResponse;
 import org.example.rspcm.exception.NotFoundException;
 import org.example.rspcm.mapper.PracticalTaskAssignmentMapper;
+import org.example.rspcm.model.entity.Exam;
 import org.example.rspcm.model.entity.PracticalTaskAssignment;
 import org.example.rspcm.model.enums.PracticalTaskAssignmentStatus;
 import org.example.rspcm.model.enums.ExamType;
@@ -48,11 +49,11 @@ public class PracticalTaskAssignmentService {
 
     @Transactional
     public PracticalTaskAssignment create(PracticalTaskAssignmentRequest request) {
-        validateExamTypeForPracticalTask(request.examId());
+        var exam = validateExamTypeForPracticalTask(request.examId());
+        validatePracticeCapacityForCreate(exam.getId(), exam.getItemLimit());
         PracticalTaskAssignment assignment = practicalTaskAssignmentMapper.toEntity(
                 request,
-                examRepository.findById(request.examId())
-                        .orElseThrow(() -> new NotFoundException("Exam topilmadi: " + request.examId())),
+                exam,
                 practicalTaskRepository.findById(request.practicalTaskId())
                         .orElseThrow(() -> new NotFoundException("PracticalTask topilmadi: " + request.practicalTaskId())),
                 request.studentId() == null ? null : userRepository.findById(request.studentId())
@@ -65,11 +66,11 @@ public class PracticalTaskAssignmentService {
     }
 
     public PracticalTaskAssignmentResponse createResponse(PracticalTaskAssignmentRequest request) {
-        validateExamTypeForPracticalTask(request.examId());
+        var exam = validateExamTypeForPracticalTask(request.examId());
+        validatePracticeCapacityForCreate(exam.getId(), exam.getItemLimit());
         PracticalTaskAssignment assignment = practicalTaskAssignmentMapper.toEntity(
                 request,
-                examRepository.findById(request.examId())
-                        .orElseThrow(() -> new NotFoundException("Exam topilmadi: " + request.examId())),
+                exam,
                 practicalTaskRepository.findById(request.practicalTaskId())
                         .orElseThrow(() -> new NotFoundException("PracticalTask topilmadi: " + request.practicalTaskId())),
                 request.studentId() == null ? null : userRepository.findById(request.studentId())
@@ -83,13 +84,13 @@ public class PracticalTaskAssignmentService {
 
     @Transactional
     public PracticalTaskAssignmentResponse update(Long id, PracticalTaskAssignmentRequest request) {
-        validateExamTypeForPracticalTask(request.examId());
+        var exam = validateExamTypeForPracticalTask(request.examId());
+        validatePracticeCapacityForUpdate(exam.getId(), exam.getItemLimit(), id);
         PracticalTaskAssignment assignment = findById(id);
         practicalTaskAssignmentMapper.updateEntity(
                 assignment,
                 request,
-                examRepository.findById(request.examId())
-                        .orElseThrow(() -> new NotFoundException("Exam topilmadi: " + request.examId())),
+                exam,
                 practicalTaskRepository.findById(request.practicalTaskId())
                         .orElseThrow(() -> new NotFoundException("PracticalTask topilmadi: " + request.practicalTaskId())),
                 request.studentId() == null ? null : userRepository.findById(request.studentId())
@@ -108,11 +109,26 @@ public class PracticalTaskAssignmentService {
         assignmentRepository.delete(findById(id));
     }
 
-    private void validateExamTypeForPracticalTask(Long examId) {
+    private Exam validateExamTypeForPracticalTask(Long examId) {
         var exam = examRepository.findById(examId)
                 .orElseThrow(() -> new NotFoundException("Exam topilmadi: " + examId));
         if (exam.getType() != ExamType.PRACTICAL_TASK) {
             throw new ErrorMessageException("Faqat PRACTICAL_TASK turidagi imtihonga amaliy topshiriq biriktirish mumkin", ErrorCodes.BadRequest);
+        }
+        return exam;
+    }
+
+    private void validatePracticeCapacityForCreate(Long examId, Integer limit) {
+        long currentCount = assignmentRepository.countByExamId(examId);
+        if (limit != null && currentCount >= limit) {
+            throw new ErrorMessageException("Bu imtihonda amaliy topshiriqlar soni yetarli", ErrorCodes.BadRequest);
+        }
+    }
+
+    private void validatePracticeCapacityForUpdate(Long examId, Integer limit, Long assignmentId) {
+        long currentCount = assignmentRepository.countByExamIdAndIdNot(examId, assignmentId);
+        if (limit != null && currentCount >= limit) {
+            throw new ErrorMessageException("Bu imtihonda amaliy topshiriqlar soni yetarli", ErrorCodes.BadRequest);
         }
     }
 }
