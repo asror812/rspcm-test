@@ -1,8 +1,10 @@
 package org.example.rspcm.service;
 
+import org.example.rspcm.dto.common.SubjectSummary;
 import org.example.rspcm.dto.subject.SubjectRequest;
 import org.example.rspcm.dto.subject.SubjectResponse;
 import org.example.rspcm.exception.NotFoundException;
+import org.example.rspcm.mapper.SummaryMapper;
 import org.example.rspcm.mapper.SubjectMapper;
 import org.example.rspcm.model.entity.User;
 import org.example.rspcm.model.entity.Subject;
@@ -25,16 +27,17 @@ public class SubjectService {
     private final SubjectRepository subjectRepository;
     private final UserRepository userRepository;
     private final SubjectMapper subjectMapper;
+    private final SummaryMapper summaryMapper;
 
     public List<SubjectResponse> findAll() {
         return subjectRepository.findAll().stream().map(subjectMapper::toResponse).toList();
     }
 
-    public List<SubjectResponse> findOwn() {
+    public List<SubjectSummary> findOwnSummaries() {
         Long teacherId = currentUser().getId();
         return subjectRepository.findDistinctByTeachersId(teacherId)
                 .stream()
-                .map(subjectMapper::toResponse)
+                .map(summaryMapper::toSubjectSummary)
                 .toList();
     }
 

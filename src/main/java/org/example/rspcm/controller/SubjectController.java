@@ -1,5 +1,6 @@
 package org.example.rspcm.controller;
 
+import org.example.rspcm.dto.common.SubjectSummary;
 import org.example.rspcm.dto.subject.SubjectRequest;
 import org.example.rspcm.dto.subject.SubjectResponse;
 import org.example.rspcm.service.SubjectService;
@@ -28,8 +29,8 @@ public class SubjectController {
 
     @GetMapping("/own")
     @PreAuthorize("hasRole('TEACHER')")
-    public List<SubjectResponse> getOwn() {
-        return subjectService.findOwn();
+    public List<SubjectSummary> getOwn() {
+        return subjectService.findOwnSummaries();
     }
 
     @GetMapping

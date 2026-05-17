@@ -117,7 +117,6 @@ public class ProfileService {
 
         User user = profile.getUser();
         updateSelfEditableUserFields(user, request);
-        teacherProfileMapper.updateSelfEditableFields(profile, request.academicDegree(), request.experienceYears());
 
         userRepository.save(user);
         return teacherProfileMapper.toResponse(teacherProfileRepository.save(profile));

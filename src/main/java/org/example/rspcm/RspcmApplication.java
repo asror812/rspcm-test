@@ -10,5 +10,4 @@ public class RspcmApplication {
     public static void main(String[] args) {
         SpringApplication.run(RspcmApplication.class, args);
     }
-
 }

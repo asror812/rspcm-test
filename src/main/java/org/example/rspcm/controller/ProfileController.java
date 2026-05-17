@@ -34,7 +34,7 @@ public class ProfileController {
     }
 
     @PutMapping("/students/{userId}")
-    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<StudentProfileResponse> updateStudentProfile(@PathVariable Long userId,
                                                                        @Valid @RequestBody StudentProfileUpdateRequest request) {
         return ResponseEntity.ok(profileService.updateStudentProfileResponse(userId, request));

@@ -121,9 +121,9 @@ public class DataInitializer implements CommandLineRunner {
         Subject physics = createOrUpdateSubject("Physics", "Mexanika va elektr bo'limlari.");
         Subject programming = createOrUpdateSubject("Programming", "Java va backend dasturlash.");
 
-        assignTeacherProfile(teacherMath, "PhD", 8, Set.of(math));
-        assignTeacherProfile(teacherPhysics, "MSc", 6, Set.of(physics));
-        assignTeacherProfile(teacherProgramming, "MSc", 5, Set.of(programming));
+        assignTeacherProfile(teacherMath, "PhD", Set.of(math));
+        assignTeacherProfile(teacherPhysics, "MSc", Set.of(physics));
+        assignTeacherProfile(teacherProgramming, "MSc", Set.of(programming));
 
         assignStudentProfile(k1Student1, 1);
         assignStudentProfile(k1Student2, 1);
@@ -230,18 +230,21 @@ public class DataInitializer implements CommandLineRunner {
         return subjectRepository.save(subject);
     }
 
-    private void assignTeacherProfile(User teacher, String degree, Integer experienceYears, Set<Subject> subjects) {
+    private void assignTeacherProfile(User teacher, String degree, Set<Subject> subjects) {
         TeacherProfile profile = teacherProfileRepository.findByUserId(teacher.getId())
                 .orElseGet(() -> TeacherProfile.builder().user(teacher).build());
         profile.setAcademicDegree(degree);
-        profile.setExperienceYears(experienceYears);
         profile.setTeachingSubjects(new HashSet<>(subjects));
         teacherProfileRepository.save(profile);
     }
 
     private void assignStudentProfile(User student, Integer course) {
         StudentProfile profile = studentProfileRepository.findByUserId(student.getId())
-                .orElseGet(() -> StudentProfile.builder().user(student).build());
+                .orElseGet(() ->
+                        StudentProfile.builder()
+                                .user(student)
+                                .build());
+
         profile.setCourse(course);
         studentProfileRepository.save(profile);
     }
@@ -319,15 +322,12 @@ public class DataInitializer implements CommandLineRunner {
         exam.setEndAt(LocalDateTime.now().plusDays(8));
         exam.setGroups(new HashSet<>(groups));
         exam.setCreatedBy(teacher);
-        if (exam.getCreatedAt() == null) {
-            exam.setCreatedAt(LocalDateTime.now());
-        }
-        if (exam.getQuestions() == null) {
-            exam.setQuestions(new ArrayList<>());
-        }
-        if (exam.getPracticalTasks() == null) {
-            exam.setPracticalTasks(new HashSet<>());
-        }
+
+        if (exam.getCreatedAt() == null) exam.setCreatedAt(LocalDateTime.now());
+
+        if (exam.getQuestions() == null) exam.setQuestions(new ArrayList<>());
+        if (exam.getPracticalTasks() == null) exam.setPracticalTasks(new HashSet<>());
+
         return examRepository.save(exam);
     }
 
@@ -343,12 +343,14 @@ public class DataInitializer implements CommandLineRunner {
         List<ExamQuestion> staleLinks = existingByQuestionId.values().stream()
                 .filter(eq -> !desiredQuestionIds.contains(eq.getQuestion().getId()))
                 .toList();
+
         if (!staleLinks.isEmpty()) {
             examQuestionRepository.deleteAll(staleLinks);
         }
 
         List<ExamQuestion> examQuestions = new ArrayList<>();
         int order = 1;
+
         for (Question question : subjectQuestions) {
             ExamQuestion examQuestion = existingByQuestionId.getOrDefault(question.getId(), new ExamQuestion());
             examQuestion.setExam(exam);
@@ -434,11 +436,12 @@ public class DataInitializer implements CommandLineRunner {
         if (fullName == null || fullName.isBlank()) {
             return "";
         }
+
         String normalized = fullName.trim().replaceAll("\\s+", " ");
         int firstSpace = normalized.indexOf(' ');
-        if (firstSpace < 0) {
-            return normalized;
-        }
+
+        if (firstSpace < 0) return normalized;
+
         return normalized.substring(0, firstSpace);
     }
 
