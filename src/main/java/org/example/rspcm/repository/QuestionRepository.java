@@ -1,6 +1,5 @@
 package org.example.rspcm.repository;
 
-import org.example.rspcm.dto.question.QuestionResponse;
 import org.example.rspcm.model.entity.Question;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

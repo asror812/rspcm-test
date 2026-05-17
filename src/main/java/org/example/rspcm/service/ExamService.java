@@ -1,19 +1,24 @@
 package org.example.rspcm.service;
 
+import lombok.RequiredArgsConstructor;
 import org.example.rspcm.dto.exam.ExamRequest;
 import org.example.rspcm.dto.exam.ExamResponse;
 import org.example.rspcm.exception.ErrorCodes;
 import org.example.rspcm.exception.ErrorMessageException;
-import org.example.rspcm.model.entity.User;
 import org.example.rspcm.exception.NotFoundException;
+import org.example.rspcm.mapper.ExamMapper;
 import org.example.rspcm.model.entity.Exam;
-import org.example.rspcm.model.entity.PracticalTask;
 import org.example.rspcm.model.entity.StudyGroup;
+import org.example.rspcm.model.entity.Subject;
+import org.example.rspcm.model.entity.User;
 import org.example.rspcm.model.enums.ExamType;
 import org.example.rspcm.model.enums.RoleName;
-import org.example.rspcm.repository.*;
-import org.example.rspcm.mapper.ExamMapper;
-import lombok.RequiredArgsConstructor;
+import org.example.rspcm.repository.ExamQuestionRepository;
+import org.example.rspcm.repository.ExamRepository;
+import org.example.rspcm.repository.StudyGroupRepository;
+import org.example.rspcm.repository.SubjectRepository;
+import org.example.rspcm.repository.TeacherProfileRepository;
+import org.example.rspcm.repository.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
@@ -23,7 +28,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 @Service
@@ -33,131 +37,142 @@ public class ExamService {
     private final ExamRepository examRepository;
     private final StudyGroupRepository groupRepository;
     private final SubjectRepository subjectRepository;
-    private final PracticeRepository practiceRepository;
     private final UserRepository userRepository;
     private final ExamMapper examMapper;
     private final TeacherProfileRepository teacherProfileRepository;
     private final ExamQuestionRepository examQuestionRepository;
 
+    public Page<ExamResponse> findAll(
+            User user, String query, ExamType examType,
+            boolean own, Long subjectId, Pageable pageable) {
 
-    public Page<ExamResponse> findAll(String query, ExamType examType, boolean own, Long subjectId, Pageable pageable) {
-        User user = currentUser();
-
-        boolean isAdmin = user.getRoles().stream()
-                .anyMatch(role -> role.getRoleName().equals(RoleName.ROLE_ADMIN));
-
-        if (isAdmin) {
+        if (isAdmin(user)) {
             return examRepository.searchAll(user.getId(), examType, own, subjectId, query, pageable)
                     .map(examMapper::toResponse);
         }
 
-        if (subjectId != null) {
-            throw new ErrorMessageException("Foydalanuvchi  faqat ozining faniga bogliq savollarni olaladi", ErrorCodes.Forbidden);
+        if (isTeacher(user)) {
+            validateTeacherSubjectAccess(user.getId(), subjectId);
+
+            return examRepository.searchAll(user.getId(), examType, own, subjectId, query, pageable)
+                    .map(examMapper::toResponse);
         }
 
-        boolean teachesSubject = teacherProfileRepository
-                .existsByUserIdAndTeachingSubjectsId(user.getId(), subjectId);
-
-        if (!teachesSubject) {
-            throw new ErrorMessageException("Foydalanuvchi faqat ozining faniga bogliq savollarni olaladi", ErrorCodes.Forbidden);
-        }
-
-        return examRepository.searchAll(
-                        user.getId(), examType, own, subjectId, query, pageable)
-                .map(examMapper::toResponse);
+        throw new ErrorMessageException("Ruxsat etilmagan amal", ErrorCodes.Forbidden);
     }
 
-    public Exam findById(Long id) {
-        Exam exam = examRepository.findById(id).orElseThrow(() -> new NotFoundException("Exam topilmadi: " + id));
-        User currentUser = currentUser();
+    public ExamResponse findById(Long id, User user) {
+        Exam exam = examRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Imtihon topilmadi: " + id));
 
-        if (!isStudent(currentUser)) {
-            return exam;
+        if (isAdmin(user)) {
+            return examMapper.toResponse(exam);
         }
 
-        boolean assignedByGroup = exam.getGroups().stream()
-                .anyMatch(group -> group.getStudents()
-                        .stream().anyMatch(student -> student.getId().equals(currentUser.getId())));
-
-        boolean assignedDirectly = exam.getTargetStudents().stream()
-                .anyMatch(student -> student.getId().equals(currentUser.getId()));
-
-        if (!assignedByGroup && !assignedDirectly) {
-            throw new NotFoundException("Exam topilmadi: " + id);
+        if (isTeacher(user)) {
+            validateTeacherSubjectAccess(user.getId(), exam.getId());
+            return examMapper.toResponse(exam);
         }
 
-        return exam;
-    }
-
-    public ExamResponse findResponseById(Long id) {
-        Exam exam = examRepository.findById(id).orElseThrow(() -> new NotFoundException("Exam topilmadi: " + id));
-        User currentUser = currentUser();
-        if (isStudent(currentUser)) {
-
-            boolean assignedByGroup = exam.getGroups().stream()
-                    .anyMatch(group -> group.getStudents().stream()
-                            .anyMatch(student -> student.getId().equals(currentUser.getId())));
-
-            boolean assignedDirectly = exam.getTargetStudents().stream()
-                    .anyMatch(student -> student.getId().equals(currentUser.getId()));
-
-            if (!assignedByGroup && !assignedDirectly) {
-                throw new NotFoundException("Exam topilmadi: " + id);
-            }
+        if (isStudent(user) && !isAssignedToStudent(exam, user.getId())) {
+            throw new NotFoundException("Imtihon topilmadi: " + id);
         }
-        return examMapper.toResponse(exam);
-    }
 
-    public List<ExamResponse> findOwnCreated() {
-        return examRepository.findByCreatedById(currentUser().getId())
-                .stream().map(examMapper::toResponse).toList();
+        throw new ErrorMessageException("Ruxsat etilmagan amal", ErrorCodes.NotFound);
     }
 
     @Transactional
-    public ExamResponse create(ExamRequest request) {
+    public ExamResponse create(User user, ExamRequest request) {
+        Subject subject = resolveSubject(request.subjectId());
         Exam exam = examMapper.toEntity(
                 request,
                 resolveGroups(request.groupIds()),
                 resolveStudents(request.studentIds()),
-                currentUser(),
-                request.subjectId() == null ? null :
-                        subjectRepository.findById(request.subjectId()).orElseThrow(
-                                () -> new NotFoundException("Subject topilmadi: " + request.subjectId()))
+                user,
+                subject
         );
-
-        Exam save = examRepository.save(exam);
-        normalizeExamByType(save);
-        save = examRepository.save(save);
-
-        return examMapper.toResponse(save);
+        Exam saved = examRepository.save(exam);
+        normalizeExamByType(saved);
+        return examMapper.toResponse(examRepository.save(saved));
     }
 
     @Transactional
-    public ExamResponse update(Long id, ExamRequest request) {
-        Exam exam = findById(id);
+    public ExamResponse update(Long id, ExamRequest request, User user) {
+        Exam exam = examRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Imtihon topilmadi: " + id));
+
+        validateTeacherSubjectAccess(user.getId(), exam.getId());
+
+        Subject subject = resolveSubject(request.subjectId());
+
         examMapper.updateEntity(
                 exam,
                 request,
                 resolveGroups(request.groupIds()),
                 resolveStudents(request.studentIds()),
-                request.subjectId() == null ? null : subjectRepository.findById(request.subjectId())
-                                                     .orElseThrow(() -> new NotFoundException("Subject topilmadi: " + request.subjectId()))
+                subject
         );
+
         normalizeExamByType(exam);
         return examMapper.toResponse(examRepository.save(exam));
     }
 
     @Transactional
     public void delete(Long id) {
-        Exam exam = findById(id);
+        Exam exam = examRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Imtihon topilmadi: " + id));
+
         examRepository.delete(exam);
+    }
+
+    private void validateTeacherSubjectAccess(Long userId, Long subjectId) {
+        if (subjectId == null) {
+            throw new ErrorMessageException("Fan bo'yicha filtr kiritilishi shart", ErrorCodes.BadRequest);
+        }
+
+        boolean teachesSubject = teacherProfileRepository.existsByUserIdAndTeachingSubjectsId(userId, subjectId);
+        if (!teachesSubject) {
+            throw new ErrorMessageException("Faqat o'zingizga biriktirilgan fan imtihonlarini ko'ra olasiz", ErrorCodes.Forbidden);
+        }
+    }
+
+    private boolean isAssignedToStudent(Exam exam, Long studentId) {
+        boolean assignedDirectly = exam.getTargetStudents().stream()
+                .anyMatch(student -> student.getId().equals(studentId));
+
+        boolean assignedByGroup = exam.getGroups().stream()
+                .anyMatch(group -> group.getStudents().stream().anyMatch(student -> student.getId().equals(studentId)));
+
+        return assignedDirectly || assignedByGroup;
+    }
+
+    private void normalizeExamByType(Exam exam) {
+        if (exam.getType() == ExamType.QUESTION) {
+            exam.setPracticalTasks(new HashSet<>());
+            return;
+        }
+
+        if (exam.getType() == ExamType.PRACTICAL_TASK) {
+            var links = examQuestionRepository.findByExamId(exam.getId());
+            if (!links.isEmpty()) {
+                examQuestionRepository.deleteAll(links);
+            }
+            exam.setQuestions(new ArrayList<>());
+        }
+    }
+
+    private Subject resolveSubject(Long subjectId) {
+        if (subjectId == null) {
+            return null;
+        }
+        return subjectRepository.findById(subjectId)
+                .orElseThrow(() -> new NotFoundException("Fan topilmadi: " + subjectId));
     }
 
     private Set<StudyGroup> resolveGroups(Set<Long> groupIds) {
         if (groupIds == null || groupIds.isEmpty()) {
             return new HashSet<>();
         }
-
         return new HashSet<>(groupRepository.findAllById(groupIds));
     }
 
@@ -168,34 +183,19 @@ public class ExamService {
         return new HashSet<>(userRepository.findAllById(studentIds));
     }
 
-    private Set<PracticalTask> resolvePracticalTasks(Set<Long> practicalTaskIds) {
-        if (practicalTaskIds == null || practicalTaskIds.isEmpty()) {
-            return new HashSet<>();
-        }
-        return new HashSet<>(practiceRepository.findAllById(practicalTaskIds));
+    private boolean hasRole(User user, RoleName roleName) {
+        return user.getRoles().stream().anyMatch(role -> role.getRoleName() == roleName);
+    }
+
+    private boolean isAdmin(User user) {
+        return hasRole(user, RoleName.ROLE_ADMIN);
+    }
+
+    private boolean isTeacher(User user) {
+        return hasRole(user, RoleName.ROLE_TEACHER);
     }
 
     private boolean isStudent(User user) {
-        return user.getRoles().stream()
-                .anyMatch(role -> role.getRoleName() == RoleName.ROLE_STUDENT);
-    }
-
-    private User currentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return (User) authentication.getPrincipal();
-    }
-
-    private void normalizeExamByType(Exam exam) {
-        if (exam.getType() == ExamType.QUESTION) {
-            exam.setPracticalTasks(new HashSet<>());
-            return;
-        }
-        if (exam.getType() == ExamType.PRACTICAL_TASK) {
-            var examQuestions = examQuestionRepository.findByExamId(exam.getId());
-            if (!examQuestions.isEmpty()) {
-                examQuestionRepository.deleteAll(examQuestions);
-            }
-            exam.setQuestions(new ArrayList<>());
-        }
+        return hasRole(user, RoleName.ROLE_STUDENT);
     }
 }
