@@ -169,13 +169,25 @@ public class DataInitializer implements CommandLineRunner {
         StudyGroup k1Group = getGroup("K1");
         StudyGroup l1Group = getGroup("L1");
 
-        Exam mathExam = createOrUpdateExamForSubject(math, teacherMath, Set.of(k1Group), "Mathematics exam");
-        Exam physicsExam = createOrUpdateExamForSubject(physics, teacherPhysics, Set.of(l1Group), "Physics exam");
-        Exam programmingExam = createOrUpdateExamForSubject(programming, teacherProgramming, Set.of(k1Group, l1Group), "Programming exam");
+        Exam questionExam = createOrUpdateExam(
+                "Umumiy savol imtihoni",
+                "Savollar asosidagi auto-seeded imtihon.",
+                programming,
+                teacherProgramming,
+                Set.of(k1Group, l1Group),
+                ExamType.QUESTION
+        );
+        attachSubjectQuestionsToExam(questionExam, programming);
 
-        attachSubjectQuestionsToExam(mathExam, math);
-        attachSubjectQuestionsToExam(physicsExam, physics);
-        attachSubjectQuestionsToExam(programmingExam, programming);
+        Exam mathQuestionExam = createOrUpdateExam(
+                "Matematika savol imtihoni",
+                "Matematika fanidan savollar asosidagi auto-seeded imtihon.",
+                math,
+                teacherMath,
+                Set.of(k1Group),
+                ExamType.QUESTION
+        );
+        attachSubjectQuestionsToExam(mathQuestionExam, math);
 
         List<PracticalTask> practicalTasks = ensureMinimumPracticalTasks(
                 List.of(
@@ -188,11 +200,15 @@ public class DataInitializer implements CommandLineRunner {
                 teacherProgramming
         );
 
-        attachPracticalTasksToExams(Map.of(
-                mathExam, List.of(practicalTasks.get(0), practicalTasks.get(4)),
-                physicsExam, List.of(practicalTasks.get(1), practicalTasks.get(4)),
-                programmingExam, List.of(practicalTasks.get(2), practicalTasks.get(3), practicalTasks.get(4))
-        ));
+        Exam practicalExam = createOrUpdateExam(
+                "Umumiy amaliy imtihon",
+                "Amaliy topshiriqlar asosidagi auto-seeded imtihon.",
+                programming,
+                teacherProgramming,
+                Set.of(k1Group, l1Group),
+                ExamType.PRACTICAL_TASK
+        );
+        attachPracticalTasksToExam(practicalExam, List.of(practicalTasks.get(2), practicalTasks.get(3), practicalTasks.get(4)));
     }
 
     private void createOrUpdateUser(
@@ -296,11 +312,13 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
-    private Exam createOrUpdateExamForSubject(
+    private Exam createOrUpdateExam(
+            String title,
+            String description,
             Subject subject,
             User teacher,
             Set<StudyGroup> groups,
-            String title
+            ExamType examType
     ) {
         Exam exam = examRepository.findAll().stream()
                 .filter(existing -> title.equals(existing.getTitle()))
@@ -313,9 +331,9 @@ public class DataInitializer implements CommandLineRunner {
                         .targetStudents(new HashSet<>())
                         .build());
 
-        exam.setDescription(subject.getName() + " uchun auto-seeded exam.");
+        exam.setDescription(description);
         exam.setSubject(subject);
-        exam.setType(ExamType.QUESTION);
+        exam.setType(examType);
         exam.setStatus(ExamStatus.READY);
         exam.setMaxScore(100);
         exam.setStartAt(LocalDateTime.now().plusDays(1));
@@ -327,6 +345,16 @@ public class DataInitializer implements CommandLineRunner {
 
         if (exam.getQuestions() == null) exam.setQuestions(new ArrayList<>());
         if (exam.getPracticalTasks() == null) exam.setPracticalTasks(new HashSet<>());
+
+        if (examType == ExamType.QUESTION) {
+            exam.setPracticalTasks(new HashSet<>());
+        } else if (examType == ExamType.PRACTICAL_TASK) {
+            List<ExamQuestion> existingQuestions = examQuestionRepository.findByExamId(exam.getId());
+            if (!existingQuestions.isEmpty()) {
+                examQuestionRepository.deleteAll(existingQuestions);
+            }
+            exam.setQuestions(new ArrayList<>());
+        }
 
         return examRepository.save(exam);
     }
@@ -389,12 +417,9 @@ public class DataInitializer implements CommandLineRunner {
         return tasks;
     }
 
-    private void attachPracticalTasksToExams(Map<Exam, List<PracticalTask>> mapping) {
-        for (Map.Entry<Exam, List<PracticalTask>> entry : mapping.entrySet()) {
-            Exam exam = entry.getKey();
-            exam.setPracticalTasks(new HashSet<>(entry.getValue()));
-            examRepository.save(exam);
-        }
+    private void attachPracticalTasksToExam(Exam exam, List<PracticalTask> practicalTasks) {
+        exam.setPracticalTasks(new HashSet<>(practicalTasks));
+        examRepository.save(exam);
     }
 
     private List<QuestionOption> buildClosedOptions(Question question) {

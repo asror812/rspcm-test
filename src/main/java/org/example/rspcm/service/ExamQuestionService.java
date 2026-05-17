@@ -6,6 +6,7 @@ import org.example.rspcm.exception.ErrorCodes;
 import org.example.rspcm.exception.ErrorMessageException;
 import org.example.rspcm.exception.NotFoundException;
 import org.example.rspcm.model.entity.ExamQuestion;
+import org.example.rspcm.model.enums.ExamType;
 import org.example.rspcm.mapper.ExamQuestionMapper;
 import org.example.rspcm.repository.ExamQuestionRepository;
 import org.example.rspcm.repository.ExamRepository;
@@ -41,6 +42,7 @@ public class ExamQuestionService {
     @Transactional
     public ExamQuestion create(ExamQuestionRequest request) {
         validateRequest(request);
+        validateExamTypeForQuestion(request.examId());
         ExamQuestion examQuestion = examQuestionMapper.toEntity(
                 request,
                 examRepository.findById(request.examId())
@@ -53,6 +55,7 @@ public class ExamQuestionService {
 
     public ExamQuestionResponse createResponse(ExamQuestionRequest request) {
         validateRequest(request);
+        validateExamTypeForQuestion(request.examId());
         ExamQuestion examQuestion = examQuestionMapper.toEntity(
                 request,
                 examRepository.findById(request.examId())
@@ -66,6 +69,7 @@ public class ExamQuestionService {
     @Transactional
     public ExamQuestionResponse update(Long id, ExamQuestionRequest request) {
         validateRequest(request);
+        validateExamTypeForQuestion(request.examId());
         ExamQuestion examQuestion = findById(id);
         examQuestionMapper.updateEntity(
                 examQuestion,
@@ -89,6 +93,14 @@ public class ExamQuestionService {
         }
         if (request.orderIndex() <= 0) {
             throw new ErrorMessageException("orderIndex 0 dan katta bo'lishi kerak", ErrorCodes.BadRequest);
+        }
+    }
+
+    private void validateExamTypeForQuestion(Long examId) {
+        var exam = examRepository.findById(examId)
+                .orElseThrow(() -> new NotFoundException("Exam topilmadi: " + examId));
+        if (exam.getType() != ExamType.QUESTION) {
+            throw new ErrorMessageException("Faqat QUESTION turidagi imtihonga savol qo'shish mumkin", ErrorCodes.BadRequest);
         }
     }
 }

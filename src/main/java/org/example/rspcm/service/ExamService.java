@@ -21,6 +21,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -36,6 +37,7 @@ public class ExamService {
     private final UserRepository userRepository;
     private final ExamMapper examMapper;
     private final TeacherProfileRepository teacherProfileRepository;
+    private final ExamQuestionRepository examQuestionRepository;
 
 
     public Page<ExamResponse> findAll(String query, ExamType examType, boolean own, Long subjectId, Pageable pageable) {
@@ -50,21 +52,25 @@ public class ExamService {
         }
 
         if (subjectId != null) {
-            boolean teachesSubject = teacherProfileRepository
-                    .existsByUserIdAndTeachingSubjectsId(user.getId(), subjectId);
-
-            if (!teachesSubject) {
-                throw new ErrorMessageException("Foydalanuvchi faqat ozining faniga bogliq savollarni olaladi", ErrorCodes.Forbidden);
-            }
+            throw new ErrorMessageException("Foydalanuvchi  faqat ozining faniga bogliq savollarni olaladi", ErrorCodes.Forbidden);
         }
 
-        return examRepository.searchAll(user.getId(), examType, own, subjectId, query, pageable)
+        boolean teachesSubject = teacherProfileRepository
+                .existsByUserIdAndTeachingSubjectsId(user.getId(), subjectId);
+
+        if (!teachesSubject) {
+            throw new ErrorMessageException("Foydalanuvchi faqat ozining faniga bogliq savollarni olaladi", ErrorCodes.Forbidden);
+        }
+
+        return examRepository.searchAll(
+                        user.getId(), examType, own, subjectId, query, pageable)
                 .map(examMapper::toResponse);
     }
 
     public Exam findById(Long id) {
         Exam exam = examRepository.findById(id).orElseThrow(() -> new NotFoundException("Exam topilmadi: " + id));
         User currentUser = currentUser();
+
         if (!isStudent(currentUser)) {
             return exam;
         }
@@ -120,6 +126,8 @@ public class ExamService {
         );
 
         Exam save = examRepository.save(exam);
+        normalizeExamByType(save);
+        save = examRepository.save(save);
 
         return examMapper.toResponse(save);
     }
@@ -135,6 +143,7 @@ public class ExamService {
                 request.subjectId() == null ? null : subjectRepository.findById(request.subjectId())
                                                      .orElseThrow(() -> new NotFoundException("Subject topilmadi: " + request.subjectId()))
         );
+        normalizeExamByType(exam);
         return examMapper.toResponse(examRepository.save(exam));
     }
 
@@ -174,5 +183,19 @@ public class ExamService {
     private User currentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return (User) authentication.getPrincipal();
+    }
+
+    private void normalizeExamByType(Exam exam) {
+        if (exam.getType() == ExamType.QUESTION) {
+            exam.setPracticalTasks(new HashSet<>());
+            return;
+        }
+        if (exam.getType() == ExamType.PRACTICAL_TASK) {
+            var examQuestions = examQuestionRepository.findByExamId(exam.getId());
+            if (!examQuestions.isEmpty()) {
+                examQuestionRepository.deleteAll(examQuestions);
+            }
+            exam.setQuestions(new ArrayList<>());
+        }
     }
 }
