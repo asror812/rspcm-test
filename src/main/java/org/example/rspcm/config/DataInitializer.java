@@ -209,6 +209,8 @@ public class DataInitializer implements CommandLineRunner {
                 ExamType.PRACTICAL_TASK
         );
         attachPracticalTasksToExam(practicalExam, List.of(practicalTasks.get(2), practicalTasks.get(3), practicalTasks.get(4)));
+
+        backfillExamAndExamQuestionAuditData(getUser("admin@rspcm.local"));
     }
 
     private void createOrUpdateUser(
@@ -422,6 +424,36 @@ public class DataInitializer implements CommandLineRunner {
     private void attachPracticalTasksToExam(Exam exam, List<PracticalTask> practicalTasks) {
         exam.setPracticalTasks(new HashSet<>(practicalTasks));
         examRepository.save(exam);
+    }
+
+    private void backfillExamAndExamQuestionAuditData(User fallbackUser) {
+        for (Exam exam : examRepository.findAll()) {
+            boolean examChanged = false;
+
+            if (exam.getTaskLimit() == null) {
+                exam.setTaskLimit(10);
+                examChanged = true;
+            }
+            if (exam.getCreatedBy() == null) {
+                exam.setCreatedBy(fallbackUser);
+                examChanged = true;
+            }
+            if (examChanged) {
+                examRepository.save(exam);
+            }
+
+            List<ExamQuestion> examQuestions = examQuestionRepository.findByExamId(exam.getId());
+            boolean questionsChanged = false;
+            for (ExamQuestion examQuestion : examQuestions) {
+                if (examQuestion.getCreatedBy() == null) {
+                    examQuestion.setCreatedBy(exam.getCreatedBy() == null ? fallbackUser : exam.getCreatedBy());
+                    questionsChanged = true;
+                }
+            }
+            if (questionsChanged) {
+                examQuestionRepository.saveAll(examQuestions);
+            }
+        }
     }
 
     private List<QuestionOption> buildClosedOptions(Question question) {

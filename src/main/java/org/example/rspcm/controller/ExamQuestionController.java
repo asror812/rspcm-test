@@ -6,14 +6,13 @@ import org.example.rspcm.model.entity.User;
 import org.example.rspcm.service.ExamQuestionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -24,13 +23,16 @@ public class ExamQuestionController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
-    public ResponseEntity<ExamQuestionResponse> create(@Valid @RequestBody ExamQuestionRequest request) {
-        return ResponseEntity.ok(examQuestionService.create(request));
+    public ResponseEntity<ExamQuestionResponse> create(
+            @Valid @RequestBody ExamQuestionRequest request,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(examQuestionService.create(request, user));
     }
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
-    public ResponseEntity<List<ExamQuestionResponse>> getAll(
+    public ResponseEntity<Page<ExamQuestionResponse>> getAll(
+            @RequestParam(required = false) Long examId,
             @RequestParam(required = false) Long subjectId,
             @RequestParam(required = false, defaultValue = "false") boolean own,
             @RequestParam(required = false, defaultValue = "0") int page,
@@ -38,7 +40,7 @@ public class ExamQuestionController {
             @AuthenticationPrincipal User user
     ) {
         Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(examQuestionService.findAll(subjectId, own, user, pageable));
+        return ResponseEntity.ok(examQuestionService.findAll(examId, subjectId, own, user, pageable));
     }
 
     @GetMapping("/{id}")

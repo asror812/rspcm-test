@@ -1,6 +1,8 @@
 package org.example.rspcm.repository;
 
+import jakarta.validation.constraints.NotNull;
 import org.example.rspcm.model.entity.ExamQuestion;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -15,10 +17,11 @@ public interface ExamQuestionRepository extends JpaRepository<ExamQuestion, Long
 
     @Query("""
             select e from ExamQuestion e
-            where (:subjectId is null or e.question.subject.id = :subjectId)
+            where (:examId is null or e.exam.id = :examId)
+                and (:subjectId is null or e.question.subject.id = :subjectId)
                 and (:createdById is null or e.createdBy.id = :createdById)
             """)
-    List<ExamQuestion> searchAll(Long subjectId, boolean own, Long createdById, Pageable pageable);
+    Page<ExamQuestion> searchAll(Long examId, Long subjectId, Long createdById, Pageable pageable);
 
     @Query("""
         SELECT COALESCE(SUM(eq.score), 0)
@@ -30,4 +33,6 @@ public interface ExamQuestionRepository extends JpaRepository<ExamQuestion, Long
     long countByExamId(Long examId);
 
     long countByExamIdAndIdNot(Long examId, Long id);
+
+    boolean existsByExamIdAndQuestionId(Long id, @NotNull Long aLong);
 }
