@@ -4,6 +4,7 @@ import org.example.rspcm.dto.common.GroupSummary;
 import org.example.rspcm.dto.common.PracticeSummary;
 import org.example.rspcm.dto.common.SubjectSummary;
 import org.example.rspcm.dto.common.UserSummary;
+import org.example.rspcm.dto.exam.ExamQuestionSummary;
 import org.example.rspcm.dto.exam.ExamRequest;
 import org.example.rspcm.dto.exam.ExamResponse;
 import org.example.rspcm.model.entity.Exam;
@@ -15,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -30,8 +32,19 @@ public class ExamMapper {
         Set<UserSummary> students = exam.getTargetStudents().stream()
                 .map(summaryMapper::toUserSummary).collect(Collectors.toSet());
 
-        Set<PracticeSummary> practicalTasks = exam.getPracticalTasks().stream()
-                .map(summaryMapper::toPracticeSummary).collect(Collectors.toSet());
+        List<PracticeSummary> practicalTasks = exam.getPracticalTasks().stream()
+                .map(summaryMapper::toPracticeSummary).toList();
+
+        List<ExamQuestionSummary> examQuestions = exam.getQuestions().stream()
+                .map(eq -> new ExamQuestionSummary(
+                        eq.getId(),
+                        eq.getQuestion().getId(),
+                        eq.getQuestion().getText(),
+                        eq.getQuestion().getType(),
+                        eq.getScore(),
+                        eq.getOrderIndex()
+                ))
+                .toList();
 
         UserSummary createdBy = summaryMapper.toUserSummary(exam.getCreatedBy());
 
@@ -47,11 +60,15 @@ public class ExamMapper {
                 exam.getMaxScore(),
                 exam.getTaskLimit(),
                 exam.getType(),
+                exam.getStatus(),
                 groups,
                 students,
                 practicalTasks,
+                examQuestions,
                 createdBy,
-                subject
+                subject,
+                exam.getCreatedAt(),
+                exam.getUpdatedAt()
         );
     }
 
@@ -76,6 +93,7 @@ public class ExamMapper {
                 .subject(subject)
                 .status(ExamStatus.DRAFT)
                 .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
                 .build();
     }
 
@@ -96,5 +114,6 @@ public class ExamMapper {
         exam.setGroups(groups);
         exam.setTargetStudents(students);
         exam.setSubject(subject);
+        exam.setUpdatedAt(LocalDateTime.now());
     }
 }

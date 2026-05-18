@@ -33,10 +33,20 @@ public class ExamQuestionService {
 
     public ExamQuestionResponse create(ExamQuestionRequest request, User user) {
         validateRequest(request);
+
         var exam = validateExamTypeForQuestion(request.examId());
 
         checkForDuplicate(exam, request.questionId());
         validateQuestionCapacityAndScoreForCreate(exam, exam.getTaskLimit(), request.score());
+
+        if (isTeacher(user)) {
+            validateTeacherAccess(user.getId(), exam.getSubject().getId(), request.examId());
+        }
+
+        if (exam.getQuestions().stream()
+                .anyMatch(eq -> eq.getOrderIndex().equals(request.orderIndex()))) {
+            throw new ErrorMessageException("Bu orderIndex imtihonda allaqachon mavjud", ErrorCodes.BadRequest);
+        }
 
         ExamQuestion examQuestion = examQuestionMapper.toEntity(
                 request,
