@@ -31,6 +31,7 @@ public class SwaggerConfig {
 
         String adminToken = generateAdminToken();
         String teacherToken = generateTeacherToken();
+        String studentToken = generateStudentToken();
 
         return new OpenAPI()
                 .info(new Info()
@@ -47,8 +48,12 @@ public class SwaggerConfig {
                                 %s
                                 ```
                                 
+                                ### Student JWT token
+                                ```
+                                %s
+                                ```
                                 
-                                """.formatted(adminToken, teacherToken))
+                                """.formatted(adminToken, teacherToken, studentToken))
                 )
                 .servers(List.of(
                         new Server().url("http://localhost:8080").description("Local development server"),
@@ -64,6 +69,13 @@ public class SwaggerConfig {
                                         .scheme("bearer")
                                         .bearerFormat("JWT")
                         ));
+    }
+
+    private String generateStudentToken() {
+        Optional<User> existingUser = userRepository.findByEmail("k1.anvar.rasulov@rspcm.local");
+
+        return existingUser.map(this::toUserDetails)
+                .map(jwtService::generateToken).orElse(null);
     }
 
     private String generateTeacherToken() {

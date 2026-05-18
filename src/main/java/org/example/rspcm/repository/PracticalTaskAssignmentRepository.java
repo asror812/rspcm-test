@@ -10,4 +10,6 @@ import java.util.List;
 public interface PracticalTaskAssignmentRepository extends JpaRepository<PracticalTaskAssignment, Long> {
     List<PracticalTaskAssignment> findByExamId(Long examId);
     List<PracticalTaskAssignment> findByStudentId(Long studentId);
+    long countByExamId(Long examId);
+    long countByExamIdAndIdNot(Long examId, Long id);
 }

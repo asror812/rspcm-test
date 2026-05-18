@@ -16,6 +16,7 @@ public record ExamResponse(
         LocalDateTime startAt,
         LocalDateTime endAt,
         Integer maxScore,
+        Integer taskLimit,
         ExamType type,
         Set<GroupSummary> groups,
         Set<UserSummary> students,

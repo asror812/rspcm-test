@@ -2,19 +2,16 @@ package org.example.rspcm.controller;
 
 import org.example.rspcm.dto.exam.ExamQuestionRequest;
 import org.example.rspcm.dto.exam.ExamQuestionResponse;
+import org.example.rspcm.model.entity.User;
 import org.example.rspcm.service.ExamQuestionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -25,10 +22,23 @@ public class ExamQuestionController {
 
     private final ExamQuestionService examQuestionService;
 
+    @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    public ResponseEntity<ExamQuestionResponse> create(@Valid @RequestBody ExamQuestionRequest request) {
+        return ResponseEntity.ok(examQuestionService.create(request));
+    }
+
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
-    public ResponseEntity<List<ExamQuestionResponse>> getAll() {
-        return ResponseEntity.ok(examQuestionService.findAll());
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    public ResponseEntity<List<ExamQuestionResponse>> getAll(
+            @RequestParam(required = false) Long subjectId,
+            @RequestParam(required = false, defaultValue = "false") boolean own,
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "10") int size,
+            @AuthenticationPrincipal User user
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(examQuestionService.findAll(subjectId, own, user, pageable));
     }
 
     @GetMapping("/{id}")
@@ -37,11 +47,6 @@ public class ExamQuestionController {
         return ResponseEntity.ok(examQuestionService.findResponseById(id));
     }
 
-    @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
-    public ResponseEntity<ExamQuestionResponse> create(@Valid @RequestBody ExamQuestionRequest request) {
-        return ResponseEntity.ok(examQuestionService.createResponse(request));
-    }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
