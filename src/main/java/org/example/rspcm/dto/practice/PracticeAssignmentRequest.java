@@ -1,14 +1,14 @@
 package org.example.rspcm.dto.practice;
 
-import org.example.rspcm.model.enums.PracticalTaskAssignmentStatus;
+import org.example.rspcm.model.enums.PracticeAssignmentStatus;
 import jakarta.validation.constraints.NotNull;
 
-public record PracticalTaskAssignmentRequest(
+public record PracticeAssignmentRequest(
         @NotNull Long examId,
-        @NotNull Long practicalTaskId,
+        @NotNull Long examPracticeId,
         Long studentId,
         Long teamId,
-        PracticalTaskAssignmentStatus status,
+        PracticeAssignmentStatus status,
         Integer score,
         String teacherComment
 ) {

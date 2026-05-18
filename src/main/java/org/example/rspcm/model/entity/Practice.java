@@ -13,8 +13,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -32,8 +32,8 @@ import java.util.Set;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "practical_tasks")
-public class PracticalTask {
+@Table(name = "practices")
+public class Practice {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -67,13 +67,14 @@ public class PracticalTask {
 
     @Builder.Default
     @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "practical_task_submission_types", joinColumns = @JoinColumn(name = "practical_task_id"))
+    @CollectionTable(name = "practice_submission_types", joinColumns = @JoinColumn(name = "practice_id"))
     @Column(name = "submission_type", nullable = false)
     @Enumerated(EnumType.STRING)
     private Set<SubmissionType> allowedSubmissionTypes = new HashSet<>();
 
-    @ManyToMany(mappedBy = "practicalTasks")
-    private Set<Exam> exams;
+    @Builder.Default
+    @OneToMany(mappedBy = "practice")
+    private Set<ExamPractice> examPractices = new HashSet<>();
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "created_by")

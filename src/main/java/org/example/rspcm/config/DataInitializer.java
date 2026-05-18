@@ -10,8 +10,9 @@ import org.example.rspcm.model.entity.StudyGroup;
 import org.example.rspcm.model.entity.Subject;
 import org.example.rspcm.model.entity.TeacherProfile;
 import org.example.rspcm.model.entity.Exam;
+import org.example.rspcm.model.entity.ExamPractice;
 import org.example.rspcm.model.entity.ExamQuestion;
-import org.example.rspcm.model.entity.PracticalTask;
+import org.example.rspcm.model.entity.Practice;
 import org.example.rspcm.model.enums.GroupLanguage;
 import org.example.rspcm.model.enums.QuestionType;
 import org.example.rspcm.model.enums.RoleName;
@@ -189,13 +190,20 @@ public class DataInitializer implements CommandLineRunner {
         );
         attachSubjectQuestionsToExam(mathQuestionExam, math);
 
-        List<PracticalTask> practicalTasks = ensureMinimumPracticalTasks(
+        List<Practice> practices = ensureMinimumPractices(
                 List.of(
                         "Math practical task 1",
                         "Physics practical task 1",
                         "Programming practical task 1",
                         "Programming practical task 2",
                         "Cross-subject practical task 1"
+                ),
+                List.of(
+                        math,
+                        physics,
+                        programming,
+                        programming,
+                        programming
                 ),
                 teacherProgramming
         );
@@ -206,9 +214,9 @@ public class DataInitializer implements CommandLineRunner {
                 programming,
                 teacherProgramming,
                 Set.of(k1Group, l1Group),
-                ExamType.PRACTICAL_TASK
+                ExamType.PRACTICE
         );
-        attachPracticalTasksToExam(practicalExam, List.of(practicalTasks.get(2), practicalTasks.get(3), practicalTasks.get(4)));
+        attachPracticesToExam(practicalExam, List.of(practices.get(2), practices.get(3), practices.get(4)));
 
         backfillExamAndExamQuestionAuditData(getUser("admin@rspcm.local"));
     }
@@ -328,7 +336,7 @@ public class DataInitializer implements CommandLineRunner {
                 .orElseGet(() -> Exam.builder()
                         .title(title)
                         .questions(new ArrayList<>())
-                        .practicalTasks(new HashSet<>())
+                        .practices(new HashSet<>())
                         .groups(new HashSet<>())
                         .targetStudents(new HashSet<>())
                         .build());
@@ -347,11 +355,11 @@ public class DataInitializer implements CommandLineRunner {
         if (exam.getCreatedAt() == null) exam.setCreatedAt(LocalDateTime.now());
 
         if (exam.getQuestions() == null) exam.setQuestions(new ArrayList<>());
-        if (exam.getPracticalTasks() == null) exam.setPracticalTasks(new HashSet<>());
+        if (exam.getPractices() == null) exam.setPractices(new HashSet<>());
 
         if (examType == ExamType.QUESTION) {
-            exam.setPracticalTasks(new HashSet<>());
-        } else if (examType == ExamType.PRACTICAL_TASK) {
+            exam.setPractices(new HashSet<>());
+        } else if (examType == ExamType.PRACTICE) {
             List<ExamQuestion> existingQuestions = examQuestionRepository.findByExamId(exam.getId());
             if (!existingQuestions.isEmpty()) {
                 examQuestionRepository.deleteAll(existingQuestions);
@@ -395,19 +403,21 @@ public class DataInitializer implements CommandLineRunner {
         examRepository.save(exam);
     }
 
-    private List<PracticalTask> ensureMinimumPracticalTasks(List<String> taskNames, User createdBy) {
-        List<PracticalTask> tasks = new ArrayList<>();
+    private List<Practice> ensureMinimumPractices(List<String> taskNames, List<Subject> subjects, User createdBy) {
+        List<Practice> tasks = new ArrayList<>();
         for (int index = 0; index < taskNames.size(); index++) {
             String taskName = taskNames.get(index);
-            PracticalTask task = practiceRepository.findAll().stream()
+            Subject subject = subjects.get(index);
+            Practice task = practiceRepository.findAll().stream()
                     .filter(existing -> taskName.equals(existing.getName()))
                     .findFirst()
-                    .orElseGet(() -> PracticalTask.builder()
+                    .orElseGet(() -> Practice.builder()
                             .name(taskName)
                             .allowedSubmissionTypes(new HashSet<>())
                             .build());
 
             task.setDescription("Auto-seeded practical task: " + taskName);
+            task.setSubject(subject);
             task.setResourceUrl("https://example.com/tasks/" + (index + 1));
             task.setRequirements("Task requirements for " + taskName);
             task.setDeadline(LocalDateTime.now().plusDays(14 + index));
@@ -421,8 +431,19 @@ public class DataInitializer implements CommandLineRunner {
         return tasks;
     }
 
-    private void attachPracticalTasksToExam(Exam exam, List<PracticalTask> practicalTasks) {
-        exam.setPracticalTasks(new HashSet<>(practicalTasks));
+    private void attachPracticesToExam(Exam exam, List<Practice> practices) {
+        Set<ExamPractice> links = new HashSet<>();
+        int order = 1;
+        for (Practice practice : practices) {
+            links.add(ExamPractice.builder()
+                    .exam(exam)
+                    .practice(practice)
+                    .score(10)
+                    .orderIndex(order++)
+                    .deadline(practice.getDeadline())
+                    .build());
+        }
+        exam.setPractices(links);
         examRepository.save(exam);
     }
 

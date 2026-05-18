@@ -32,8 +32,9 @@ public class ExamMapper {
         Set<UserSummary> students = exam.getTargetStudents().stream()
                 .map(summaryMapper::toUserSummary).collect(Collectors.toSet());
 
-        List<PracticeSummary> practicalTasks = exam.getPracticalTasks().stream()
-                .map(summaryMapper::toPracticeSummary).toList();
+        List<PracticeSummary> practices = exam.getPractices().stream()
+                .map(link -> summaryMapper.toPracticeSummary(link.getPractice()))
+                .toList();
 
         List<ExamQuestionSummary> examQuestions = exam.getQuestions().stream()
                 .map(eq -> new ExamQuestionSummary(
@@ -63,7 +64,7 @@ public class ExamMapper {
                 exam.getStatus(),
                 groups,
                 students,
-                practicalTasks,
+                practices,
                 examQuestions,
                 createdBy,
                 subject,

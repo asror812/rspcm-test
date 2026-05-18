@@ -3,7 +3,7 @@ package org.example.rspcm.mapper;
 import org.example.rspcm.dto.common.UserSummary;
 import org.example.rspcm.dto.practice.PracticeTeamRequest;
 import org.example.rspcm.dto.practice.PracticeTeamResponse;
-import org.example.rspcm.model.entity.PracticalTask;
+import org.example.rspcm.model.entity.Practice;
 import org.example.rspcm.model.entity.PracticeTeam;
 import org.example.rspcm.model.entity.User;
 import lombok.RequiredArgsConstructor;
@@ -19,12 +19,12 @@ public class PracticeTeamMapper {
 
     public PracticeTeamResponse toResponse(PracticeTeam team) {
         Set<UserSummary> members = team.getMembers().stream().map(summaryMapper::toUserSummary).collect(Collectors.toSet());
-        return new PracticeTeamResponse(team.getId(), summaryMapper.toPracticeSummary(team.getPracticalTask()), team.getName(), members);
+        return new PracticeTeamResponse(team.getId(), summaryMapper.toPracticeSummary(team.getPractice()), team.getName(), members);
     }
 
-    public PracticeTeam toEntity(PracticeTeamRequest request, PracticalTask practicalTask, Set<User> members) {
+    public PracticeTeam toEntity(PracticeTeamRequest request, Practice practice, Set<User> members) {
         return PracticeTeam.builder()
-                .practicalTask(practicalTask)
+                .practice(practice)
                 .name(request.name())
                 .members(members)
                 .build();

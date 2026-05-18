@@ -1,11 +1,11 @@
 package org.example.rspcm.mapper;
 
-import org.example.rspcm.dto.practice.PracticalTaskAssignmentRequest;
-import org.example.rspcm.dto.practice.PracticalTaskAssignmentResponse;
+import org.example.rspcm.dto.practice.PracticeAssignmentRequest;
+import org.example.rspcm.dto.practice.PracticeAssignmentResponse;
 import org.example.rspcm.model.entity.Exam;
-import org.example.rspcm.model.entity.PracticalTask;
-import org.example.rspcm.model.entity.PracticalTaskAssignment;
-import org.example.rspcm.model.enums.PracticalTaskAssignmentStatus;
+import org.example.rspcm.model.entity.ExamPractice;
+import org.example.rspcm.model.entity.PracticeAssignment;
+import org.example.rspcm.model.enums.PracticeAssignmentStatus;
 import org.example.rspcm.model.entity.PracticeTeam;
 import org.example.rspcm.model.entity.User;
 import lombok.RequiredArgsConstructor;
@@ -15,14 +15,14 @@ import java.time.LocalDateTime;
 
 @Component
 @RequiredArgsConstructor
-public class PracticalTaskAssignmentMapper {
+public class PracticeAssignmentMapper {
     private final SummaryMapper summaryMapper;
 
-    public PracticalTaskAssignmentResponse toResponse(PracticalTaskAssignment assignment) {
-        return new PracticalTaskAssignmentResponse(
+    public PracticeAssignmentResponse toResponse(PracticeAssignment assignment) {
+        return new PracticeAssignmentResponse(
                 assignment.getId(),
                 summaryMapper.toExamSummary(assignment.getExam()),
-                summaryMapper.toPracticeSummary(assignment.getPracticalTask()),
+                summaryMapper.toPracticeSummary(assignment.getExamPractice().getPractice()),
                 assignment.getStudent() == null ? null : summaryMapper.toUserSummary(assignment.getStudent()),
                 assignment.getTeam() == null ? null : summaryMapper.toPracticeTeamSummary(assignment.getTeam()),
                 assignment.getChosenAt(),
@@ -33,20 +33,20 @@ public class PracticalTaskAssignmentMapper {
         );
     }
 
-    public PracticalTaskAssignment toEntity(
-            PracticalTaskAssignmentRequest request,
+    public PracticeAssignment toEntity(
+            PracticeAssignmentRequest request,
             Exam exam,
-            PracticalTask practicalTask,
+            ExamPractice examPractice,
             User student,
             PracticeTeam team,
             LocalDateTime chosenAt
     ) {
-        return PracticalTaskAssignment.builder()
+        return PracticeAssignment.builder()
                 .exam(exam)
-                .practicalTask(practicalTask)
+                .examPractice(examPractice)
                 .student(student)
                 .team(team)
-                .status(request.status() == null ? PracticalTaskAssignmentStatus.CHOSEN : request.status())
+                .status(request.status() == null ? PracticeAssignmentStatus.CHOSEN : request.status())
                 .chosenAt(chosenAt)
                 .score(request.score())
                 .teacherComment(request.teacherComment())
@@ -54,15 +54,15 @@ public class PracticalTaskAssignmentMapper {
     }
 
     public void updateEntity(
-            PracticalTaskAssignment assignment,
-            PracticalTaskAssignmentRequest request,
+            PracticeAssignment assignment,
+            PracticeAssignmentRequest request,
             Exam exam,
-            PracticalTask practicalTask,
+            ExamPractice examPractice,
             User student,
             PracticeTeam team
     ) {
         assignment.setExam(exam);
-        assignment.setPracticalTask(practicalTask);
+        assignment.setExamPractice(examPractice);
         assignment.setStudent(student);
         assignment.setTeam(team);
         assignment.setStatus(request.status() == null ? assignment.getStatus() : request.status());

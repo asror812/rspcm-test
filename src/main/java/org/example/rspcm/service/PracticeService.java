@@ -5,7 +5,7 @@ import org.example.rspcm.dto.practice.PracticeResponse;
 import org.example.rspcm.exception.ErrorCodes;
 import org.example.rspcm.exception.ErrorMessageException;
 import org.example.rspcm.exception.NotFoundException;
-import org.example.rspcm.model.entity.PracticalTask;
+import org.example.rspcm.model.entity.Practice;
 import org.example.rspcm.model.entity.User;
 import org.example.rspcm.model.enums.RoleName;
 import org.example.rspcm.model.enums.SubmissionType;
@@ -46,74 +46,75 @@ public class PracticeService {
                 .map(practiceMapper::toResponse);
     }
 
-    public PracticalTask findById(Long id, User user) {
-        PracticalTask practicalTask = practiceRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("PracticalTask topilmadi: " + id));
+    public Practice findById(Long id, User user) {
+        Practice practice = practiceRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Practice topilmadi: " + id));
 
         if (isAdmin(user)) {
-            return practicalTask;
+            return practice;
         }
 
-        validateTeacherSubjectAccess(user.getId(), practicalTask.getSubject().getId());
+        validateTeacherSubjectAccess(user.getId(), practice.getSubject().getId());
 
-        return practicalTask;
+        return practice;
     }
 
     public PracticeResponse findResponseById(Long id, User user) {
-        PracticalTask practicalTask = practiceRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("PracticalTask topilmadi: " + id));
+        Practice practice = practiceRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Practice topilmadi: " + id));
 
         if (isStudent(user)) {
 
             Long studentId = user.getId();
-            boolean assigned = practicalTask.getExams() != null && practicalTask.getExams().stream().anyMatch(exam ->
-                    exam.getTargetStudents().stream().anyMatch(student -> Objects.equals(student.getId(), studentId)) ||
-                            exam.getGroups().stream().anyMatch(group ->
+            boolean assigned = practice.getExamPractices() != null
+                    && practice.getExamPractices().stream().anyMatch(link ->
+                    link.getExam().getTargetStudents().stream().anyMatch(student -> Objects.equals(student.getId(), studentId)) ||
+                            link.getExam().getGroups().stream().anyMatch(group ->
                                     group.getStudents().stream().anyMatch(student -> Objects.equals(student.getId(), studentId))));
             if (!assigned) {
-                throw new NotFoundException("PracticalTask topilmadi: " + id);
+                throw new NotFoundException("Practice topilmadi: " + id);
             }
         }
 
-        return practiceMapper.toResponse(practicalTask);
+        return practiceMapper.toResponse(practice);
     }
 
 
     public PracticeResponse createResponse(PracticeRequest request, User user) {
         validateTeamConfig(request.workMode(), request.teamSize());
 
-        PracticalTask practicalTask = practiceMapper.toEntity(
+        Practice practice = practiceMapper.toEntity(
                 request,
                 resolveSubmissionTypes(request.allowedSubmissionTypes()),
                 user
         );
-        return practiceMapper.toResponse(practiceRepository.save(practicalTask));
+        return practiceMapper.toResponse(practiceRepository.save(practice));
     }
 
     @Transactional
     public PracticeResponse update(Long id, PracticeRequest request, User user) {
         validateTeamConfig(request.workMode(), request.teamSize());
 
-        PracticalTask practicalTask = findById(id, user);
-        practiceMapper.updateEntity(practicalTask, request, resolveSubmissionTypes(request.allowedSubmissionTypes()));
-        return practiceMapper.toResponse(practiceRepository.save(practicalTask));
+        Practice practice = findById(id, user);
+        practiceMapper.updateEntity(practice, request, resolveSubmissionTypes(request.allowedSubmissionTypes()));
+        return practiceMapper.toResponse(practiceRepository.save(practice));
     }
 
 /*    @Transactional
-    public PracticalTask assignGroups(Long practiceId, User user) {
-        PracticalTask practicalTask = findById(practiceId, user);
-        return practiceRepository.save(practicalTask);
+    public Practice assignGroups(Long practiceId, User user) {
+        Practice practice = findById(practiceId, user);
+        return practiceRepository.save(practice);
     }*/
 
     public PracticeResponse assignGroupsResponse(Long practiceId, User user) {
-        PracticalTask practicalTask = findById(practiceId, user);
-        return practiceMapper.toResponse(practiceRepository.save(practicalTask));
+        Practice practice = findById(practiceId, user);
+        return practiceMapper.toResponse(practiceRepository.save(practice));
     }
 
     @Transactional
     public void delete(Long id, User user) {
-        PracticalTask practicalTask = findById(id, user);
-        practiceRepository.delete(practicalTask);
+        Practice practice = findById(id, user);
+        practiceRepository.delete(practice);
     }
 
     private void validateTeamConfig(WorkMode mode, Integer teamSize) {

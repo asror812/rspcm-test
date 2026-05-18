@@ -163,11 +163,11 @@ public class ExamService {
 
     private void normalizeExamByType(Exam exam) {
         if (exam.getType() == ExamType.QUESTION) {
-            exam.setPracticalTasks(new HashSet<>());
+            exam.setPractices(new HashSet<>());
             return;
         }
 
-        if (exam.getType() == ExamType.PRACTICAL_TASK) {
+        if (exam.getType() == ExamType.PRACTICE) {
             var links = examQuestionRepository.findByExamId(exam.getId());
             if (!links.isEmpty()) {
                 examQuestionRepository.deleteAll(links);

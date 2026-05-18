@@ -14,7 +14,7 @@ public class PracticeJournalMapper {
     public PracticeJournalResponse toResponse(PracticeLogbook journal) {
         return new PracticeJournalResponse(
                 journal.getId(),
-                summaryMapper.toPracticeSummary(journal.getPracticalTask()),
+                summaryMapper.toPracticeSummary(journal.getPractice()),
                 summaryMapper.toUserSummary(journal.getStudent()),
                 journal.getTeam() == null ? null : summaryMapper.toPracticeTeamSummary(journal.getTeam()),
                 journal.getFilePath(),

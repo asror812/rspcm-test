@@ -17,9 +17,9 @@ public interface ExamQuestionRepository extends JpaRepository<ExamQuestion, Long
 
     @Query("""
             select e from ExamQuestion e
-            where (:examId is null or e.exam.id = :examId)
-                and (:subjectId is null or e.question.subject.id = :subjectId)
-                and (:own  = false or e.createdBy.id = :userId)
+            where (:examId      is null or e.exam.id = :examId)
+                and (:subjectId is null or e.exam.subject.id = :subjectId)
+                and (:own  =      false or e.createdBy.id = :userId)
             """)
     Page<ExamQuestion> searchAll(Long examId, Long subjectId, boolean own, Long userId, Pageable pageable);
 

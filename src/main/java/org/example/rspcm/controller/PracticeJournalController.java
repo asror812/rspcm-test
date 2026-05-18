@@ -30,14 +30,12 @@ public class PracticeJournalController {
         return ResponseEntity.ok(journalService.findMineResponse());
     }
 
-    @GetMapping({"/practice/{practiceId}", "/practical-task/{practicalTaskId}"})
+    @GetMapping({"/practice/{practiceId}", "/practice/{practiceId}"})
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
-    public ResponseEntity<List<PracticeJournalResponse>> byPracticalTask(
-            @PathVariable(value = "practiceId", required = false) Long practiceId,
-            @PathVariable(value = "practicalTaskId", required = false) Long practicalTaskId
+    public ResponseEntity<List<PracticeJournalResponse>> byPractice(
+            @PathVariable(value = "practiceId", required = false) Long practiceId
     ) {
-        Long resolvedTaskId = practicalTaskId != null ? practicalTaskId : practiceId;
-        return ResponseEntity.ok(journalService.findByPracticalTaskResponse(resolvedTaskId));
+        return ResponseEntity.ok(journalService.findByPracticeResponse(practiceId));
     }
 
     @PostMapping

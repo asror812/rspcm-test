@@ -1,6 +1,6 @@
 package org.example.rspcm.model.enums;
 
-public enum PracticalTaskAssignmentStatus {
+public enum PracticeAssignmentStatus {
     CHOSEN,
     IN_PROGRESS,
     SUBMITTED,

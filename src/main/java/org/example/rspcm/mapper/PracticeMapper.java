@@ -3,7 +3,7 @@ package org.example.rspcm.mapper;
 import org.example.rspcm.dto.common.UserSummary;
 import org.example.rspcm.dto.practice.PracticeRequest;
 import org.example.rspcm.dto.practice.PracticeResponse;
-import org.example.rspcm.model.entity.PracticalTask;
+import org.example.rspcm.model.entity.Practice;
 import org.example.rspcm.model.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -16,26 +16,26 @@ import org.example.rspcm.model.enums.SubmissionType;
 public class PracticeMapper {
     private final SummaryMapper summaryMapper;
 
-    public PracticeResponse toResponse(PracticalTask practicalTask) {
-        UserSummary createdBy = summaryMapper.toUserSummary(practicalTask.getCreatedBy());
+    public PracticeResponse toResponse(Practice practice) {
+        UserSummary createdBy = summaryMapper.toUserSummary(practice.getCreatedBy());
 
         return new PracticeResponse(
-                practicalTask.getId(),
-                practicalTask.getName(),
-                practicalTask.getDescription(),
-                practicalTask.getResourceUrl(),
-                practicalTask.getRequirements(),
-                practicalTask.getDeadline(),
-                practicalTask.getWorkMode(),
-                practicalTask.getTeamSize(),
-                practicalTask.isSchedulingRequired(),
-                practicalTask.getAllowedSubmissionTypes(),
+                practice.getId(),
+                practice.getName(),
+                practice.getDescription(),
+                practice.getResourceUrl(),
+                practice.getRequirements(),
+                practice.getDeadline(),
+                practice.getWorkMode(),
+                practice.getTeamSize(),
+                practice.isSchedulingRequired(),
+                practice.getAllowedSubmissionTypes(),
                 createdBy
         );
     }
 
-    public PracticalTask toEntity(PracticeRequest request, Set<SubmissionType> submissionTypes, User createdBy) {
-        return PracticalTask.builder()
+    public Practice toEntity(PracticeRequest request, Set<SubmissionType> submissionTypes, User createdBy) {
+        return Practice.builder()
                 .name(request.name())
                 .description(request.description())
                 .resourceUrl(request.resourceUrl())
@@ -49,15 +49,15 @@ public class PracticeMapper {
                 .build();
     }
 
-    public void updateEntity(PracticalTask practicalTask, PracticeRequest request, Set<SubmissionType> submissionTypes) {
-        practicalTask.setName(request.name());
-        practicalTask.setDescription(request.description());
-        practicalTask.setResourceUrl(request.resourceUrl());
-        practicalTask.setRequirements(request.requirements());
-        practicalTask.setDeadline(request.deadline());
-        practicalTask.setWorkMode(request.workMode());
-        practicalTask.setTeamSize(request.teamSize());
-        practicalTask.setSchedulingRequired(request.schedulingRequired());
-        practicalTask.setAllowedSubmissionTypes(submissionTypes);
+    public void updateEntity(Practice practice, PracticeRequest request, Set<SubmissionType> submissionTypes) {
+        practice.setName(request.name());
+        practice.setDescription(request.description());
+        practice.setResourceUrl(request.resourceUrl());
+        practice.setRequirements(request.requirements());
+        practice.setDeadline(request.deadline());
+        practice.setWorkMode(request.workMode());
+        practice.setTeamSize(request.teamSize());
+        practice.setSchedulingRequired(request.schedulingRequired());
+        practice.setAllowedSubmissionTypes(submissionTypes);
     }
 }

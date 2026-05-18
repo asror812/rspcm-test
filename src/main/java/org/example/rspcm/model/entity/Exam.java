@@ -57,12 +57,9 @@ public class Exam {
     private List<ExamQuestion> questions = new ArrayList<>();
 
     @Builder.Default
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(name = "exam_practices",
-            joinColumns = @JoinColumn(name = "exam_id"),
-            inverseJoinColumns = @JoinColumn(name = "practical_task_id")
-    )
-    private Set<PracticalTask> practicalTasks = new HashSet<>();
+    @OneToMany(mappedBy = "exam", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("orderIndex asc")
+    private Set<ExamPractice> practices = new HashSet<>();
 
     @Builder.Default
     @ManyToMany(fetch = FetchType.LAZY)

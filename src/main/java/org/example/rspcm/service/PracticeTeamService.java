@@ -6,7 +6,7 @@ import org.example.rspcm.exception.ErrorCodes;
 import org.example.rspcm.exception.ErrorMessageException;
 import org.example.rspcm.exception.NotFoundException;
 import org.example.rspcm.model.entity.User;
-import org.example.rspcm.model.entity.PracticalTask;
+import org.example.rspcm.model.entity.Practice;
 import org.example.rspcm.model.entity.PracticeTeam;
 import org.example.rspcm.model.enums.WorkMode;
 import org.example.rspcm.repository.UserRepository;
@@ -31,42 +31,42 @@ public class PracticeTeamService {
     private final PracticeTeamMapper practiceTeamMapper;
 
     public List<PracticeTeam> getByPracticeId(Long practiceId) {
-        return teamRepository.findByPracticalTaskId(practiceId);
+        return teamRepository.findByPracticeId(practiceId);
     }
 
     public List<PracticeTeamResponse> getByPracticeIdResponse(Long practiceId) {
-        return teamRepository.findByPracticalTaskId(practiceId).stream().map(practiceTeamMapper::toResponse).toList();
+        return teamRepository.findByPracticeId(practiceId).stream().map(practiceTeamMapper::toResponse).toList();
     }
 
     @Transactional
     public PracticeTeam create(PracticeTeamRequest request) {
-        PracticalTask practicalTask = practiceRepository.findById(request.practiceId())
-                .orElseThrow(() -> new NotFoundException("PracticalTask topilmadi: " + request.practiceId()));
-        if (practicalTask.getWorkMode() != WorkMode.TEAM) {
-            throw new ErrorMessageException("Bu practicalTask individual rejimda", ErrorCodes.BadRequest);
+        Practice practice = practiceRepository.findById(request.practiceId())
+                .orElseThrow(() -> new NotFoundException("Practice topilmadi: " + request.practiceId()));
+        if (practice.getWorkMode() != WorkMode.TEAM) {
+            throw new ErrorMessageException("Bu practice individual rejimda", ErrorCodes.BadRequest);
         }
         Set<User> members = new HashSet<>(userRepository.findAllById(request.memberIds()));
-        Integer teamSize = practicalTask.getTeamSize();
+        Integer teamSize = practice.getTeamSize();
         if (teamSize != null && members.size() > teamSize) {
             throw new ErrorMessageException("Jamoa a'zolari soni teamSize dan oshib ketdi", ErrorCodes.BadRequest);
         }
 
-        PracticeTeam team = practiceTeamMapper.toEntity(request, practicalTask, members);
+        PracticeTeam team = practiceTeamMapper.toEntity(request, practice, members);
         return teamRepository.save(team);
     }
 
     public PracticeTeamResponse createResponse(PracticeTeamRequest request) {
-        PracticalTask practicalTask = practiceRepository.findById(request.practiceId())
-                .orElseThrow(() -> new NotFoundException("PracticalTask topilmadi: " + request.practiceId()));
-        if (practicalTask.getWorkMode() != WorkMode.TEAM) {
-            throw new ErrorMessageException("Bu practicalTask individual rejimda", ErrorCodes.BadRequest);
+        Practice practice = practiceRepository.findById(request.practiceId())
+                .orElseThrow(() -> new NotFoundException("Practice topilmadi: " + request.practiceId()));
+        if (practice.getWorkMode() != WorkMode.TEAM) {
+            throw new ErrorMessageException("Bu practice individual rejimda", ErrorCodes.BadRequest);
         }
         Set<User> members = new HashSet<>(userRepository.findAllById(request.memberIds()));
-        Integer teamSize = practicalTask.getTeamSize();
+        Integer teamSize = practice.getTeamSize();
         if (teamSize != null && members.size() > teamSize) {
             throw new ErrorMessageException("Jamoa a'zolari soni teamSize dan oshib ketdi", ErrorCodes.BadRequest);
         }
-        PracticeTeam team = practiceTeamMapper.toEntity(request, practicalTask, members);
+        PracticeTeam team = practiceTeamMapper.toEntity(request, practice, members);
         return practiceTeamMapper.toResponse(teamRepository.save(team));
     }
 }

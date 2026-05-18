@@ -10,6 +10,6 @@ import java.util.Optional;
 @Repository
 public interface PracticeJournalRepository extends JpaRepository<PracticeLogbook, Long> {
     List<PracticeLogbook> findByStudentId(Long studentId);
-    List<PracticeLogbook> findByPracticalTaskId(Long practiceId);
-    Optional<PracticeLogbook> findFirstByPracticalTaskIdAndStudentId(Long practiceId, Long studentId);
+    List<PracticeLogbook> findByPracticeId(Long practiceId);
+    Optional<PracticeLogbook> findFirstByPracticeIdAndStudentId(Long practiceId, Long studentId);
 }

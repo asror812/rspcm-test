@@ -27,7 +27,7 @@ public record ExamResponse(
 
         Set<GroupSummary> groups,
         Set<UserSummary> students,
-        List<PracticeSummary> practicalTasks,
+        List<PracticeSummary> practices,
         List<ExamQuestionSummary> examQuestions,
 
         UserSummary createdBy,
