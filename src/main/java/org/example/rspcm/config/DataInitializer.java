@@ -216,8 +216,8 @@ public class DataInitializer implements CommandLineRunner {
                 Set.of(k1Group, l1Group),
                 ExamType.PRACTICE
         );
-        attachPracticesToExam(practicalExam, List.of(practices.get(2), practices.get(3), practices.get(4)));
 
+        attachPracticesToExam(practicalExam, List.of(practices.get(2), practices.get(3), practices.get(4)));
         backfillExamAndExamQuestionAuditData(getUser("admin@rspcm.local"));
     }
 
@@ -336,7 +336,7 @@ public class DataInitializer implements CommandLineRunner {
                 .orElseGet(() -> Exam.builder()
                         .title(title)
                         .questions(new ArrayList<>())
-                        .practices(new HashSet<>())
+                        .practices(new ArrayList<>())
                         .groups(new HashSet<>())
                         .targetStudents(new HashSet<>())
                         .build());
@@ -355,10 +355,10 @@ public class DataInitializer implements CommandLineRunner {
         if (exam.getCreatedAt() == null) exam.setCreatedAt(LocalDateTime.now());
 
         if (exam.getQuestions() == null) exam.setQuestions(new ArrayList<>());
-        if (exam.getPractices() == null) exam.setPractices(new HashSet<>());
+        if (exam.getPractices() == null) exam.setPractices(new ArrayList<>());
 
         if (examType == ExamType.QUESTION) {
-            exam.setPractices(new HashSet<>());
+            exam.setPractices(new ArrayList<>());
         } else if (examType == ExamType.PRACTICE) {
             List<ExamQuestion> existingQuestions = examQuestionRepository.findByExamId(exam.getId());
             if (!existingQuestions.isEmpty()) {
@@ -420,7 +420,6 @@ public class DataInitializer implements CommandLineRunner {
             task.setSubject(subject);
             task.setResourceUrl("https://example.com/tasks/" + (index + 1));
             task.setRequirements("Task requirements for " + taskName);
-            task.setDeadline(LocalDateTime.now().plusDays(14 + index));
             task.setWorkMode(index % 2 == 0 ? WorkMode.INDIVIDUAL : WorkMode.TEAM);
             task.setTeamSize(task.getWorkMode() == WorkMode.TEAM ? 3 : null);
             task.setSchedulingRequired(false);
@@ -432,17 +431,18 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void attachPracticesToExam(Exam exam, List<Practice> practices) {
-        Set<ExamPractice> links = new HashSet<>();
+        List<ExamPractice> links = new ArrayList<>();
         int order = 1;
+
         for (Practice practice : practices) {
             links.add(ExamPractice.builder()
                     .exam(exam)
                     .practice(practice)
                     .score(10)
                     .orderIndex(order++)
-                    .deadline(practice.getDeadline())
                     .build());
         }
+
         exam.setPractices(links);
         examRepository.save(exam);
     }

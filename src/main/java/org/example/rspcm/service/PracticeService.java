@@ -18,7 +18,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.Objects;
+
 import java.util.Set;
 
 @Service
@@ -29,10 +29,18 @@ public class PracticeService {
     private final PracticeMapper practiceMapper;
     private final TeacherProfileRepository teacherProfileRepository;
 
+    public PracticeResponse create(PracticeRequest request, User user) {
+        Practice practice = practiceMapper.toEntity(
+                request,
+                resolveSubmissionTypes(request.allowedSubmissionTypes()),
+                user
+        );
+        return practiceMapper.toResponse(practiceRepository.save(practice));
+    }
+
     public Page<PracticeResponse> findAll(
             String query, boolean own, Long subjectId,
             User user, Pageable pageable) {
-
         Long userId = user.getId();
 
         if (isAdmin(user)) {
@@ -44,6 +52,17 @@ public class PracticeService {
 
         return practiceRepository.searchAll(query, own, subjectId, userId, pageable)
                 .map(practiceMapper::toResponse);
+    }
+
+    public PracticeResponse findResponseById(Long id, User user) {
+        Practice practice = findById(id, user);
+
+        if (isAdmin(user)) {
+            return practiceMapper.toResponse(practice);
+        }
+
+        validateTeacherSubjectAccess(user.getId(), practice.getSubject().getId());
+        return practiceMapper.toResponse(practice);
     }
 
     public Practice findById(Long id, User user) {
@@ -59,52 +78,12 @@ public class PracticeService {
         return practice;
     }
 
-    public PracticeResponse findResponseById(Long id, User user) {
-        Practice practice = practiceRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Practice topilmadi: " + id));
-
-        if (isStudent(user)) {
-
-            Long studentId = user.getId();
-            boolean assigned = practice.getExamPractices() != null
-                    && practice.getExamPractices().stream().anyMatch(link ->
-                    link.getExam().getTargetStudents().stream().anyMatch(student -> Objects.equals(student.getId(), studentId)) ||
-                            link.getExam().getGroups().stream().anyMatch(group ->
-                                    group.getStudents().stream().anyMatch(student -> Objects.equals(student.getId(), studentId))));
-            if (!assigned) {
-                throw new NotFoundException("Practice topilmadi: " + id);
-            }
-        }
-
-        return practiceMapper.toResponse(practice);
-    }
-
-
-    public PracticeResponse createResponse(PracticeRequest request, User user) {
-        validateTeamConfig(request.workMode(), request.teamSize());
-
-        Practice practice = practiceMapper.toEntity(
-                request,
-                resolveSubmissionTypes(request.allowedSubmissionTypes()),
-                user
-        );
-        return practiceMapper.toResponse(practiceRepository.save(practice));
-    }
-
     @Transactional
     public PracticeResponse update(Long id, PracticeRequest request, User user) {
-        validateTeamConfig(request.workMode(), request.teamSize());
-
         Practice practice = findById(id, user);
         practiceMapper.updateEntity(practice, request, resolveSubmissionTypes(request.allowedSubmissionTypes()));
         return practiceMapper.toResponse(practiceRepository.save(practice));
     }
-
-/*    @Transactional
-    public Practice assignGroups(Long practiceId, User user) {
-        Practice practice = findById(practiceId, user);
-        return practiceRepository.save(practice);
-    }*/
 
     public PracticeResponse assignGroupsResponse(Long practiceId, User user) {
         Practice practice = findById(practiceId, user);
@@ -114,16 +93,15 @@ public class PracticeService {
     @Transactional
     public void delete(Long id, User user) {
         Practice practice = findById(id, user);
-        practiceRepository.delete(practice);
-    }
 
-    private void validateTeamConfig(WorkMode mode, Integer teamSize) {
-        if (mode == WorkMode.TEAM && (teamSize == null || teamSize < 2)) {
-            throw new ErrorMessageException("TEAM mode uchun teamSize kamida 2 bo'lishi kerak", ErrorCodes.BadRequest);
+        if (isAdmin(user)) {
+            practice.setDeleted(true);
+            practiceRepository.save(practice);
         }
-        if (mode == WorkMode.INDIVIDUAL && teamSize != null) {
-            throw new ErrorMessageException("INDIVIDUAL mode uchun teamSize bo'sh bo'lishi kerak", ErrorCodes.BadRequest);
-        }
+
+        validateTeacherSubjectAccess(user.getId(), practice.getSubject().getId());
+        practice.setDeleted(true);
+        practiceRepository.save(practice);
     }
 
     private Set<SubmissionType> resolveSubmissionTypes(Set<SubmissionType> requestedTypes) {

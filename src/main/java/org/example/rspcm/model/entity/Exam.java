@@ -59,7 +59,7 @@ public class Exam {
     @Builder.Default
     @OneToMany(mappedBy = "exam", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("orderIndex asc")
-    private Set<ExamPractice> practices = new HashSet<>();
+    private List<ExamPractice> practices = new ArrayList<>();
 
     @Builder.Default
     @ManyToMany(fetch = FetchType.LAZY)
@@ -91,4 +91,38 @@ public class Exam {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "created_by")
     private User createdBy;
+
+    public void addPractice(Practice practice, Integer score, Integer orderIndex, LocalDateTime deadline) {
+        ExamPractice examPractice = ExamPractice.builder()
+                .exam(this)
+                .practice(practice)
+                .score(score)
+                .orderIndex(orderIndex)
+                .deadline(deadline)
+                .build();
+
+        this.practices.add(examPractice);
+    }
+
+    public void removePractice(ExamPractice examPractice) {
+        this.practices.remove(examPractice);
+        examPractice.setExam(null);
+    }
+
+    public void addQuestion(Practice practice, Integer score, Integer orderIndex, LocalDateTime deadline) {
+        ExamPractice examPractice = ExamPractice.builder()
+                .exam(this)
+                .practice(practice)
+                .score(score)
+                .orderIndex(orderIndex)
+                .deadline(deadline)
+                .build();
+
+        this.practices.add(examPractice);
+    }
+
+    public void removeQuestion(ExamQuestion examQuestion) {
+        this.questions.remove(examQuestion);
+        examQuestion.setExam(null);
+    }
 }

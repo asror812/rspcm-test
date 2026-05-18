@@ -27,7 +27,7 @@ import java.time.LocalDateTime;
                         columnNames = {"exam_id", "practice_id"}
                 ),
                 @UniqueConstraint(
-                        name = "uk_exam_practical_order",
+                        name = "uk_exam_practice_order",
                         columnNames = {"exam_id", "order_index"}
                 )
         }

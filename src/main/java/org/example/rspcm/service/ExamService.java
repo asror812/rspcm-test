@@ -163,7 +163,7 @@ public class ExamService {
 
     private void normalizeExamByType(Exam exam) {
         if (exam.getType() == ExamType.QUESTION) {
-            exam.setPractices(new HashSet<>());
+            exam.setPractices(new ArrayList<>());
             return;
         }
 

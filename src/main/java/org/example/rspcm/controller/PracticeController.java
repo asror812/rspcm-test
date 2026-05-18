@@ -15,8 +15,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/practices")
@@ -39,7 +37,7 @@ public class PracticeController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<PracticeResponse> getById(
             @PathVariable Long id,
             @AuthenticationPrincipal User user) {
@@ -51,7 +49,7 @@ public class PracticeController {
     public ResponseEntity<PracticeResponse> create(
             @Valid @RequestBody PracticeRequest request,
             @AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(practiceService.createResponse(request, user));
+        return ResponseEntity.ok(practiceService.create(request, user));
     }
 
     @PutMapping("/{id}")

@@ -13,13 +13,9 @@ public record PracticeRequest(
         String description,
         String resourceUrl,
         String requirements,
-        LocalDateTime deadline,
         @NotNull WorkMode workMode,
-        Integer teamSize,
         boolean schedulingRequired,
         Set<SubmissionType> allowedSubmissionTypes,
-        Set<Long> groupIds,
-        Set<Long> studentIds,
         Long subjectId
 ) {
 }

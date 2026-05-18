@@ -59,7 +59,7 @@ public class ExamQuestionService {
         return examQuestionMapper.toResponse(examQuestionRepository.save(examQuestion));
     }
 
-    private void checkForDuplicate(Exam exam, @NotNull Long aLong) {
+    private void checkForDuplicate(Exam exam, Long aLong) {
         boolean exists = examQuestionRepository.existsByExamIdAndQuestionId(exam.getId(), aLong);
         if (exists) {
             throw new ErrorMessageException("Bu imtihonda bu savol allaqachon mavjud", ErrorCodes.BadRequest);
@@ -135,12 +135,12 @@ public class ExamQuestionService {
 
     private void validateQuestionCapacityAndScoreForCreate(Exam exam, Integer limit, Integer newScore) {
         long currentCount = examQuestionRepository.countByExamId(exam.getId());
+
         if (limit != null && currentCount >= limit) {
             throw new ErrorMessageException("Bu imtihonda savollar soni yetarli", ErrorCodes.BadRequest);
         }
 
         Integer currentTotalScore = examQuestionRepository.sumScoreByExamId(exam.getId());
-
         if (exam.getMaxScore() != null && currentTotalScore + newScore > exam.getMaxScore()) {
             throw new ErrorMessageException(
                     "Savollar umumiy bali imtihon maksimal balidan oshib ketmasligi kerak",

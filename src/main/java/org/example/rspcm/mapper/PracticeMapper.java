@@ -25,7 +25,7 @@ public class PracticeMapper {
                 practice.getDescription(),
                 practice.getResourceUrl(),
                 practice.getRequirements(),
-                practice.getDeadline(),
+                null,
                 practice.getWorkMode(),
                 practice.getTeamSize(),
                 practice.isSchedulingRequired(),
@@ -40,7 +40,6 @@ public class PracticeMapper {
                 .description(request.description())
                 .resourceUrl(request.resourceUrl())
                 .requirements(request.requirements())
-                .deadline(request.deadline())
                 .workMode(request.workMode())
                 .teamSize(request.teamSize())
                 .schedulingRequired(request.schedulingRequired())
@@ -54,7 +53,6 @@ public class PracticeMapper {
         practice.setDescription(request.description());
         practice.setResourceUrl(request.resourceUrl());
         practice.setRequirements(request.requirements());
-        practice.setDeadline(request.deadline());
         practice.setWorkMode(request.workMode());
         practice.setTeamSize(request.teamSize());
         practice.setSchedulingRequired(request.schedulingRequired());

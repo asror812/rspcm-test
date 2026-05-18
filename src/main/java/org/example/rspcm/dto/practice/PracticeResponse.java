@@ -13,9 +13,7 @@ public record PracticeResponse(
         String description,
         String resourceUrl,
         String requirements,
-        LocalDateTime deadline,
         WorkMode workMode,
-        Integer teamSize,
         boolean calendarRequired,
         Set<SubmissionType> allowedSubmissionTypes,
         UserSummary createdBy

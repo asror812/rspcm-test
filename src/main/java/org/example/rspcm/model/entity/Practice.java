@@ -22,8 +22,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Getter
@@ -54,8 +55,6 @@ public class Practice {
     @Column(length = 2000)
     private String requirements;
 
-    private LocalDateTime deadline;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private WorkMode workMode;
@@ -65,16 +64,14 @@ public class Practice {
     @Column(nullable = false)
     private boolean schedulingRequired;
 
+    private boolean deleted;
+
     @Builder.Default
-    @ElementCollection(fetch = FetchType.EAGER)
+    @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "practice_submission_types", joinColumns = @JoinColumn(name = "practice_id"))
     @Column(name = "submission_type", nullable = false)
     @Enumerated(EnumType.STRING)
     private Set<SubmissionType> allowedSubmissionTypes = new HashSet<>();
-
-    @Builder.Default
-    @OneToMany(mappedBy = "practice")
-    private Set<ExamPractice> examPractices = new HashSet<>();
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "created_by")
