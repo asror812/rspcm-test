@@ -50,7 +50,7 @@ public class PracticalTaskAssignmentService {
     @Transactional
     public PracticalTaskAssignment create(PracticalTaskAssignmentRequest request) {
         var exam = validateExamTypeForPracticalTask(request.examId());
-        validatePracticeCapacityForCreate(exam.getId(), exam.getItemLimit());
+        validatePracticeCapacityForCreate(exam.getId(), exam.getTaskLimit());
         PracticalTaskAssignment assignment = practicalTaskAssignmentMapper.toEntity(
                 request,
                 exam,
@@ -67,7 +67,7 @@ public class PracticalTaskAssignmentService {
 
     public PracticalTaskAssignmentResponse createResponse(PracticalTaskAssignmentRequest request) {
         var exam = validateExamTypeForPracticalTask(request.examId());
-        validatePracticeCapacityForCreate(exam.getId(), exam.getItemLimit());
+        validatePracticeCapacityForCreate(exam.getId(), exam.getTaskLimit());
         PracticalTaskAssignment assignment = practicalTaskAssignmentMapper.toEntity(
                 request,
                 exam,
@@ -85,7 +85,7 @@ public class PracticalTaskAssignmentService {
     @Transactional
     public PracticalTaskAssignmentResponse update(Long id, PracticalTaskAssignmentRequest request) {
         var exam = validateExamTypeForPracticalTask(request.examId());
-        validatePracticeCapacityForUpdate(exam.getId(), exam.getItemLimit(), id);
+        validatePracticeCapacityForUpdate(exam.getId(), exam.getTaskLimit(), id);
         PracticalTaskAssignment assignment = findById(id);
         practicalTaskAssignmentMapper.updateEntity(
                 assignment,

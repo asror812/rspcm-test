@@ -29,16 +29,19 @@ public class ExamQuestionService {
     private final ExamQuestionMapper examQuestionMapper;
     private final TeacherProfileRepository teacherProfileRepository;
 
-    public ExamQuestionResponse createResponse(ExamQuestionRequest request) {
+    public ExamQuestionResponse create(ExamQuestionRequest request) {
         validateRequest(request);
         var exam = validateExamTypeForQuestion(request.examId());
-        validateQuestionCapacityForCreate(exam.getId(), exam.getItemLimit());
+
+        validateQuestionCapacityAndScoreForCreate(exam, exam.getTaskLimit(), request.score());
+
         ExamQuestion examQuestion = examQuestionMapper.toEntity(
                 request,
                 exam,
                 questionRepository.findById(request.questionId())
                         .orElseThrow(() -> new NotFoundException("Question topilmadi: " + request.questionId()))
         );
+
         return examQuestionMapper.toResponse(examQuestionRepository.save(examQuestion));
     }
 
@@ -68,7 +71,7 @@ public class ExamQuestionService {
     public ExamQuestionResponse update(Long id, ExamQuestionRequest request) {
         validateRequest(request);
         var exam = validateExamTypeForQuestion(request.examId());
-        validateQuestionCapacityForUpdate(exam.getId(), exam.getItemLimit(), id);
+        validateQuestionCapacityForUpdate(exam.getId(), exam.getTaskLimit(), id);
         ExamQuestion examQuestion = findById(id);
         examQuestionMapper.updateEntity(
                 examQuestion,
@@ -97,16 +100,27 @@ public class ExamQuestionService {
     private Exam validateExamTypeForQuestion(Long examId) {
         var exam = examRepository.findById(examId)
                 .orElseThrow(() -> new NotFoundException("Exam topilmadi: " + examId));
+
         if (exam.getType() != ExamType.QUESTION) {
             throw new ErrorMessageException("Faqat QUESTION turidagi imtihonga savol qo'shish mumkin", ErrorCodes.BadRequest);
         }
+
         return exam;
     }
 
-    private void validateQuestionCapacityForCreate(Long examId, Integer limit) {
-        long currentCount = examQuestionRepository.countByExamId(examId);
+    private void validateQuestionCapacityAndScoreForCreate(Exam exam, Integer limit, Integer newScore) {
+        long currentCount = examQuestionRepository.countByExamId(exam.getId());
         if (limit != null && currentCount >= limit) {
             throw new ErrorMessageException("Bu imtihonda savollar soni yetarli", ErrorCodes.BadRequest);
+        }
+
+        Integer currentTotalScore = examQuestionRepository.sumScoreByExamId(exam.getId());
+
+        if (exam.getMaxScore() != null && currentTotalScore + newScore > exam.getMaxScore()) {
+            throw new ErrorMessageException(
+                    "Savollar umumiy bali imtihon maksimal balidan oshib ketmasligi kerak",
+                    ErrorCodes.BadRequest
+            );
         }
     }
 

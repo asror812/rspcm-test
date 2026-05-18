@@ -22,6 +22,12 @@ public class ExamQuestionController {
 
     private final ExamQuestionService examQuestionService;
 
+    @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    public ResponseEntity<ExamQuestionResponse> create(@Valid @RequestBody ExamQuestionRequest request) {
+        return ResponseEntity.ok(examQuestionService.create(request));
+    }
+
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<List<ExamQuestionResponse>> getAll(
@@ -41,11 +47,6 @@ public class ExamQuestionController {
         return ResponseEntity.ok(examQuestionService.findResponseById(id));
     }
 
-    @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
-    public ResponseEntity<ExamQuestionResponse> create(@Valid @RequestBody ExamQuestionRequest request) {
-        return ResponseEntity.ok(examQuestionService.createResponse(request));
-    }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")

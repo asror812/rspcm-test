@@ -45,9 +45,7 @@ public class ExamMapper {
                 exam.getStartAt(),
                 exam.getEndAt(),
                 exam.getMaxScore(),
-                exam.getItemLimit(),
-                exam.getQuestions() == null ? 0 : exam.getQuestions().size(),
-                exam.getPracticalTasks() == null ? 0 : exam.getPracticalTasks().size(),
+                exam.getTaskLimit(),
                 exam.getType(),
                 groups,
                 students,
@@ -70,7 +68,7 @@ public class ExamMapper {
                 .startAt(request.startAt())
                 .endAt(request.endAt())
                 .maxScore(request.maxScore())
-                .itemLimit(request.itemLimit())
+                .taskLimit(request.taskLimit())
                 .type(request.type())
                 .groups(groups)
                 .targetStudents(students)
@@ -93,7 +91,7 @@ public class ExamMapper {
         exam.setStartAt(request.startAt());
         exam.setEndAt(request.endAt());
         exam.setMaxScore(request.maxScore());
-        exam.setItemLimit(request.itemLimit());
+        exam.setTaskLimit(request.taskLimit());
         exam.setType(request.type());
         exam.setGroups(groups);
         exam.setTargetStudents(students);
