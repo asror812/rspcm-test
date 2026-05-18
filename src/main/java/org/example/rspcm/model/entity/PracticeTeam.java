@@ -17,7 +17,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Getter
@@ -47,5 +49,5 @@ public class PracticeTeam {
             joinColumns = @JoinColumn(name = "team_id"),
             inverseJoinColumns = @JoinColumn(name = "student_id")
     )
-    private Set<User> members = new HashSet<>();
+    private List<User> members = new ArrayList<>();
 }
