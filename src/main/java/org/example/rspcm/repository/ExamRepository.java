@@ -1,6 +1,7 @@
 package org.example.rspcm.repository;
 
 import org.example.rspcm.model.entity.Exam;
+import org.example.rspcm.model.enums.ExamStatus;
 import org.example.rspcm.model.enums.ExamType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -50,6 +51,7 @@ public interface ExamRepository extends JpaRepository<Exam, Long> {
                         or lower(e.description) like lower(concat('%', :query, '%'))
                     )
                     and (:examType is null or e.type = :examType)
+                    and (:examStatus is null or e.status = :examStatus)
                     and (:subjectId is null or e.subject.id = :subjectId)
             """,
             countQuery = """
@@ -60,7 +62,8 @@ public interface ExamRepository extends JpaRepository<Exam, Long> {
                         or lower(e.description) like lower(concat('%', :query, '%'))
                     )
                     and (:examType is null or e.type = :examType)
+                    and (:examStatus is null or e.status = :examStatus)
                     and (:subjectId is null or e.subject.id = :subjectId)
                     """)
-    Page<Exam> searchAll(Long userId, ExamType examType, boolean own, Long subjectId, String query, Pageable pageable);
+    Page<Exam> searchAll(Long userId, ExamType examType, ExamStatus examStatus, boolean own, Long subjectId, String query, Pageable pageable);
 }

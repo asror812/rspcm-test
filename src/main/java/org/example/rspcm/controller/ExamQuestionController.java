@@ -30,6 +30,7 @@ public class ExamQuestionController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<Page<ExamQuestionResponse>> getAll(
+            @RequestParam(required = false) Long examId,
             @RequestParam(required = false) Long subjectId,
             @RequestParam(required = false, defaultValue = "false") boolean own,
             @RequestParam(required = false, defaultValue = "0") int page,
@@ -37,7 +38,7 @@ public class ExamQuestionController {
             @AuthenticationPrincipal User user
     ) {
         Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(examQuestionService.findAll(subjectId, own, user, pageable));
+        return ResponseEntity.ok(examQuestionService.findAll(examId, subjectId, own, user, pageable));
     }
 
     @GetMapping("/{id}")

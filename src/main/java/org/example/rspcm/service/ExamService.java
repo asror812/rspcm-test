@@ -11,6 +11,7 @@ import org.example.rspcm.model.entity.Exam;
 import org.example.rspcm.model.entity.StudyGroup;
 import org.example.rspcm.model.entity.Subject;
 import org.example.rspcm.model.entity.User;
+import org.example.rspcm.model.enums.ExamStatus;
 import org.example.rspcm.model.enums.ExamType;
 import org.example.rspcm.model.enums.RoleName;
 import org.example.rspcm.repository.ExamQuestionRepository;
@@ -43,22 +44,19 @@ public class ExamService {
     private final ExamQuestionRepository examQuestionRepository;
 
     public Page<ExamResponse> findAll(
-            User user, String query, ExamType examType,
+            User user, String query, ExamType examType, ExamStatus examStatus,
             boolean own, Long subjectId, Pageable pageable) {
 
         if (isAdmin(user)) {
-            return examRepository.searchAll(user.getId(), examType, own, subjectId, query, pageable)
+            return examRepository.searchAll(user.getId(), examType, examStatus, own, subjectId, query, pageable)
                     .map(examMapper::toResponse);
         }
 
-        if (isTeacher(user)) {
-            validateTeacherSubjectAccess(user.getId(), subjectId);
+        validateTeacherSubjectAccess(user.getId(), subjectId);
 
-            return examRepository.searchAll(user.getId(), examType, own, subjectId, query, pageable)
+        return examRepository.searchAll(user.getId(), examType, examStatus, own, subjectId, query, pageable)
                     .map(examMapper::toResponse);
-        }
 
-        throw new ErrorMessageException("Ruxsat etilmagan amal", ErrorCodes.Forbidden);
     }
 
     public ExamResponse findById(Long id, User user) {
@@ -70,7 +68,7 @@ public class ExamService {
         }
 
         if (isTeacher(user)) {
-            validateTeacherSubjectAccess(user.getId(), exam.getId());
+            validateTeacherSubjectAccess(user.getId(), exam.getSubject() == null ? null : exam.getSubject().getId());
             return examMapper.toResponse(exam);
         }
 
@@ -101,7 +99,7 @@ public class ExamService {
         Exam exam = examRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Imtihon topilmadi: " + id));
 
-        validateTeacherSubjectAccess(user.getId(), exam.getId());
+        validateTeacherSubjectAccess(user.getId(), exam.getSubject() == null ? null : exam.getSubject().getId());
 
         Subject subject = resolveSubject(request.subjectId());
 
@@ -123,6 +121,19 @@ public class ExamService {
                 .orElseThrow(() -> new NotFoundException("Imtihon topilmadi: " + id));
 
         examRepository.delete(exam);
+    }
+
+    @Transactional
+    public ExamResponse updateStatus(Long id, ExamStatus status, User user) {
+        Exam exam = examRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Imtihon topilmadi: " + id));
+
+        if (isTeacher(user)) {
+            validateTeacherSubjectAccess(user.getId(), exam.getSubject() == null ? null : exam.getSubject().getId());
+        }
+
+        exam.setStatus(status);
+        return examMapper.toResponse(examRepository.save(exam));
     }
 
     private void validateTeacherSubjectAccess(Long userId, Long subjectId) {

@@ -3,6 +3,7 @@ package org.example.rspcm.controller;
 import org.example.rspcm.dto.exam.ExamRequest;
 import org.example.rspcm.dto.exam.ExamResponse;
 import org.example.rspcm.model.entity.User;
+import org.example.rspcm.model.enums.ExamStatus;
 import org.example.rspcm.model.enums.ExamType;
 import org.example.rspcm.service.ExamService;
 import jakarta.validation.Valid;
@@ -28,6 +29,7 @@ public class ExamController {
     public ResponseEntity<Page<ExamResponse>> getAll(
             @RequestParam(required = false) String query,
             @RequestParam(required = false) ExamType type,
+            @RequestParam(required = false) ExamStatus status,
             @RequestParam(required = false) boolean own,
             @RequestParam(required = false) Long subjectId,
             @RequestParam(required = false, defaultValue = "0") int page,
@@ -35,7 +37,7 @@ public class ExamController {
             @AuthenticationPrincipal User user
     ) {
         Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(examService.findAll(user, query, type, own, subjectId, pageable));
+        return ResponseEntity.ok(examService.findAll(user, query, type, status, own, subjectId, pageable));
     }
 
     @GetMapping("/{id}")
@@ -68,5 +70,15 @@ public class ExamController {
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         examService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    public ResponseEntity<ExamResponse> updateStatus(
+            @PathVariable Long id,
+            @RequestParam ExamStatus status,
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(examService.updateStatus(id, status, user));
     }
 }

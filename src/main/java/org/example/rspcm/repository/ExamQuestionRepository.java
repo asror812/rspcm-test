@@ -16,10 +16,11 @@ public interface ExamQuestionRepository extends JpaRepository<ExamQuestion, Long
 
     @Query("""
             select e from ExamQuestion e
-            where (:subjectId is null or e.question.subject.id = :subjectId)
+            where (:examId is null or e.exam.id = :examId)
+                and (:subjectId is null or e.question.subject.id = :subjectId)
                 and (:createdById is null or e.createdBy.id = :createdById)
             """)
-    Page<ExamQuestion> searchAll(Long subjectId, Long createdById, Pageable pageable);
+    Page<ExamQuestion> searchAll(Long examId, Long subjectId, Long createdById, Pageable pageable);
 
     @Query("""
         SELECT COALESCE(SUM(eq.score), 0)

@@ -8,6 +8,7 @@ import org.example.rspcm.exception.NotFoundException;
 import org.example.rspcm.model.entity.Exam;
 import org.example.rspcm.model.entity.ExamQuestion;
 import org.example.rspcm.model.entity.User;
+import org.example.rspcm.model.enums.ExamStatus;
 import org.example.rspcm.model.enums.ExamType;
 import org.example.rspcm.mapper.ExamQuestionMapper;
 import org.example.rspcm.model.enums.RoleName;
@@ -45,17 +46,17 @@ public class ExamQuestionService {
         return examQuestionMapper.toResponse(examQuestionRepository.save(examQuestion));
     }
 
-    public Page<ExamQuestionResponse> findAll(Long subjectId, boolean own, User user, Pageable pageable) {
+    public Page<ExamQuestionResponse> findAll(Long examId, Long subjectId, boolean own, User user, Pageable pageable) {
         Long createdById = own ? user.getId() : null;
 
         if (isAdmin(user)) {
-            return examQuestionRepository.searchAll(subjectId, createdById, pageable)
+            return examQuestionRepository.searchAll(examId, subjectId, createdById, pageable)
                     .map(examQuestionMapper::toResponse);
         }
 
-        validateTeacherAccess(user.getId(), subjectId);
+        validateTeacherAccess(user.getId(), subjectId, examId);
 
-        return examQuestionRepository.searchAll(subjectId, createdById, pageable)
+        return examQuestionRepository.searchAll(examId, subjectId, createdById, pageable)
                 .map(examQuestionMapper::toResponse);
     }
 
@@ -101,6 +102,10 @@ public class ExamQuestionService {
         var exam = examRepository.findById(examId)
                 .orElseThrow(() -> new NotFoundException("Exam topilmadi: " + examId));
 
+        if (exam.getStatus() != ExamStatus.DRAFT) {
+            throw new ErrorMessageException("Examni faqat Draft statusida yangilab buladi", ErrorCodes.BadRequest);
+        }
+
         if (exam.getType() != ExamType.QUESTION) {
             throw new ErrorMessageException("Faqat QUESTION turidagi imtihonga savol qo'shish mumkin", ErrorCodes.BadRequest);
         }
@@ -131,12 +136,22 @@ public class ExamQuestionService {
         }
     }
 
-    private void validateTeacherAccess(Long userId, Long subjectId) {
-        if (subjectId == null) {
-            throw new ErrorMessageException("Fan bo'yicha filtr kiritilishi shart", ErrorCodes.BadRequest);
+    private void validateTeacherAccess(Long userId, Long subjectId, Long examId) {
+        if (subjectId == null && examId == null) {
+            throw new ErrorMessageException("Filtr uchun subjectId yoki examId kiritilishi shart", ErrorCodes.BadRequest);
         }
 
-        boolean teachesSubject = teacherProfileRepository.existsByUserIdAndTeachingSubjectsId(userId, subjectId);
+        Long resolvedSubjectId = subjectId;
+        if (resolvedSubjectId == null) {
+            var exam = examRepository.findById(examId)
+                    .orElseThrow(() -> new NotFoundException("Exam topilmadi: " + examId));
+            if (exam.getSubject() == null) {
+                throw new ErrorMessageException("Bu exam uchun subject biriktirilmagan", ErrorCodes.BadRequest);
+            }
+            resolvedSubjectId = exam.getSubject().getId();
+        }
+
+        boolean teachesSubject = teacherProfileRepository.existsByUserIdAndTeachingSubjectsId(userId, resolvedSubjectId);
         if (!teachesSubject) {
             throw new ErrorMessageException("Faqat o'zingizga biriktirilgan fan imtihonlarini ko'ra olasiz", ErrorCodes.Forbidden);
         }
