@@ -13,12 +13,11 @@ import org.example.rspcm.model.enums.WorkMode;
 import org.example.rspcm.repository.PracticeRepository;
 import org.example.rspcm.mapper.PracticeMapper;
 import lombok.RequiredArgsConstructor;
+import org.example.rspcm.repository.TeacherProfileRepository;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -28,39 +27,35 @@ public class PracticeService {
 
     private final PracticeRepository practiceRepository;
     private final PracticeMapper practiceMapper;
+    private final TeacherProfileRepository teacherProfileRepository;
 
-    public List<PracticeResponse> findAll(String query, boolean own, Long subjectId, Pageable pageable, User user) {
-        if (!isStudent(user)) {
-            return practiceRepository.findAll().stream().map(practiceMapper::toResponse).toList();
+    public Page<PracticeResponse> findAll(
+            String query, boolean own, Long subjectId,
+            User user, Pageable pageable) {
+
+        Long userId = user.getId();
+
+        if (isAdmin(user)) {
+            return practiceRepository.searchAll(query, own, subjectId, userId, pageable)
+                    .map(practiceMapper::toResponse);
         }
 
-        Long studentId = user.getId();
-        return practiceRepository.findAll().stream()
-                .filter(practicalTask -> practicalTask.getExams() != null)
-                .filter(practicalTask -> practicalTask.getExams().stream().anyMatch(exam ->
-                        exam.getTargetStudents().stream().anyMatch(student -> Objects.equals(student.getId(), studentId)) ||
-                                exam.getGroups().stream().anyMatch(group ->
-                                        group.getStudents().stream().anyMatch(student -> Objects.equals(student.getId(), studentId)))
-                ))
-                .map(practiceMapper::toResponse)
-                .toList();
+        validateTeacherSubjectAccess(userId, subjectId);
+
+        return practiceRepository.searchAll(query, own, subjectId, userId, pageable)
+                .map(practiceMapper::toResponse);
     }
 
     public PracticalTask findById(Long id, User user) {
         PracticalTask practicalTask = practiceRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("PracticalTask topilmadi: " + id));
 
-        if (!isStudent(user)) {
+        if (isAdmin(user)) {
             return practicalTask;
         }
-        Long studentId = user.getId();
-        boolean assigned = practicalTask.getExams() != null && practicalTask.getExams().stream().anyMatch(exam ->
-                exam.getTargetStudents().stream().anyMatch(student -> Objects.equals(student.getId(), studentId)) ||
-                        exam.getGroups().stream().anyMatch(group ->
-                                group.getStudents().stream().anyMatch(student -> Objects.equals(student.getId(), studentId))));
-        if (!assigned) {
-            throw new NotFoundException("PracticalTask topilmadi: " + id);
-        }
+
+        validateTeacherSubjectAccess(user.getId(), practicalTask.getSubject().getId());
+
         return practicalTask;
     }
 
@@ -104,11 +99,11 @@ public class PracticeService {
         return practiceMapper.toResponse(practiceRepository.save(practicalTask));
     }
 
-    @Transactional
+/*    @Transactional
     public PracticalTask assignGroups(Long practiceId, User user) {
         PracticalTask practicalTask = findById(practiceId, user);
         return practiceRepository.save(practicalTask);
-    }
+    }*/
 
     public PracticeResponse assignGroupsResponse(Long practiceId, User user) {
         PracticalTask practicalTask = findById(practiceId, user);
@@ -130,14 +125,37 @@ public class PracticeService {
         }
     }
 
-    private boolean isStudent(User user) {
-        return user.getRoles().stream().anyMatch(role -> role.getRoleName() == RoleName.ROLE_STUDENT);
-    }
-
     private Set<SubmissionType> resolveSubmissionTypes(Set<SubmissionType> requestedTypes) {
         if (requestedTypes == null || requestedTypes.isEmpty()) {
             return Set.of(SubmissionType.TEXT);
         }
         return requestedTypes;
+    }
+
+    private void validateTeacherSubjectAccess(Long userId, Long subjectId) {
+        if (subjectId == null) {
+            throw new ErrorMessageException("Fan bo'yicha filtr kiritilishi shart", ErrorCodes.BadRequest);
+        }
+
+        boolean teachesSubject = teacherProfileRepository.existsByUserIdAndTeachingSubjectsId(userId, subjectId);
+        if (!teachesSubject) {
+            throw new ErrorMessageException("Faqat o'zingizga biriktirilgan fan imtihonlarini ko'ra olasiz", ErrorCodes.Forbidden);
+        }
+    }
+
+    private boolean hasRole(User user, RoleName roleName) {
+        return user.getRoles().stream().anyMatch(role -> role.getRoleName() == roleName);
+    }
+
+    private boolean isAdmin(User user) {
+        return hasRole(user, RoleName.ROLE_ADMIN);
+    }
+
+    private boolean isTeacher(User user) {
+        return hasRole(user, RoleName.ROLE_TEACHER);
+    }
+
+    private boolean isStudent(User user) {
+        return hasRole(user, RoleName.ROLE_STUDENT);
     }
 }

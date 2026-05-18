@@ -67,16 +67,16 @@ public class ExamQuestionService {
     }
 
     public Page<ExamQuestionResponse> findAll(Long examId, Long subjectId, boolean own, User user, Pageable pageable) {
-        Long createdById = own ? user.getId() : null;
+        Long userId = user.getId();
 
         if (isAdmin(user)) {
-            return examQuestionRepository.searchAll(examId, subjectId, createdById, pageable)
+            return examQuestionRepository.searchAll(examId, subjectId, own, userId, pageable)
                     .map(examQuestionMapper::toResponse);
         }
 
-        validateTeacherAccess(user.getId(), subjectId, examId);
+        validateTeacherAccess(userId, subjectId, examId);
 
-        return examQuestionRepository.searchAll(examId, subjectId, createdById, pageable)
+        return examQuestionRepository.searchAll(examId, subjectId, own, userId, pageable)
                 .map(examQuestionMapper::toResponse);
     }
 

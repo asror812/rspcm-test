@@ -42,6 +42,10 @@ public class PracticalTask {
     @Column(nullable = false)
     private String name;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "subject_id", nullable = false)
+    private Subject subject;
+
     @Column(length = 2000)
     private String description;
 
