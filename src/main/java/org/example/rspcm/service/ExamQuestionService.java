@@ -1,5 +1,6 @@
 package org.example.rspcm.service;
 
+import jakarta.validation.constraints.NotNull;
 import org.example.rspcm.dto.exam.ExamQuestionRequest;
 import org.example.rspcm.dto.exam.ExamQuestionResponse;
 import org.example.rspcm.exception.ErrorCodes;
@@ -30,20 +31,29 @@ public class ExamQuestionService {
     private final ExamQuestionMapper examQuestionMapper;
     private final TeacherProfileRepository teacherProfileRepository;
 
-    public ExamQuestionResponse create(ExamQuestionRequest request) {
+    public ExamQuestionResponse create(ExamQuestionRequest request, User user) {
         validateRequest(request);
         var exam = validateExamTypeForQuestion(request.examId());
 
+        checkForDuplicate(exam, request.questionId());
         validateQuestionCapacityAndScoreForCreate(exam, exam.getTaskLimit(), request.score());
 
         ExamQuestion examQuestion = examQuestionMapper.toEntity(
                 request,
                 exam,
                 questionRepository.findById(request.questionId())
-                        .orElseThrow(() -> new NotFoundException("Question topilmadi: " + request.questionId()))
+                        .orElseThrow(() -> new NotFoundException("Question topilmadi: " + request.questionId())),
+                user
         );
 
         return examQuestionMapper.toResponse(examQuestionRepository.save(examQuestion));
+    }
+
+    private void checkForDuplicate(Exam exam, @NotNull Long aLong) {
+        boolean exists = examQuestionRepository.existsByExamIdAndQuestionId(exam.getId(), aLong);
+        if (exists) {
+            throw new ErrorMessageException("Bu imtihonda bu savol allaqachon mavjud", ErrorCodes.BadRequest);
+        }
     }
 
     public Page<ExamQuestionResponse> findAll(Long examId, Long subjectId, boolean own, User user, Pageable pageable) {

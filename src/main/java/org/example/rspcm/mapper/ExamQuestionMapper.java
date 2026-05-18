@@ -7,6 +7,7 @@ import org.example.rspcm.model.entity.Exam;
 import org.example.rspcm.model.entity.ExamQuestion;
 import org.example.rspcm.model.entity.Question;
 import lombok.RequiredArgsConstructor;
+import org.example.rspcm.model.entity.User;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -40,12 +41,13 @@ public class ExamQuestionMapper {
         );
     }
 
-    public ExamQuestion toEntity(ExamQuestionRequest request, Exam exam, Question question) {
+    public ExamQuestion toEntity(ExamQuestionRequest request, Exam exam, Question question, User user) {
         ExamQuestion examQuestion = new ExamQuestion();
         examQuestion.setExam(exam);
         examQuestion.setQuestion(question);
         examQuestion.setScore(request.score());
         examQuestion.setOrderIndex(request.orderIndex());
+        examQuestion.setCreatedBy(user);
         return examQuestion;
     }
 

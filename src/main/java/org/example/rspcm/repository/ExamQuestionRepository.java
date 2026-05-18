@@ -1,5 +1,6 @@
 package org.example.rspcm.repository;
 
+import jakarta.validation.constraints.NotNull;
 import org.example.rspcm.model.entity.ExamQuestion;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -32,4 +33,6 @@ public interface ExamQuestionRepository extends JpaRepository<ExamQuestion, Long
     long countByExamId(Long examId);
 
     long countByExamIdAndIdNot(Long examId, Long id);
+
+    boolean existsByExamIdAndQuestionId(Long id, @NotNull Long aLong);
 }

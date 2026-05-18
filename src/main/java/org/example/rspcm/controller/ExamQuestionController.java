@@ -23,8 +23,10 @@ public class ExamQuestionController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
-    public ResponseEntity<ExamQuestionResponse> create(@Valid @RequestBody ExamQuestionRequest request) {
-        return ResponseEntity.ok(examQuestionService.create(request));
+    public ResponseEntity<ExamQuestionResponse> create(
+            @Valid @RequestBody ExamQuestionRequest request,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(examQuestionService.create(request, user));
     }
 
     @GetMapping

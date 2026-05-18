@@ -82,6 +82,9 @@ public class ExamService {
     @Transactional
     public ExamResponse create(User user, ExamRequest request) {
         Subject subject = resolveSubject(request.subjectId());
+
+        validateTeacherSubjectAccess(user.getId(), subject.getId());
+
         Exam exam = examMapper.toEntity(
                 request,
                 resolveGroups(request.groupIds()),
@@ -89,8 +92,9 @@ public class ExamService {
                 user,
                 subject
         );
+
         Exam saved = examRepository.save(exam);
-        normalizeExamByType(saved);
+        normalizeExamByType(exam);
         return examMapper.toResponse(examRepository.save(saved));
     }
 
