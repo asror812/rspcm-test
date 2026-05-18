@@ -42,7 +42,6 @@ public class PracticeService {
             String query, boolean own, Long subjectId,
             User user, Pageable pageable) {
         Long userId = user.getId();
-
         if (isAdmin(user)) {
             return practiceRepository.searchAll(query, own, subjectId, userId, pageable)
                     .map(practiceMapper::toResponse);

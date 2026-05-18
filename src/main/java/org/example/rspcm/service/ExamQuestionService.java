@@ -1,6 +1,5 @@
 package org.example.rspcm.service;
 
-import jakarta.validation.constraints.NotNull;
 import org.example.rspcm.dto.exam.ExamQuestionRequest;
 import org.example.rspcm.dto.exam.ExamQuestionResponse;
 import org.example.rspcm.exception.ErrorCodes;

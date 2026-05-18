@@ -431,19 +431,34 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void attachPracticesToExam(Exam exam, List<Practice> practices) {
-        List<ExamPractice> links = new ArrayList<>();
-        int order = 1;
+        List<ExamPractice> existingLinks = new ArrayList<>(exam.getPractices() == null ? List.of() : exam.getPractices());
+        Map<Long, ExamPractice> existingByPracticeId = existingLinks.stream()
+                .collect(Collectors.toMap(link -> link.getPractice().getId(), link -> link, (left, right) -> left));
 
-        for (Practice practice : practices) {
-            links.add(ExamPractice.builder()
-                    .exam(exam)
-                    .practice(practice)
-                    .score(10)
-                    .orderIndex(order++)
-                    .build());
+        Set<Long> desiredPracticeIds = practices.stream()
+                .map(Practice::getId)
+                .collect(Collectors.toSet());
+
+        List<ExamPractice> staleLinks = existingLinks.stream()
+                .filter(link -> !desiredPracticeIds.contains(link.getPractice().getId()))
+                .toList();
+
+        if (!staleLinks.isEmpty()) {
+            exam.getPractices().removeAll(staleLinks);
         }
 
-        exam.setPractices(links);
+        List<ExamPractice> normalized = new ArrayList<>();
+        int order = 1;
+        for (Practice practice : practices) {
+            ExamPractice link = existingByPracticeId.getOrDefault(practice.getId(), new ExamPractice());
+            link.setExam(exam);
+            link.setPractice(practice);
+            link.setScore(10);
+            link.setOrderIndex(order++);
+            normalized.add(link);
+        }
+
+        exam.setPractices(normalized);
         examRepository.save(exam);
     }
 

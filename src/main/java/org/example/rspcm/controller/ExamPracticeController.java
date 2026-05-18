@@ -43,7 +43,9 @@ public class ExamPracticeController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
-    public ResponseEntity<ExamPracticeResponse> getById(@PathVariable Long id, @AuthenticationPrincipal User user) {
+    public ResponseEntity<ExamPracticeResponse> getById(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user) {
         return ResponseEntity.ok(examPracticeService.findById(id, user));
     }
 

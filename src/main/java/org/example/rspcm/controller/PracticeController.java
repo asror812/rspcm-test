@@ -61,14 +61,6 @@ public class PracticeController {
         return ResponseEntity.ok(practiceService.update(id, request, user));
     }
 
-    @PatchMapping("/{id}/assign-groups")
-    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
-    public ResponseEntity<PracticeResponse> assignGroups(
-            @PathVariable Long id,
-            @AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(practiceService.assignGroupsResponse(id, user));
-    }
-
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<Void> delete(

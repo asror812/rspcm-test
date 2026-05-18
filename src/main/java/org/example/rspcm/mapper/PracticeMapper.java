@@ -25,9 +25,7 @@ public class PracticeMapper {
                 practice.getDescription(),
                 practice.getResourceUrl(),
                 practice.getRequirements(),
-                null,
                 practice.getWorkMode(),
-                practice.getTeamSize(),
                 practice.isSchedulingRequired(),
                 practice.getAllowedSubmissionTypes(),
                 createdBy
@@ -41,7 +39,6 @@ public class PracticeMapper {
                 .resourceUrl(request.resourceUrl())
                 .requirements(request.requirements())
                 .workMode(request.workMode())
-                .teamSize(request.teamSize())
                 .schedulingRequired(request.schedulingRequired())
                 .allowedSubmissionTypes(submissionTypes)
                 .createdBy(createdBy)
@@ -54,7 +51,6 @@ public class PracticeMapper {
         practice.setResourceUrl(request.resourceUrl());
         practice.setRequirements(request.requirements());
         practice.setWorkMode(request.workMode());
-        practice.setTeamSize(request.teamSize());
         practice.setSchedulingRequired(request.schedulingRequired());
         practice.setAllowedSubmissionTypes(submissionTypes);
     }

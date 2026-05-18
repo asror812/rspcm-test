@@ -13,9 +13,7 @@ import java.util.Optional;
 @Repository
 public interface QuestionRepository extends JpaRepository<Question, Long> {
     List<Question> findBySubjectIdAndDeletedFalse(Long subjectId);
-    List<Question> findByCreatedByIdAndSubjectIdAndDeletedFalse(Long createdById, Long subjectId);
-    long countBySubjectId(Long subjectId);
-    boolean existsBySubjectIdAndText(Long subjectId, String text);
+
     Optional<Question> findBySubjectIdAndText(Long subjectId, String text);
     Optional<Question> findByIdAndDeletedFalse(Long id);
 

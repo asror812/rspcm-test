@@ -17,9 +17,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -45,7 +44,8 @@ public class PracticeTeamService {
         if (practice.getWorkMode() != WorkMode.TEAM) {
             throw new ErrorMessageException("Bu practice individual rejimda", ErrorCodes.BadRequest);
         }
-        Set<User> members = new HashSet<>(userRepository.findAllById(request.memberIds()));
+
+        List<User> members = new ArrayList<>(userRepository.findAllById(request.memberIds()));
         Integer teamSize = practice.getTeamSize();
         if (teamSize != null && members.size() > teamSize) {
             throw new ErrorMessageException("Jamoa a'zolari soni teamSize dan oshib ketdi", ErrorCodes.BadRequest);
@@ -61,7 +61,8 @@ public class PracticeTeamService {
         if (practice.getWorkMode() != WorkMode.TEAM) {
             throw new ErrorMessageException("Bu practice individual rejimda", ErrorCodes.BadRequest);
         }
-        Set<User> members = new HashSet<>(userRepository.findAllById(request.memberIds()));
+
+        List<User> members = new ArrayList<>(userRepository.findAllById(request.memberIds()));
         Integer teamSize = practice.getTeamSize();
         if (teamSize != null && members.size() > teamSize) {
             throw new ErrorMessageException("Jamoa a'zolari soni teamSize dan oshib ketdi", ErrorCodes.BadRequest);

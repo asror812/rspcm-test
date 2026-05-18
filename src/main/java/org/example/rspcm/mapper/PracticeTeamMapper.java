@@ -9,6 +9,7 @@ import org.example.rspcm.model.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -22,7 +23,7 @@ public class PracticeTeamMapper {
         return new PracticeTeamResponse(team.getId(), summaryMapper.toPracticeSummary(team.getPractice()), team.getName(), members);
     }
 
-    public PracticeTeam toEntity(PracticeTeamRequest request, Practice practice, Set<User> members) {
+    public PracticeTeam toEntity(PracticeTeamRequest request, Practice practice, List<User> members) {
         return PracticeTeam.builder()
                 .practice(practice)
                 .name(request.name())
