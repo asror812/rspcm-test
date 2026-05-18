@@ -13,11 +13,11 @@ import org.example.rspcm.mapper.ExamQuestionMapper;
 import org.example.rspcm.model.enums.RoleName;
 import org.example.rspcm.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -45,18 +45,18 @@ public class ExamQuestionService {
         return examQuestionMapper.toResponse(examQuestionRepository.save(examQuestion));
     }
 
-    public List<ExamQuestionResponse> findAll(Long subjectId, boolean own, User user, Pageable pageable) {
+    public Page<ExamQuestionResponse> findAll(Long subjectId, boolean own, User user, Pageable pageable) {
         Long createdById = own ? user.getId() : null;
 
         if (isAdmin(user)) {
-            return examQuestionRepository.searchAll(subjectId, own, createdById, pageable)
-                    .stream().map(examQuestionMapper::toResponse).toList();
+            return examQuestionRepository.searchAll(subjectId, createdById, pageable)
+                    .map(examQuestionMapper::toResponse);
         }
 
         validateTeacherAccess(user.getId(), subjectId);
 
-        return examQuestionRepository.searchAll(subjectId, own, createdById, pageable)
-                .stream().map(examQuestionMapper::toResponse).toList();
+        return examQuestionRepository.searchAll(subjectId, createdById, pageable)
+                .map(examQuestionMapper::toResponse);
     }
 
     public ExamQuestion findById(Long id) {
@@ -154,7 +154,4 @@ public class ExamQuestionService {
         return hasRole(user, RoleName.ROLE_TEACHER);
     }
 
-    private boolean isStudent(User user) {
-        return hasRole(user, RoleName.ROLE_STUDENT);
-    }
 }

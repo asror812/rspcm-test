@@ -1,6 +1,7 @@
 package org.example.rspcm.repository;
 
 import org.example.rspcm.model.entity.ExamQuestion;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -18,7 +19,7 @@ public interface ExamQuestionRepository extends JpaRepository<ExamQuestion, Long
             where (:subjectId is null or e.question.subject.id = :subjectId)
                 and (:createdById is null or e.createdBy.id = :createdById)
             """)
-    List<ExamQuestion> searchAll(Long subjectId, boolean own, Long createdById, Pageable pageable);
+    Page<ExamQuestion> searchAll(Long subjectId, Long createdById, Pageable pageable);
 
     @Query("""
         SELECT COALESCE(SUM(eq.score), 0)
