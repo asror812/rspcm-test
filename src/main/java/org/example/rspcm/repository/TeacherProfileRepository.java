@@ -11,8 +11,5 @@ import java.util.Optional;
 public interface TeacherProfileRepository extends JpaRepository<TeacherProfile, Long> {
     Optional<TeacherProfile> findByUserId(Long userId);
     void deleteByUserId(Long userId);
-
     boolean existsByUserIdAndTeachingSubjectsId(Long userId, Long subjectId);
-
-    Long user(User user);
 }

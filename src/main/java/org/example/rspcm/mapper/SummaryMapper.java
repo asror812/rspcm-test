@@ -25,8 +25,15 @@ public class SummaryMapper {
         return new GroupSummary(group.getId(), group.getName(), group.getLanguage());
     }
 
-    public PracticeSummary toPracticeSummary(PracticalTask practicalTask) {
-        return new PracticeSummary(practicalTask.getId(), practicalTask.getName(), practicalTask.getDeadline());
+    public PracticeSummary toPracticeSummary(Practice practice) {
+        return new PracticeSummary(
+                practice.getId(),
+                practice.getName(),
+                toSubjectSummary(practice.getSubject()),
+                practice.getWorkMode(),
+                practice.getTeamSize(),
+                practice.isSchedulingRequired()
+        );
     }
 
     public ExamSummary toExamSummary(Exam exam) {

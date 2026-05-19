@@ -44,7 +44,7 @@ public class PracticeLogbook {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "practice_id")
-    private PracticalTask practicalTask;
+    private Practice practice;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "student_id")

@@ -30,7 +30,8 @@ public class SwaggerConfig {
         String schemeName = "bearerAuth";
 
         String adminToken = generateAdminToken();
-        String teacherToken = generateTeacherToken();
+        String mathTeacherToken = generateMathTeacherToken();
+        String programmingTeacherToken = generateProgrammingTeacherToken();
         String studentToken = generateStudentToken();
 
         return new OpenAPI()
@@ -43,7 +44,12 @@ public class SwaggerConfig {
                                 %s
                                 ```
                                 
-                                ### Teacher JWT token
+                                ### Math Teacher JWT token
+                                ```
+                                %s
+                                ```
+
+                                ### Programming Teacher JWT token
                                 ```
                                 %s
                                 ```
@@ -53,7 +59,7 @@ public class SwaggerConfig {
                                 %s
                                 ```
                                 
-                                """.formatted(adminToken, teacherToken, studentToken))
+                                """.formatted(adminToken, mathTeacherToken, programmingTeacherToken, studentToken))
                 )
                 .servers(List.of(
                         new Server().url("http://localhost:8080").description("Local development server"),
@@ -78,8 +84,14 @@ public class SwaggerConfig {
                 .map(jwtService::generateToken).orElse(null);
     }
 
-    private String generateTeacherToken() {
+    private String generateMathTeacherToken() {
         Optional<User> existingUser = userRepository.findByEmail("math.teacher@rspcm.local");
+        return existingUser.map(this::toUserDetails)
+                .map(jwtService::generateToken).orElse(null);
+    }
+
+    private String generateProgrammingTeacherToken() {
+        Optional<User> existingUser = userRepository.findByEmail("programming.teacher@rspcm.local");
         return existingUser.map(this::toUserDetails)
                 .map(jwtService::generateToken).orElse(null);
     }

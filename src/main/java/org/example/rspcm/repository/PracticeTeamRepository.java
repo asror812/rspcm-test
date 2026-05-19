@@ -8,5 +8,5 @@ import java.util.List;
 
 @Repository
 public interface PracticeTeamRepository extends JpaRepository<PracticeTeam, Long> {
-    List<PracticeTeam> findByPracticalTaskId(Long practiceId);
+    List<PracticeTeam> findByPracticeId(Long practiceId);
 }

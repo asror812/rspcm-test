@@ -5,7 +5,7 @@ import org.example.rspcm.dto.practice.PracticeResponse;
 import org.example.rspcm.exception.ErrorCodes;
 import org.example.rspcm.exception.ErrorMessageException;
 import org.example.rspcm.exception.NotFoundException;
-import org.example.rspcm.model.entity.PracticalTask;
+import org.example.rspcm.model.entity.Practice;
 import org.example.rspcm.model.entity.User;
 import org.example.rspcm.model.enums.RoleName;
 import org.example.rspcm.model.enums.SubmissionType;
@@ -13,12 +13,12 @@ import org.example.rspcm.model.enums.WorkMode;
 import org.example.rspcm.repository.PracticeRepository;
 import org.example.rspcm.mapper.PracticeMapper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.example.rspcm.repository.TeacherProfileRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.List;
-import java.util.Objects;
+
 import java.util.Set;
 
 @Service
@@ -27,116 +27,80 @@ public class PracticeService {
 
     private final PracticeRepository practiceRepository;
     private final PracticeMapper practiceMapper;
+    private final TeacherProfileRepository teacherProfileRepository;
 
-    public List<PracticeResponse> findAll() {
-        User currentUser = currentUser();
-        if (!isStudent(currentUser)) {
-            return practiceRepository.findAll().stream().map(practiceMapper::toResponse).toList();
-        }
-        Long studentId = currentUser.getId();
-        return practiceRepository.findAll().stream()
-                .filter(practicalTask -> practicalTask.getExams() != null)
-                .filter(practicalTask -> practicalTask.getExams().stream().anyMatch(exam ->
-                        exam.getTargetStudents().stream().anyMatch(student -> Objects.equals(student.getId(), studentId)) ||
-                                exam.getGroups().stream().anyMatch(group ->
-                                        group.getStudents().stream().anyMatch(student -> Objects.equals(student.getId(), studentId)))
-                ))
-                .map(practiceMapper::toResponse)
-                .toList();
-    }
-
-    public PracticalTask findById(Long id) {
-        PracticalTask practicalTask = practiceRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("PracticalTask topilmadi: " + id));
-        User currentUser = currentUser();
-        if (!isStudent(currentUser)) {
-            return practicalTask;
-        }
-        Long studentId = currentUser.getId();
-        boolean assigned = practicalTask.getExams() != null && practicalTask.getExams().stream().anyMatch(exam ->
-                exam.getTargetStudents().stream().anyMatch(student -> Objects.equals(student.getId(), studentId)) ||
-                        exam.getGroups().stream().anyMatch(group ->
-                                group.getStudents().stream().anyMatch(student -> Objects.equals(student.getId(), studentId))));
-        if (!assigned) {
-            throw new NotFoundException("PracticalTask topilmadi: " + id);
-        }
-        return practicalTask;
-    }
-
-    public PracticeResponse findResponseById(Long id) {
-        PracticalTask practicalTask = practiceRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("PracticalTask topilmadi: " + id));
-        User currentUser = currentUser();
-        if (isStudent(currentUser)) {
-            Long studentId = currentUser.getId();
-            boolean assigned = practicalTask.getExams() != null && practicalTask.getExams().stream().anyMatch(exam ->
-                    exam.getTargetStudents().stream().anyMatch(student -> Objects.equals(student.getId(), studentId)) ||
-                            exam.getGroups().stream().anyMatch(group ->
-                                    group.getStudents().stream().anyMatch(student -> Objects.equals(student.getId(), studentId))));
-            if (!assigned) {
-                throw new NotFoundException("PracticalTask topilmadi: " + id);
-            }
-        }
-        return practiceMapper.toResponse(practicalTask);
-    }
-
-    @Transactional
-    public PracticalTask create(PracticeRequest request) {
-        validateTeamConfig(request.workMode(), request.teamSize());
-        PracticalTask practicalTask = practiceMapper.toEntity(
+    public PracticeResponse create(PracticeRequest request, User user) {
+        Practice practice = practiceMapper.toEntity(
                 request,
                 resolveSubmissionTypes(request.allowedSubmissionTypes()),
-                currentUser()
+                user
         );
-        return practiceRepository.save(practicalTask);
+        return practiceMapper.toResponse(practiceRepository.save(practice));
     }
 
-    public PracticeResponse createResponse(PracticeRequest request) {
-        validateTeamConfig(request.workMode(), request.teamSize());
-        PracticalTask practicalTask = practiceMapper.toEntity(
-                request,
-                resolveSubmissionTypes(request.allowedSubmissionTypes()),
-                currentUser()
-        );
-        return practiceMapper.toResponse(practiceRepository.save(practicalTask));
-    }
-
-    @Transactional
-    public PracticeResponse update(Long id, PracticeRequest request) {
-        validateTeamConfig(request.workMode(), request.teamSize());
-        PracticalTask practicalTask = findById(id);
-        practiceMapper.updateEntity(practicalTask, request, resolveSubmissionTypes(request.allowedSubmissionTypes()));
-        return practiceMapper.toResponse(practiceRepository.save(practicalTask));
-    }
-
-    @Transactional
-    public PracticalTask assignGroups(Long practiceId) {
-        PracticalTask practicalTask = findById(practiceId);
-        return practiceRepository.save(practicalTask);
-    }
-
-    public PracticeResponse assignGroupsResponse(Long practiceId) {
-        PracticalTask practicalTask = findById(practiceId);
-        return practiceMapper.toResponse(practiceRepository.save(practicalTask));
-    }
-
-    @Transactional
-    public void delete(Long id) {
-        PracticalTask practicalTask = findById(id);
-        practiceRepository.delete(practicalTask);
-    }
-
-    private void validateTeamConfig(WorkMode mode, Integer teamSize) {
-        if (mode == WorkMode.TEAM && (teamSize == null || teamSize < 2)) {
-            throw new ErrorMessageException("TEAM mode uchun teamSize kamida 2 bo'lishi kerak", ErrorCodes.BadRequest);
+    public Page<PracticeResponse> findAll(
+            String query, boolean own, Long subjectId,
+            User user, Pageable pageable) {
+        Long userId = user.getId();
+        if (isAdmin(user)) {
+            return practiceRepository.searchAll(query, own, subjectId, userId, pageable)
+                    .map(practiceMapper::toResponse);
         }
-        if (mode == WorkMode.INDIVIDUAL && teamSize != null) {
-            throw new ErrorMessageException("INDIVIDUAL mode uchun teamSize bo'sh bo'lishi kerak", ErrorCodes.BadRequest);
-        }
+
+        validateTeacherSubjectAccess(userId, subjectId);
+
+        return practiceRepository.searchAll(query, own, subjectId, userId, pageable)
+                .map(practiceMapper::toResponse);
     }
 
-    private boolean isStudent(User user) {
-        return user.getRoles().stream().anyMatch(role -> role.getRoleName() == RoleName.ROLE_STUDENT);
+    public PracticeResponse findResponseById(Long id, User user) {
+        Practice practice = findById(id, user);
+
+        if (isAdmin(user)) {
+            return practiceMapper.toResponse(practice);
+        }
+
+        validateTeacherSubjectAccess(user.getId(), practice.getSubject().getId());
+        return practiceMapper.toResponse(practice);
+    }
+
+    public Practice findById(Long id, User user) {
+        Practice practice = practiceRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Practice topilmadi: " + id));
+
+        if (isAdmin(user)) {
+            return practice;
+        }
+
+        validateTeacherSubjectAccess(user.getId(), practice.getSubject().getId());
+
+        return practice;
+    }
+
+    @Transactional
+    public PracticeResponse update(Long id, PracticeRequest request, User user) {
+        Practice practice = findById(id, user);
+        practiceMapper.updateEntity(practice, request, resolveSubmissionTypes(request.allowedSubmissionTypes()));
+        return practiceMapper.toResponse(practiceRepository.save(practice));
+    }
+
+    public PracticeResponse assignGroupsResponse(Long practiceId, User user) {
+        Practice practice = findById(practiceId, user);
+        return practiceMapper.toResponse(practiceRepository.save(practice));
+    }
+
+    @Transactional
+    public void delete(Long id, User user) {
+        Practice practice = findById(id, user);
+
+        if (isAdmin(user)) {
+            practice.setDeleted(true);
+            practiceRepository.save(practice);
+        }
+
+        validateTeacherSubjectAccess(user.getId(), practice.getSubject().getId());
+        practice.setDeleted(true);
+        practiceRepository.save(practice);
     }
 
     private Set<SubmissionType> resolveSubmissionTypes(Set<SubmissionType> requestedTypes) {
@@ -146,8 +110,30 @@ public class PracticeService {
         return requestedTypes;
     }
 
-    private User currentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return (User) authentication.getPrincipal();
+    private void validateTeacherSubjectAccess(Long userId, Long subjectId) {
+        if (subjectId == null) {
+            throw new ErrorMessageException("Fan bo'yicha filtr kiritilishi shart", ErrorCodes.BadRequest);
+        }
+
+        boolean teachesSubject = teacherProfileRepository.existsByUserIdAndTeachingSubjectsId(userId, subjectId);
+        if (!teachesSubject) {
+            throw new ErrorMessageException("Faqat o'zingizga biriktirilgan fan imtihonlarini ko'ra olasiz", ErrorCodes.Forbidden);
+        }
+    }
+
+    private boolean hasRole(User user, RoleName roleName) {
+        return user.getRoles().stream().anyMatch(role -> role.getRoleName() == roleName);
+    }
+
+    private boolean isAdmin(User user) {
+        return hasRole(user, RoleName.ROLE_ADMIN);
+    }
+
+    private boolean isTeacher(User user) {
+        return hasRole(user, RoleName.ROLE_TEACHER);
+    }
+
+    private boolean isStudent(User user) {
+        return hasRole(user, RoleName.ROLE_STUDENT);
     }
 }

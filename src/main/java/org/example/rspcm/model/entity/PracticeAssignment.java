@@ -3,13 +3,13 @@ package org.example.rspcm.model.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.example.rspcm.model.enums.PracticalTaskAssignmentStatus;
+import org.example.rspcm.model.enums.PracticeAssignmentStatus;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(
-        name = "practical_task_assignments",
+        name = "practice_assignments",
         uniqueConstraints = {
                 @UniqueConstraint(
                         name = "uk_exam_student_assignment",
@@ -21,7 +21,7 @@ import java.time.LocalDateTime;
                 ),
                 @UniqueConstraint(
                         name = "uk_exam_task_assignment",
-                        columnNames = {"exam_id", "practical_task_id"}
+                        columnNames = {"exam_id", "exam_practice_id"}
                 )
         }
 )
@@ -30,7 +30,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PracticalTaskAssignment {
+public class PracticeAssignment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -41,8 +41,8 @@ public class PracticalTaskAssignment {
     private Exam exam;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "practical_task_id", nullable = false)
-    private PracticalTask practicalTask;
+    @JoinColumn(name = "exam_practice_id", nullable = false)
+    private ExamPractice examPractice;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id")
@@ -58,7 +58,7 @@ public class PracticalTaskAssignment {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private PracticalTaskAssignmentStatus status;
+    private PracticeAssignmentStatus status;
 
     private Integer score;
 

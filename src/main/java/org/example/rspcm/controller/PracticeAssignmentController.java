@@ -1,8 +1,8 @@
 package org.example.rspcm.controller;
 
-import org.example.rspcm.dto.practice.PracticalTaskAssignmentRequest;
-import org.example.rspcm.dto.practice.PracticalTaskAssignmentResponse;
-import org.example.rspcm.service.PracticalTaskAssignmentService;
+import org.example.rspcm.dto.practice.PracticeAssignmentRequest;
+import org.example.rspcm.dto.practice.PracticeAssignmentResponse;
+import org.example.rspcm.service.PracticeAssignmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,32 +20,32 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/practical-task-assignments")
-public class PracticalTaskAssignmentController {
+@RequestMapping("/api/practice-assignments")
+public class PracticeAssignmentController {
 
-    private final PracticalTaskAssignmentService assignmentService;
+    private final PracticeAssignmentService assignmentService;
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
-    public ResponseEntity<List<PracticalTaskAssignmentResponse>> getAll() {
+    public ResponseEntity<List<PracticeAssignmentResponse>> getAll() {
         return ResponseEntity.ok(assignmentService.findAll());
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
-    public ResponseEntity<PracticalTaskAssignmentResponse> getById(@PathVariable Long id) {
+    public ResponseEntity<PracticeAssignmentResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(assignmentService.findResponseById(id));
     }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
-    public ResponseEntity<PracticalTaskAssignmentResponse> create(@Valid @RequestBody PracticalTaskAssignmentRequest request) {
+    public ResponseEntity<PracticeAssignmentResponse> create(@Valid @RequestBody PracticeAssignmentRequest request) {
         return ResponseEntity.ok(assignmentService.createResponse(request));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
-    public ResponseEntity<PracticalTaskAssignmentResponse> update(@PathVariable Long id, @Valid @RequestBody PracticalTaskAssignmentRequest request) {
+    public ResponseEntity<PracticeAssignmentResponse> update(@PathVariable Long id, @Valid @RequestBody PracticeAssignmentRequest request) {
         return ResponseEntity.ok(assignmentService.update(id, request));
     }
 

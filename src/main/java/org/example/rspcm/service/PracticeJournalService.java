@@ -40,33 +40,33 @@ public class PracticeJournalService {
         return journalRepository.findByStudentId(student.getId()).stream().map(practiceJournalMapper::toResponse).toList();
     }
 
-    public List<PracticeLogbook> findByPracticalTask(Long practicalTaskId) {
-        return journalRepository.findByPracticalTaskId(practicalTaskId);
+    public List<PracticeLogbook> findByPractice(Long practiceId) {
+        return journalRepository.findByPracticeId(practiceId);
     }
 
-    public List<PracticeJournalResponse> findByPracticalTaskResponse(Long practicalTaskId) {
-        return journalRepository.findByPracticalTaskId(practicalTaskId).stream().map(practiceJournalMapper::toResponse).toList();
+    public List<PracticeJournalResponse> findByPracticeResponse(Long practiceId) {
+        return journalRepository.findByPracticeId(practiceId).stream().map(practiceJournalMapper::toResponse).toList();
     }
 
     @Transactional
     public PracticeLogbook submit(PracticeJournalRequest request) {
         User student = currentUser();
-        PracticalTask practicalTask = practiceRepository.findById(request.practiceId())
-                .orElseThrow(() -> new NotFoundException("PracticalTask topilmadi: " + request.practiceId()));
+        Practice practice = practiceRepository.findById(request.practiceId())
+                .orElseThrow(() -> new NotFoundException("Practice topilmadi: " + request.practiceId()));
 
         PracticeTeam team = null;
         if (request.teamId() != null) {
             team = teamRepository.findById(request.teamId())
-                    .orElseThrow(() -> new NotFoundException("PracticalTask team topilmadi: " + request.teamId()));
+                    .orElseThrow(() -> new NotFoundException("Practice team topilmadi: " + request.teamId()));
         }
 
         boolean isDraft = Boolean.TRUE.equals(request.draft());
         LocalDateTime now = LocalDateTime.now();
 
         PracticeLogbook logbook = journalRepository
-                .findFirstByPracticalTaskIdAndStudentId(practicalTask.getId(), student.getId())
+                .findFirstByPracticeIdAndStudentId(practice.getId(), student.getId())
                 .orElseGet(() -> PracticeLogbook.builder()
-                        .practicalTask(practicalTask)
+                        .practice(practice)
                         .student(student)
                         .build());
 
@@ -94,22 +94,22 @@ public class PracticeJournalService {
 
     public PracticeJournalResponse submitResponse(PracticeJournalRequest request) {
         User student = currentUser();
-        PracticalTask practicalTask = practiceRepository.findById(request.practiceId())
-                .orElseThrow(() -> new NotFoundException("PracticalTask topilmadi: " + request.practiceId()));
+        Practice practice = practiceRepository.findById(request.practiceId())
+                .orElseThrow(() -> new NotFoundException("Practice topilmadi: " + request.practiceId()));
 
         PracticeTeam team = null;
         if (request.teamId() != null) {
             team = teamRepository.findById(request.teamId())
-                    .orElseThrow(() -> new NotFoundException("PracticalTask team topilmadi: " + request.teamId()));
+                    .orElseThrow(() -> new NotFoundException("Practice team topilmadi: " + request.teamId()));
         }
 
         boolean isDraft = Boolean.TRUE.equals(request.draft());
         LocalDateTime now = LocalDateTime.now();
 
         PracticeLogbook logbook = journalRepository
-                .findFirstByPracticalTaskIdAndStudentId(practicalTask.getId(), student.getId())
+                .findFirstByPracticeIdAndStudentId(practice.getId(), student.getId())
                 .orElseGet(() -> PracticeLogbook.builder()
-                        .practicalTask(practicalTask)
+                        .practice(practice)
                         .student(student)
                         .build());
 

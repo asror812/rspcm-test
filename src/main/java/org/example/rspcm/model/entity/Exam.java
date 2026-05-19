@@ -40,7 +40,7 @@ public class Exam {
 
     private Integer maxScore;
 
-    @Column(nullable = false)
+    @Column
     private Integer taskLimit;
 
     @Enumerated(EnumType.STRING)
@@ -57,12 +57,9 @@ public class Exam {
     private List<ExamQuestion> questions = new ArrayList<>();
 
     @Builder.Default
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(name = "exam_practices",
-            joinColumns = @JoinColumn(name = "exam_id"),
-            inverseJoinColumns = @JoinColumn(name = "practical_task_id")
-    )
-    private Set<PracticalTask> practicalTasks = new HashSet<>();
+    @OneToMany(mappedBy = "exam", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("orderIndex asc")
+    private List<ExamPractice> practices = new ArrayList<>();
 
     @Builder.Default
     @ManyToMany(fetch = FetchType.LAZY)
@@ -89,7 +86,39 @@ public class Exam {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    private LocalDateTime updatedAt;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "created_by")
     private User createdBy;
+
+    public void addPractice(Practice practice, Integer score, Integer orderIndex, LocalDateTime deadline) {
+        ExamPractice examPractice = ExamPractice.builder()
+                .exam(this)
+                .practice(practice)
+                .orderIndex(orderIndex)
+                .build();
+
+        this.practices.add(examPractice);
+    }
+
+    public void removePractice(ExamPractice examPractice) {
+        this.practices.remove(examPractice);
+        examPractice.setExam(null);
+    }
+
+    public void addQuestion(Practice practice, Integer score, Integer orderIndex, LocalDateTime deadline) {
+        ExamPractice examPractice = ExamPractice.builder()
+                .exam(this)
+                .practice(practice)
+                .orderIndex(orderIndex)
+                .build();
+
+        this.practices.add(examPractice);
+    }
+
+    public void removeQuestion(ExamQuestion examQuestion) {
+        this.questions.remove(examQuestion);
+        examQuestion.setExam(null);
+    }
 }

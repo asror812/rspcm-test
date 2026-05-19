@@ -22,11 +22,10 @@ import org.example.rspcm.repository.TeacherProfileRepository;
 import org.example.rspcm.repository.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
@@ -137,6 +136,7 @@ public class ExamService {
         }
 
         exam.setStatus(status);
+        exam.setUpdatedAt(LocalDateTime.now());
         return examMapper.toResponse(examRepository.save(exam));
     }
 
@@ -163,11 +163,11 @@ public class ExamService {
 
     private void normalizeExamByType(Exam exam) {
         if (exam.getType() == ExamType.QUESTION) {
-            exam.setPracticalTasks(new HashSet<>());
+            exam.setPractices(new ArrayList<>());
             return;
         }
 
-        if (exam.getType() == ExamType.PRACTICAL_TASK) {
+        if (exam.getType() == ExamType.PRACTICE) {
             var links = examQuestionRepository.findByExamId(exam.getId());
             if (!links.isEmpty()) {
                 examQuestionRepository.deleteAll(links);
