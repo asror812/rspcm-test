@@ -58,7 +58,6 @@ public class Exam {
 
     @Builder.Default
     @OneToMany(mappedBy = "exam", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("orderIndex asc")
     private List<ExamPractice> practices = new ArrayList<>();
 
     @Builder.Default
@@ -92,11 +91,10 @@ public class Exam {
     @JoinColumn(name = "created_by")
     private User createdBy;
 
-    public void addPractice(Practice practice, Integer score, Integer orderIndex, LocalDateTime deadline) {
+    public void addPractice(Practice practice, Integer score) {
         ExamPractice examPractice = ExamPractice.builder()
                 .exam(this)
                 .practice(practice)
-                .orderIndex(orderIndex)
                 .build();
 
         this.practices.add(examPractice);
@@ -107,11 +105,10 @@ public class Exam {
         examPractice.setExam(null);
     }
 
-    public void addQuestion(Practice practice, Integer score, Integer orderIndex, LocalDateTime deadline) {
+    public void addQuestion(Practice practice, Integer score, Integer orderIndex) {
         ExamPractice examPractice = ExamPractice.builder()
                 .exam(this)
                 .practice(practice)
-                .orderIndex(orderIndex)
                 .build();
 
         this.practices.add(examPractice);

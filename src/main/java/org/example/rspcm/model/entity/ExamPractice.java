@@ -1,6 +1,5 @@
 package org.example.rspcm.model.entity;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -23,10 +22,6 @@ import lombok.Setter;
                 @UniqueConstraint(
                         name = "uk_exam_practice",
                         columnNames = {"exam_id", "practice_id"}
-                ),
-                @UniqueConstraint(
-                        name = "uk_exam_practice_order",
-                        columnNames = {"exam_id", "order_index"}
                 )
         }
 )
@@ -48,7 +43,4 @@ public class ExamPractice {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "practice_id", nullable = false)
     private Practice practice;
-
-    @Column(nullable = false)
-    private Integer orderIndex;
 }
