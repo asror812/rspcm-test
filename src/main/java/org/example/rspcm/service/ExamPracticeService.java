@@ -57,37 +57,16 @@ public class ExamPracticeService {
         Practice practice = practiceRepository.findById(request.practiceId())
                 .orElseThrow(() -> new NotFoundException("Practice topilmadi: " + request.practiceId()));
 
-        validateExamScore(exam);
-
         if (examPracticeRepository.existsByExamIdAndPracticeId(exam.getId(), practice.getId())) {
             throw new ErrorMessageException("Bu practice allaqachon examga biriktirilgan", ErrorCodes.AlreadyExists);
-        }
-
-        if (examPracticeRepository.existsByExamIdAndOrderIndex(exam.getId(), request.orderIndex())) {
-            throw new ErrorMessageException("Bu examda orderIndex band", ErrorCodes.AlreadyExists);
         }
 
         ExamPractice link = ExamPractice.builder()
                 .exam(exam)
                 .practice(practice)
-                .orderIndex(request.orderIndex())
                 .build();
 
         return toResponse(examPracticeRepository.save(link));
-    }
-
-    private void validateExamScore(Exam exam) {
-        Long currentCount = examPracticeRepository.countByExamId(exam.getId());
-
-        if (exam.getTaskLimit() == null || currentCount > exam.getTaskLimit()) {
-            throw new ErrorMessageException("Bu exam uchun praktikalar soni yetarli", ErrorCodes.BadRequest);
-        }
-
-    /*    Integer currentScore = examPracticeRepository.sumScoreByExamId(exam.getId());
-
-        if (exam.getMaxScore() == null || currentScore > exam.getMaxScore()) {
-            throw new ErrorMessageException("Bu exam uchun maksimal ball yetarli emas", ErrorCodes.BadRequest);
-        }*/
     }
 
     @Transactional
@@ -100,13 +79,8 @@ public class ExamPracticeService {
         Practice practice = practiceRepository.findById(request.practiceId())
                 .orElseThrow(() -> new NotFoundException("Practice topilmadi: " + request.practiceId()));
 
-        if (examPracticeRepository.existsByExamIdAndOrderIndexAndIdNot(exam.getId(), request.orderIndex(), id)) {
-            throw new ErrorMessageException("Bu examda orderIndex band", ErrorCodes.AlreadyExists);
-        }
-
         existing.setExam(exam);
         existing.setPractice(practice);
-        existing.setOrderIndex(request.orderIndex());
         return toResponse(examPracticeRepository.save(existing));
     }
 
@@ -163,8 +137,7 @@ public class ExamPracticeService {
         return new ExamPracticeResponse(
                 link.getId(),
                 link.getExam().getId(),
-                summaryMapper.toPracticeSummary(link.getPractice()),
-                link.getOrderIndex()
+                summaryMapper.toPracticeSummary(link.getPractice())
         );
     }
 }

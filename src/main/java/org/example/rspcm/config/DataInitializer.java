@@ -448,12 +448,10 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         List<ExamPractice> normalized = new ArrayList<>();
-        int order = 1;
         for (Practice practice : practices) {
             ExamPractice link = existingByPracticeId.getOrDefault(practice.getId(), new ExamPractice());
             link.setExam(exam);
             link.setPractice(practice);
-            link.setOrderIndex(order++);
             normalized.add(link);
         }
 
