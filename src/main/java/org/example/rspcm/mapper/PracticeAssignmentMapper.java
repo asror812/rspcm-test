@@ -6,7 +6,6 @@ import org.example.rspcm.model.entity.Exam;
 import org.example.rspcm.model.entity.ExamPractice;
 import org.example.rspcm.model.entity.PracticeAssignment;
 import org.example.rspcm.model.enums.PracticeAssignmentStatus;
-import org.example.rspcm.model.entity.PracticeTeam;
 import org.example.rspcm.model.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

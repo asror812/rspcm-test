@@ -1,6 +1,5 @@
 package org.example.rspcm.repository;
 
-import org.example.rspcm.model.entity.PracticeTeam;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

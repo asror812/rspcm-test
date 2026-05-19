@@ -2,7 +2,6 @@ package org.example.rspcm.controller;
 
 import org.example.rspcm.dto.practice.PracticeTeamRequest;
 import org.example.rspcm.dto.practice.PracticeTeamResponse;
-import org.example.rspcm.service.PracticeTeamService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -24,10 +23,10 @@ public class PracticeTeamController {
 
     private final PracticeTeamService teamService;
 
-    @GetMapping("/practice/{practiceId}")
-    @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
-    public ResponseEntity<List<PracticeTeamResponse>> byPractice(@PathVariable Long practiceId) {
-        return ResponseEntity.ok(teamService.getByPracticeIdResponse(practiceId));
+    @GetMapping("/exam/{examId}")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    public ResponseEntity<List<PracticeTeamResponse>> byExamId(@PathVariable Long examId) {
+        return ResponseEntity.ok(teamService.getPracticeTeamsByExam(examId));
     }
 
     @PostMapping
