@@ -16,8 +16,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
-
 @Entity
 @Table(
         name = "exam_practices",
@@ -52,10 +50,5 @@ public class ExamPractice {
     private Practice practice;
 
     @Column(nullable = false)
-    private Integer score;
-
-    @Column(nullable = false)
     private Integer orderIndex;
-
-    private LocalDateTime deadline;
 }

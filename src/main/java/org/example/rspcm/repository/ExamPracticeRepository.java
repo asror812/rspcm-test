@@ -15,4 +15,6 @@ public interface ExamPracticeRepository extends JpaRepository<ExamPractice, Long
     boolean existsByExamIdAndPracticeId(Long examId, Long practiceId);
     boolean existsByExamIdAndOrderIndex(Long examId, Integer orderIndex);
     boolean existsByExamIdAndOrderIndexAndIdNot(Long examId, Integer orderIndex, Long id);
+
+    Long countByExamId(Long id);
 }

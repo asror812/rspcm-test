@@ -36,6 +36,7 @@ public class ExamPracticeService {
         if (examId == null) {
             throw new ErrorMessageException("examId kiritilishi shart", ErrorCodes.BadRequest);
         }
+
         Exam exam = resolveExam(examId);
         validateTeacherAccess(user, exam);
         return examPracticeRepository.findByExamId(examId, pageable).map(this::toResponse);
@@ -56,9 +57,12 @@ public class ExamPracticeService {
         Practice practice = practiceRepository.findById(request.practiceId())
                 .orElseThrow(() -> new NotFoundException("Practice topilmadi: " + request.practiceId()));
 
+        validateExamScore(exam);
+
         if (examPracticeRepository.existsByExamIdAndPracticeId(exam.getId(), practice.getId())) {
             throw new ErrorMessageException("Bu practice allaqachon examga biriktirilgan", ErrorCodes.AlreadyExists);
         }
+
         if (examPracticeRepository.existsByExamIdAndOrderIndex(exam.getId(), request.orderIndex())) {
             throw new ErrorMessageException("Bu examda orderIndex band", ErrorCodes.AlreadyExists);
         }
@@ -66,12 +70,24 @@ public class ExamPracticeService {
         ExamPractice link = ExamPractice.builder()
                 .exam(exam)
                 .practice(practice)
-                .score(request.score())
                 .orderIndex(request.orderIndex())
-                .deadline(request.deadline())
                 .build();
 
         return toResponse(examPracticeRepository.save(link));
+    }
+
+    private void validateExamScore(Exam exam) {
+        Long currentCount = examPracticeRepository.countByExamId(exam.getId());
+
+        if (exam.getTaskLimit() == null || currentCount > exam.getTaskLimit()) {
+            throw new ErrorMessageException("Bu exam uchun praktikalar soni yetarli", ErrorCodes.BadRequest);
+        }
+
+    /*    Integer currentScore = examPracticeRepository.sumScoreByExamId(exam.getId());
+
+        if (exam.getMaxScore() == null || currentScore > exam.getMaxScore()) {
+            throw new ErrorMessageException("Bu exam uchun maksimal ball yetarli emas", ErrorCodes.BadRequest);
+        }*/
     }
 
     @Transactional
@@ -90,9 +106,7 @@ public class ExamPracticeService {
 
         existing.setExam(exam);
         existing.setPractice(practice);
-        existing.setScore(request.score());
         existing.setOrderIndex(request.orderIndex());
-        existing.setDeadline(request.deadline());
         return toResponse(examPracticeRepository.save(existing));
     }
 
@@ -126,9 +140,11 @@ public class ExamPracticeService {
         if (!isTeacher(user)) {
             throw new ErrorMessageException("Ruxsat etilmagan amal", ErrorCodes.Forbidden);
         }
+
         if (exam.getSubject() == null) {
             throw new ErrorMessageException("Examga subject biriktirilmagan", ErrorCodes.BadRequest);
         }
+
         boolean teaches = teacherProfileRepository.existsByUserIdAndTeachingSubjectsId(user.getId(), exam.getSubject().getId());
         if (!teaches) {
             throw new ErrorMessageException("Faqat o'zingizga biriktirilgan fan examlarini boshqara olasiz", ErrorCodes.Forbidden);
@@ -148,9 +164,7 @@ public class ExamPracticeService {
                 link.getId(),
                 link.getExam().getId(),
                 summaryMapper.toPracticeSummary(link.getPractice()),
-                link.getScore(),
-                link.getOrderIndex(),
-                link.getDeadline()
+                link.getOrderIndex()
         );
     }
 }

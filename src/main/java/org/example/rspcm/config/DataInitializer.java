@@ -453,7 +453,6 @@ public class DataInitializer implements CommandLineRunner {
             ExamPractice link = existingByPracticeId.getOrDefault(practice.getId(), new ExamPractice());
             link.setExam(exam);
             link.setPractice(practice);
-            link.setScore(10);
             link.setOrderIndex(order++);
             normalized.add(link);
         }

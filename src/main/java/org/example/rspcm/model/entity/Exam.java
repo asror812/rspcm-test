@@ -40,7 +40,7 @@ public class Exam {
 
     private Integer maxScore;
 
-    @Column(nullable = false)
+    @Column
     private Integer taskLimit;
 
     @Enumerated(EnumType.STRING)
@@ -96,9 +96,7 @@ public class Exam {
         ExamPractice examPractice = ExamPractice.builder()
                 .exam(this)
                 .practice(practice)
-                .score(score)
                 .orderIndex(orderIndex)
-                .deadline(deadline)
                 .build();
 
         this.practices.add(examPractice);
@@ -113,9 +111,7 @@ public class Exam {
         ExamPractice examPractice = ExamPractice.builder()
                 .exam(this)
                 .practice(practice)
-                .score(score)
                 .orderIndex(orderIndex)
-                .deadline(deadline)
                 .build();
 
         this.practices.add(examPractice);
