@@ -1,0 +1,63 @@
+package org.example.rspcm.mapper;
+
+import org.example.rspcm.dto.practice.PracticeAssignmentRequest;
+import org.example.rspcm.dto.practice.PracticeAssignmentResponse;
+import org.example.rspcm.model.entity.*;
+import org.example.rspcm.model.enums.PracticeAssignmentStatus;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
+import java.time.LocalDateTime;
+
+@Component
+@RequiredArgsConstructor
+public class PracticeAssignmentMapper {
+    private final SummaryMapper summaryMapper;
+
+    public PracticeAssignmentResponse toResponse(PracticeSubmission assignment) {
+        return new PracticeAssignmentResponse(
+                assignment.getId(),
+                summaryMapper.toExamSummary(assignment.getExam()),
+                summaryMapper.toPracticeSummary(assignment.getExamPractice().getPractice()),
+                assignment.getStudent() == null ? null : summaryMapper.toUserSummary(assignment.getStudent()),
+                assignment.getChosenAt(),
+                assignment.getSubmittedAt(),
+                assignment.getStatus(),
+                assignment.getScore(),
+                assignment.getTeacherComment()
+        );
+    }
+
+    public PracticeSubmission toEntity(
+            PracticeAssignmentRequest request,
+            Exam exam,
+            ExamPractice examPractice,
+            User student,
+            LocalDateTime chosenAt
+    ) {
+        return PracticeSubmission.builder()
+                .exam(exam)
+                .examPractice(examPractice)
+                .student(student)
+                .status(request.status() == null ? PracticeAssignmentStatus.CHOSEN : request.status())
+                .chosenAt(chosenAt)
+                .score(request.score())
+                .teacherComment(request.teacherComment())
+                .build();
+    }
+
+    public void updateEntity(
+            PracticeSubmission assignment,
+            PracticeAssignmentRequest request,
+            Exam exam,
+            ExamPractice examPractice,
+            User student
+    ) {
+        assignment.setExam(exam);
+        assignment.setExamPractice(examPractice);
+        assignment.setStudent(student);
+        assignment.setStatus(request.status() == null ? assignment.getStatus() : request.status());
+        assignment.setScore(request.score());
+        assignment.setTeacherComment(request.teacherComment());
+    }
+}
