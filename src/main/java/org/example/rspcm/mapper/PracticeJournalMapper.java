@@ -16,7 +16,6 @@ public class PracticeJournalMapper {
                 journal.getId(),
                 summaryMapper.toPracticeSummary(journal.getPractice()),
                 summaryMapper.toUserSummary(journal.getStudent()),
-                journal.getTeam() == null ? null : summaryMapper.toPracticeTeamSummary(journal.getTeam()),
                 journal.getFilePath(),
                 journal.getSubmittedAt(),
                 journal.getStatus(),

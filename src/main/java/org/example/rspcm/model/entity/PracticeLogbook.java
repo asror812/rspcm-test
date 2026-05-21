@@ -50,10 +50,6 @@ public class PracticeLogbook {
     @JoinColumn(name = "student_id")
     private User student;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "team_id")
-    private PracticeTeam team;
-
     private String filePath;
 
     private LocalDateTime submittedAt;

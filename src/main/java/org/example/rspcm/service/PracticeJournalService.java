@@ -10,7 +10,6 @@ import org.example.rspcm.model.enums.LogbookStatus;
 import org.example.rspcm.repository.PracticeLogbookEntryRepository;
 import org.example.rspcm.repository.PracticeJournalRepository;
 import org.example.rspcm.repository.PracticeRepository;
-import org.example.rspcm.repository.PracticeTeamRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -27,7 +26,6 @@ public class PracticeJournalService {
     private final PracticeJournalRepository journalRepository;
     private final PracticeLogbookEntryRepository entryRepository;
     private final PracticeRepository practiceRepository;
-    private final PracticeTeamRepository teamRepository;
     private final PracticeJournalMapper practiceJournalMapper;
 
     public List<PracticeLogbook> findMine() {
@@ -40,10 +38,6 @@ public class PracticeJournalService {
         return journalRepository.findByStudentId(student.getId()).stream().map(practiceJournalMapper::toResponse).toList();
     }
 
-    public List<PracticeLogbook> findByPractice(Long practiceId) {
-        return journalRepository.findByPracticeId(practiceId);
-    }
-
     public List<PracticeJournalResponse> findByPracticeResponse(Long practiceId) {
         return journalRepository.findByPracticeId(practiceId).stream().map(practiceJournalMapper::toResponse).toList();
     }
@@ -53,12 +47,6 @@ public class PracticeJournalService {
         User student = currentUser();
         Practice practice = practiceRepository.findById(request.practiceId())
                 .orElseThrow(() -> new NotFoundException("Practice topilmadi: " + request.practiceId()));
-
-        PracticeTeam team = null;
-        if (request.teamId() != null) {
-            team = teamRepository.findById(request.teamId())
-                    .orElseThrow(() -> new NotFoundException("Practice team topilmadi: " + request.teamId()));
-        }
 
         boolean isDraft = Boolean.TRUE.equals(request.draft());
         LocalDateTime now = LocalDateTime.now();
@@ -70,7 +58,6 @@ public class PracticeJournalService {
                         .student(student)
                         .build());
 
-        logbook.setTeam(team);
         logbook.setFilePath(request.filePath());
         logbook.setSubmittedAt(now);
         logbook.setStatus(isDraft ? LogbookStatus.DRAFT : LogbookStatus.SUBMITTED);
@@ -97,12 +84,6 @@ public class PracticeJournalService {
         Practice practice = practiceRepository.findById(request.practiceId())
                 .orElseThrow(() -> new NotFoundException("Practice topilmadi: " + request.practiceId()));
 
-        PracticeTeam team = null;
-        if (request.teamId() != null) {
-            team = teamRepository.findById(request.teamId())
-                    .orElseThrow(() -> new NotFoundException("Practice team topilmadi: " + request.teamId()));
-        }
-
         boolean isDraft = Boolean.TRUE.equals(request.draft());
         LocalDateTime now = LocalDateTime.now();
 
@@ -113,7 +94,6 @@ public class PracticeJournalService {
                         .student(student)
                         .build());
 
-        logbook.setTeam(team);
         logbook.setFilePath(request.filePath());
         logbook.setSubmittedAt(now);
         logbook.setStatus(isDraft ? LogbookStatus.DRAFT : LogbookStatus.SUBMITTED);

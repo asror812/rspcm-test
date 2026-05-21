@@ -3,7 +3,6 @@ package org.example.rspcm.mapper;
 import org.example.rspcm.dto.common.ExamSummary;
 import org.example.rspcm.dto.common.GroupSummary;
 import org.example.rspcm.dto.common.PracticeSummary;
-import org.example.rspcm.dto.common.PracticeTeamSummary;
 import org.example.rspcm.dto.common.QuestionSummary;
 import org.example.rspcm.dto.common.SubjectSummary;
 import org.example.rspcm.dto.common.UserSummary;
@@ -42,9 +41,5 @@ public class SummaryMapper {
 
     public QuestionSummary toQuestionSummary(Question question) {
         return new QuestionSummary(question.getId(), question.getText(), question.getType());
-    }
-
-    public PracticeTeamSummary toPracticeTeamSummary(PracticeTeam team) {
-        return new PracticeTeamSummary(team.getId(), team.getName());
     }
 }
