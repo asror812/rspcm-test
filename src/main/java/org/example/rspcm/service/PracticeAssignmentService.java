@@ -14,7 +14,6 @@ import org.example.rspcm.exception.ErrorMessageException;
 import org.example.rspcm.repository.ExamRepository;
 import org.example.rspcm.repository.ExamPracticeRepository;
 import org.example.rspcm.repository.PracticeAssignmentRepository;
-import org.example.rspcm.repository.PracticeTeamRepository;
 import org.example.rspcm.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -31,7 +30,6 @@ public class PracticeAssignmentService {
     private final ExamRepository examRepository;
     private final ExamPracticeRepository examPracticeRepository;
     private final UserRepository userRepository;
-    private final PracticeTeamRepository practiceTeamRepository;
     private final PracticeAssignmentMapper practiceAssignmentMapper;
 
     public List<PracticeAssignmentResponse> findAll() {
@@ -58,8 +56,6 @@ public class PracticeAssignmentService {
                 resolveExamPractice(request.examPracticeId(), exam),
                 request.studentId() == null ? null : userRepository.findById(request.studentId())
                         .orElseThrow(() -> new NotFoundException("Student topilmadi: " + request.studentId())),
-                request.teamId() == null ? null : practiceTeamRepository.findById(request.teamId())
-                        .orElseThrow(() -> new NotFoundException("PracticeTeam topilmadi: " + request.teamId())),
                 LocalDateTime.now()
         );
         return assignmentRepository.save(assignment);
@@ -74,8 +70,6 @@ public class PracticeAssignmentService {
                 resolveExamPractice(request.examPracticeId(), exam),
                 request.studentId() == null ? null : userRepository.findById(request.studentId())
                         .orElseThrow(() -> new NotFoundException("Student topilmadi: " + request.studentId())),
-                request.teamId() == null ? null : practiceTeamRepository.findById(request.teamId())
-                        .orElseThrow(() -> new NotFoundException("PracticeTeam topilmadi: " + request.teamId())),
                 LocalDateTime.now()
         );
         return practiceAssignmentMapper.toResponse(assignmentRepository.save(assignment));
@@ -92,9 +86,7 @@ public class PracticeAssignmentService {
                 exam,
                 resolveExamPractice(request.examPracticeId(), exam),
                 request.studentId() == null ? null : userRepository.findById(request.studentId())
-                        .orElseThrow(() -> new NotFoundException("Student topilmadi: " + request.studentId())),
-                request.teamId() == null ? null : practiceTeamRepository.findById(request.teamId())
-                        .orElseThrow(() -> new NotFoundException("PracticeTeam topilmadi: " + request.teamId()))
+                        .orElseThrow(() -> new NotFoundException("Student topilmadi: " + request.studentId()))
         );
         if (request.status() == PracticeAssignmentStatus.SUBMITTED && assignment.getSubmittedAt() == null) {
             assignment.setSubmittedAt(LocalDateTime.now());

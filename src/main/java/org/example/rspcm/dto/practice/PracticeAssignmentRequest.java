@@ -7,7 +7,6 @@ public record PracticeAssignmentRequest(
         @NotNull Long examId,
         @NotNull Long examPracticeId,
         Long studentId,
-        Long teamId,
         PracticeAssignmentStatus status,
         Integer score,
         String teacherComment
