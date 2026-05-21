@@ -14,10 +14,6 @@ import java.time.LocalDateTime;
                 @UniqueConstraint(
                         name = "uk_exam_student_assignment",
                         columnNames = {"exam_id", "student_id"}
-                ),
-                @UniqueConstraint(
-                        name = "uk_exam_task_assignment",
-                        columnNames = {"exam_id", "exam_practice_id"}
                 )
         }
 )

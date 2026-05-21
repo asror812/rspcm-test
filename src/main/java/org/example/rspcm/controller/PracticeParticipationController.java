@@ -2,9 +2,7 @@ package org.example.rspcm.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.example.rspcm.dto.practice.PracticeParticipationCreateRequest;
-import org.example.rspcm.dto.practice.PracticeParticipationResponse;
-import org.example.rspcm.dto.practice.PracticeParticipationUpdateRequest;
+import org.example.rspcm.dto.practice.*;
 import org.example.rspcm.model.entity.User;
 import org.example.rspcm.service.PracticeParticipationService;
 import org.springframework.data.domain.Page;
@@ -63,13 +61,34 @@ public class PracticeParticipationController {
 
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
+    @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<PracticeParticipationResponse> update(
             @PathVariable Long id,
             @Valid @RequestBody PracticeParticipationUpdateRequest request,
             @AuthenticationPrincipal User user
     ) {
         return ResponseEntity.ok(practiceParticipationService.update(id, request, user));
+    }
+
+    @PutMapping("/{id}/status")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    public ResponseEntity<PracticeParticipationResponse> changeStatus(
+        @PathVariable Long id,
+        @Valid @RequestBody PracticeParticipationStatusUpdateRequest request,
+        @AuthenticationPrincipal User user
+    )   {
+    return ResponseEntity.ok(practiceParticipationService.changeStatus(id, request, user));
+    }
+
+
+    @PostMapping("/{id}/invite")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<PracticeParticipationResponse> inviteMember(
+            @PathVariable Long id,
+            @Valid @RequestBody PracticeParticipationInviteRequest request,
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(practiceParticipationService.inviteMember(id, request, user));
     }
 
     @DeleteMapping("/{id}")

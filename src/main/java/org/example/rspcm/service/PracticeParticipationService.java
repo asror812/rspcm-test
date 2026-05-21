@@ -1,9 +1,8 @@
 package org.example.rspcm.service;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.example.rspcm.dto.practice.PracticeParticipationCreateRequest;
-import org.example.rspcm.dto.practice.PracticeParticipationResponse;
-import org.example.rspcm.dto.practice.PracticeParticipationUpdateRequest;
+import org.example.rspcm.dto.practice.*;
 import org.example.rspcm.exception.ErrorCodes;
 import org.example.rspcm.exception.ErrorMessageException;
 import org.example.rspcm.exception.NotFoundException;
@@ -12,6 +11,7 @@ import org.example.rspcm.model.entity.Exam;
 import org.example.rspcm.model.entity.ExamPractice;
 import org.example.rspcm.model.entity.PracticeParticipation;
 import org.example.rspcm.model.entity.PracticeParticipationMember;
+import org.example.rspcm.model.entity.StudentProfile;
 import org.example.rspcm.model.entity.User;
 import org.example.rspcm.model.enums.ExamType;
 import org.example.rspcm.model.enums.PracticeMemberRole;
@@ -22,6 +22,8 @@ import org.example.rspcm.repository.ExamPracticeRepository;
 import org.example.rspcm.repository.ExamRepository;
 import org.example.rspcm.repository.PracticeParticipationMemberRepository;
 import org.example.rspcm.repository.PracticeParticipationRepository;
+import org.example.rspcm.repository.StudentProfileRepository;
+import org.example.rspcm.repository.UserRepository;
 import org.example.rspcm.repository.TeacherProfileRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -38,6 +40,8 @@ public class PracticeParticipationService {
     private final PracticeParticipationMemberRepository participationMemberRepository;
     private final ExamPracticeRepository examPracticeRepository;
     private final TeacherProfileRepository teacherProfileRepository;
+    private final StudentProfileRepository studentProfileRepository;
+    private final UserRepository userRepository;
     private final SummaryMapper summaryMapper;
     private final ExamRepository examRepository;
 
@@ -86,13 +90,13 @@ public class PracticeParticipationService {
     }
 
     @Transactional
-    public PracticeParticipationResponse update(Long id, PracticeParticipationUpdateRequest request, User user) {
+    public PracticeParticipationResponse update(
+            Long id, PracticeParticipationUpdateRequest request, User user) {
         PracticeParticipation participation = findEntityById(id);
         Exam exam = resolveExam(request.examId());
         checkPracticeExam(exam);
-        if (isAdmin(user) || isTeacher(user)) {
-            validateAccess(user, exam);
-        } else if (!isStudent(user)) {
+
+        if (!isStudent(user)) {
             throw new ErrorMessageException("Ruxsat yo'q", ErrorCodes.Forbidden);
         }
 
@@ -103,7 +107,7 @@ public class PracticeParticipationService {
         refreshReadyStatusIfEligible(participation);
 
         if (request.examPracticeId() != null) {
-            requireLeaderOrStaff(user, participation);
+            requireAcceptedLeader(user, participation);
             if (participation.getStatus() != PracticeParticipationStatus.READY_TO_CHOOSE) {
                 throw new ErrorMessageException("Avval barcha a'zolar ACCEPTED bo'lishi kerak", ErrorCodes.BadRequest);
             }
@@ -117,6 +121,70 @@ public class PracticeParticipationService {
             participation.setStatus(PracticeParticipationStatus.PRACTICE_CHOSEN);
             participation.setChosenAt(LocalDateTime.now());
         }
+
+        return toResponse(practiceParticipationRepository.save(participation));
+    }
+
+    @Transactional
+    public PracticeParticipationResponse inviteMember(Long id, PracticeParticipationInviteRequest request, User user) {
+        PracticeParticipation participation = findEntityById(id);
+        requireAcceptedLeader(user, participation);
+
+        if (participation.getStatus() == PracticeParticipationStatus.PRACTICE_CHOSEN
+                || participation.getStatus() == PracticeParticipationStatus.CANCELLED) {
+            throw new ErrorMessageException("Ushbu holatda yangi a'zo qo'shib bo'lmaydi", ErrorCodes.BadRequest);
+        }
+
+        if (user.getId().equals(request.userId())) {
+            throw new ErrorMessageException("O'zingizni taklif qila olmaysiz", ErrorCodes.BadRequest);
+        }
+
+        User invitee = userRepository.findById(request.userId())
+                .orElseThrow(() -> new NotFoundException("Foydalanuvchi topilmadi: " + request.userId()));
+
+        if (!isStudent(invitee)) {
+            throw new ErrorMessageException("Faqat student taklif qilinadi", ErrorCodes.BadRequest);
+        }
+
+        StudentProfile leaderProfile = studentProfileRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new ErrorMessageException("Lider student profili topilmadi", ErrorCodes.BadRequest));
+        StudentProfile inviteeProfile = studentProfileRepository.findByUserId(invitee.getId())
+                .orElseThrow(() -> new ErrorMessageException("Taklif qilinayotgan student profili topilmadi", ErrorCodes.BadRequest));
+
+        if (leaderProfile.getGroup() == null || inviteeProfile.getGroup() == null
+                || !leaderProfile.getGroup().getId().equals(inviteeProfile.getGroup().getId())) {
+            throw new ErrorMessageException("Faqat o'z study groupingizdagi studentni taklif qila olasiz", ErrorCodes.BadRequest);
+        }
+
+        boolean usedInAnotherParticipation = participationMemberRepository
+                .existsByPracticeParticipationExamIdAndUserIdAndStatusAndPracticeParticipationIdNot(
+                        participation.getExam().getId(),
+                        invitee.getId(),
+                        PracticeParticipationMemberStatus.ACCEPTED,
+                        participation.getId()
+                );
+        if (usedInAnotherParticipation) {
+            throw new ErrorMessageException("Bu student boshqa practice participationda mavjud", ErrorCodes.BadRequest);
+        }
+
+        PracticeParticipationMember member = participationMemberRepository
+                .findByPracticeParticipationIdAndUserId(participation.getId(), invitee.getId())
+                .orElseGet(PracticeParticipationMember::new);
+
+        if (member.getId() != null
+                && member.getStatus() != PracticeParticipationMemberStatus.REMOVED
+                && member.getStatus() != PracticeParticipationMemberStatus.DECLINED) {
+            throw new ErrorMessageException("Bu student allaqachon participationga biriktirilgan", ErrorCodes.AlreadyExists);
+        }
+
+        member.setPracticeParticipation(participation);
+        member.setUser(invitee);
+        member.setRole(PracticeMemberRole.MEMBER);
+        member.setStatus(PracticeParticipationMemberStatus.INVITED);
+        participationMemberRepository.save(member);
+
+        participation.setStatus(PracticeParticipationStatus.FORMING);
+        participation.setReadyAt(null);
 
         return toResponse(practiceParticipationRepository.save(participation));
     }
@@ -166,10 +234,7 @@ public class PracticeParticipationService {
         }
     }
 
-    private void requireLeaderOrStaff(User user, PracticeParticipation participation) {
-        if (isAdmin(user) || isTeacher(user)) {
-            return;
-        }
+    private void requireAcceptedLeader(User user, PracticeParticipation participation) {
         boolean isAcceptedLeader = participationMemberRepository.existsByPracticeParticipationIdAndUserIdAndRoleAndStatus(
                 participation.getId(),
                 user.getId(),
@@ -219,5 +284,46 @@ public class PracticeParticipationService {
                 participation.getCreatedAt(),
                 participation.getStatus()
         );
+    }
+
+    @Transactional
+    public PracticeParticipationResponse changeStatus(
+            Long id,
+            PracticeParticipationStatusUpdateRequest request,
+            User user
+    ) {
+        PracticeParticipation participation = findEntityById(id);
+
+        validateAccess(user, participation.getExam());
+
+        PracticeParticipationStatus newStatus = request.status();
+
+        if (newStatus == PracticeParticipationStatus.PRACTICE_CHOSEN) {
+            throw new ErrorMessageException(
+                    "PRACTICE_CHOSEN status student practice tanlaganda avtomatik qo'yiladi",
+                    ErrorCodes.BadRequest
+            );
+        }
+
+        if (newStatus == PracticeParticipationStatus.READY_TO_CHOOSE) {
+            refreshReadyStatusIfEligible(participation);
+
+            if (participation.getStatus() != PracticeParticipationStatus.READY_TO_CHOOSE) {
+                throw new ErrorMessageException(
+                        "Barcha a'zolar ACCEPTED bo'lmasa READY_TO_CHOOSE qilib bo'lmaydi",
+                        ErrorCodes.BadRequest
+                );
+            }
+
+            return toResponse(practiceParticipationRepository.save(participation));
+        }
+
+        participation.setStatus(newStatus);
+
+        if (newStatus == PracticeParticipationStatus.CANCELLED) {
+            participation.setReadyAt(null);
+        }
+
+        return toResponse(practiceParticipationRepository.save(participation));
     }
 }
