@@ -1,8 +1,6 @@
 package org.example.rspcm.service;
 
 import lombok.RequiredArgsConstructor;
-import org.example.rspcm.dto.practice.PracticeParticipationInviteRequest;
-import org.example.rspcm.dto.practice.PracticeParticipationMemberResponse;
 import org.example.rspcm.dto.practice.PracticeParticipationRequest;
 import org.example.rspcm.dto.practice.PracticeParticipationResponse;
 import org.example.rspcm.exception.ErrorCodes;
@@ -24,14 +22,12 @@ import org.example.rspcm.repository.ExamRepository;
 import org.example.rspcm.repository.PracticeParticipationMemberRepository;
 import org.example.rspcm.repository.PracticeParticipationRepository;
 import org.example.rspcm.repository.TeacherProfileRepository;
-import org.example.rspcm.repository.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -43,7 +39,6 @@ public class PracticeParticipationService {
     private final TeacherProfileRepository teacherProfileRepository;
     private final SummaryMapper summaryMapper;
     private final ExamRepository examRepository;
-    private final UserRepository userRepository;
 
     @Transactional
     public PracticeParticipationResponse create(PracticeParticipationRequest request, User user) {
@@ -130,84 +125,6 @@ public class PracticeParticipationService {
         PracticeParticipation participation = findEntityById(id);
         validateAccess(user, participation.getExam());
         practiceParticipationRepository.delete(participation);
-    }
-
-    @Transactional
-    public PracticeParticipationMemberResponse inviteMember(Long participationId, PracticeParticipationInviteRequest request, User user) {
-        PracticeParticipation participation = findEntityById(participationId);
-        if (isAdmin(user) || isTeacher(user)) {
-            validateAccess(user, participation.getExam());
-        }
-        requireLeaderOrStaff(user, participation);
-
-        User invitedUser = userRepository.findById(request.userId())
-                .orElseThrow(() -> new NotFoundException("User topilmadi: " + request.userId()));
-
-        if (participationMemberRepository.existsByPracticeParticipationIdAndUserId(participationId, invitedUser.getId())) {
-            throw new ErrorMessageException("Bu foydalanuvchi allaqachon jamoada", ErrorCodes.AlreadyExists);
-        }
-        if (participation.getStatus() == PracticeParticipationStatus.PRACTICE_CHOSEN
-                || participation.getStatus() == PracticeParticipationStatus.CANCELLED) {
-            throw new ErrorMessageException("Ushbu participationga yangi member qo'shib bo'lmaydi", ErrorCodes.BadRequest);
-        }
-
-        PracticeParticipationMember member = new PracticeParticipationMember();
-        member.setPracticeParticipation(participation);
-        member.setUser(invitedUser);
-        member.setRole(PracticeMemberRole.MEMBER);
-        member.setStatus(PracticeParticipationMemberStatus.INVITED);
-        PracticeParticipationMember saved = participationMemberRepository.save(member);
-
-        if (participation.getStatus() == PracticeParticipationStatus.READY_TO_CHOOSE) {
-            participation.setStatus(PracticeParticipationStatus.FORMING);
-            participation.setReadyAt(null);
-        }
-
-        return toMemberResponse(saved);
-    }
-
-    @Transactional
-    public PracticeParticipationMemberResponse acceptInvite(Long participationId, User user) {
-        PracticeParticipation participation = findEntityById(participationId);
-        PracticeParticipationMember member = participationMemberRepository
-                .findByPracticeParticipationIdAndUserId(participationId, user.getId())
-                .orElseThrow(() -> new NotFoundException("Invitation topilmadi"));
-
-        if (member.getStatus() != PracticeParticipationMemberStatus.INVITED) {
-            throw new ErrorMessageException("Faqat INVITED holatdagi taklif qabul qilinadi", ErrorCodes.BadRequest);
-        }
-
-        member.setStatus(PracticeParticipationMemberStatus.ACCEPTED);
-        PracticeParticipationMember saved = participationMemberRepository.save(member);
-        refreshReadyStatusIfEligible(participation);
-        return toMemberResponse(saved);
-    }
-
-    @Transactional
-    public PracticeParticipationMemberResponse declineInvite(Long participationId, User user) {
-        PracticeParticipationMember member = participationMemberRepository
-                .findByPracticeParticipationIdAndUserId(participationId, user.getId())
-                .orElseThrow(() -> new NotFoundException("Invitation topilmadi"));
-
-        if (member.getStatus() != PracticeParticipationMemberStatus.INVITED) {
-            throw new ErrorMessageException("Faqat INVITED holatdagi taklif rad qilinadi", ErrorCodes.BadRequest);
-        }
-
-        member.setStatus(PracticeParticipationMemberStatus.DECLINED);
-        return toMemberResponse(participationMemberRepository.save(member));
-    }
-
-    public List<PracticeParticipationMemberResponse> listMembers(Long participationId, User user) {
-        PracticeParticipation participation = findEntityById(participationId);
-        if (isAdmin(user) || isTeacher(user)) {
-            validateAccess(user, participation.getExam());
-        } else if (!participationMemberRepository.existsByPracticeParticipationIdAndUserId(participationId, user.getId())) {
-            throw new ErrorMessageException("Ruxsat yo'q", ErrorCodes.Forbidden);
-        }
-
-        return participationMemberRepository.findByPracticeParticipationId(participationId).stream()
-                .map(this::toMemberResponse)
-                .toList();
     }
 
     private PracticeParticipation findEntityById(Long id) {
@@ -300,15 +217,6 @@ public class PracticeParticipationService {
                 examPractice == null ? null : summaryMapper.toPracticeSummary(examPractice.getPractice()),
                 participation.getCreatedAt(),
                 participation.getStatus()
-        );
-    }
-
-    private PracticeParticipationMemberResponse toMemberResponse(PracticeParticipationMember member) {
-        return new PracticeParticipationMemberResponse(
-                member.getId(),
-                summaryMapper.toUserSummary(member.getUser()),
-                member.getRole(),
-                member.getStatus()
         );
     }
 }
