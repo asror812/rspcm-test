@@ -2,11 +2,8 @@ package org.example.rspcm.mapper;
 
 import org.example.rspcm.dto.practice.PracticeAssignmentRequest;
 import org.example.rspcm.dto.practice.PracticeAssignmentResponse;
-import org.example.rspcm.model.entity.Exam;
-import org.example.rspcm.model.entity.ExamPractice;
-import org.example.rspcm.model.entity.PracticeAssignment;
+import org.example.rspcm.model.entity.*;
 import org.example.rspcm.model.enums.PracticeAssignmentStatus;
-import org.example.rspcm.model.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -17,7 +14,7 @@ import java.time.LocalDateTime;
 public class PracticeAssignmentMapper {
     private final SummaryMapper summaryMapper;
 
-    public PracticeAssignmentResponse toResponse(PracticeAssignment assignment) {
+    public PracticeAssignmentResponse toResponse(PracticeSubmission assignment) {
         return new PracticeAssignmentResponse(
                 assignment.getId(),
                 summaryMapper.toExamSummary(assignment.getExam()),
@@ -32,7 +29,7 @@ public class PracticeAssignmentMapper {
         );
     }
 
-    public PracticeAssignment toEntity(
+    public PracticeSubmission toEntity(
             PracticeAssignmentRequest request,
             Exam exam,
             ExamPractice examPractice,
@@ -40,7 +37,7 @@ public class PracticeAssignmentMapper {
             PracticeTeam team,
             LocalDateTime chosenAt
     ) {
-        return PracticeAssignment.builder()
+        return PracticeSubmission.builder()
                 .exam(exam)
                 .examPractice(examPractice)
                 .student(student)
@@ -53,7 +50,7 @@ public class PracticeAssignmentMapper {
     }
 
     public void updateEntity(
-            PracticeAssignment assignment,
+            PracticeSubmission assignment,
             PracticeAssignmentRequest request,
             Exam exam,
             ExamPractice examPractice,

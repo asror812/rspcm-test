@@ -4,6 +4,7 @@ package org.example.rspcm.model.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.example.rspcm.model.enums.PracticeAssignmentStatus;
+import org.example.rspcm.model.enums.PracticeSubmissionStatus;
 
 import java.time.LocalDateTime;
 
@@ -30,7 +31,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PracticeAssignment {
+public class PracticeSubmission {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -38,29 +39,22 @@ public class PracticeAssignment {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "exam_id", nullable = false)
-    private Exam exam;
+    private PracticeParticipation examParticipation;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "exam_practice_id", nullable = false)
-    private ExamPractice examPractice;
+    @Column(length = 5000)
+    private String textAnswer;
+
+    private String fileUrl;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id")
     private User student;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "team_id")
-    private PracticeTeam team;
-
-    private LocalDateTime chosenAt;
-
     private LocalDateTime submittedAt;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private PracticeAssignmentStatus status;
-
-    private Integer score;
+    private PracticeSubmissionStatus status;
 
     @Column(length = 2000)
     private String teacherComment;

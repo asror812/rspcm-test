@@ -6,7 +6,7 @@ import org.example.rspcm.exception.NotFoundException;
 import org.example.rspcm.mapper.PracticeAssignmentMapper;
 import org.example.rspcm.model.entity.Exam;
 import org.example.rspcm.model.entity.ExamPractice;
-import org.example.rspcm.model.entity.PracticeAssignment;
+import org.example.rspcm.model.entity.PracticeSubmission;
 import org.example.rspcm.model.enums.PracticeAssignmentStatus;
 import org.example.rspcm.model.enums.ExamType;
 import org.example.rspcm.exception.ErrorCodes;
@@ -38,21 +38,21 @@ public class PracticeAssignmentService {
         return assignmentRepository.findAll().stream().map(practiceAssignmentMapper::toResponse).toList();
     }
 
-    public PracticeAssignment findById(Long id) {
+    public PracticeSubmission findById(Long id) {
         return assignmentRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("PracticeAssignment topilmadi: " + id));
+                .orElseThrow(() -> new NotFoundException("PracticeSubmission topilmadi: " + id));
     }
 
     public PracticeAssignmentResponse findResponseById(Long id) {
         return practiceAssignmentMapper.toResponse(assignmentRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("PracticeAssignment topilmadi: " + id)));
+                .orElseThrow(() -> new NotFoundException("PracticeSubmission topilmadi: " + id)));
     }
 
     @Transactional
-    public PracticeAssignment create(PracticeAssignmentRequest request) {
+    public PracticeSubmission create(PracticeAssignmentRequest request) {
         var exam = validateExamTypeForPractice(request.examId());
         validatePracticeCapacityForCreate(exam.getId(), exam.getTaskLimit());
-        PracticeAssignment assignment = practiceAssignmentMapper.toEntity(
+        PracticeSubmission assignment = practiceAssignmentMapper.toEntity(
                 request,
                 exam,
                 resolveExamPractice(request.examPracticeId(), exam),
@@ -68,7 +68,7 @@ public class PracticeAssignmentService {
     public PracticeAssignmentResponse createResponse(PracticeAssignmentRequest request) {
         var exam = validateExamTypeForPractice(request.examId());
         validatePracticeCapacityForCreate(exam.getId(), exam.getTaskLimit());
-        PracticeAssignment assignment = practiceAssignmentMapper.toEntity(
+        PracticeSubmission assignment = practiceAssignmentMapper.toEntity(
                 request,
                 exam,
                 resolveExamPractice(request.examPracticeId(), exam),
@@ -85,7 +85,7 @@ public class PracticeAssignmentService {
     public PracticeAssignmentResponse update(Long id, PracticeAssignmentRequest request) {
         var exam = validateExamTypeForPractice(request.examId());
         validatePracticeCapacityForUpdate(exam.getId(), exam.getTaskLimit(), id);
-        PracticeAssignment assignment = findById(id);
+        PracticeSubmission assignment = findById(id);
         practiceAssignmentMapper.updateEntity(
                 assignment,
                 request,

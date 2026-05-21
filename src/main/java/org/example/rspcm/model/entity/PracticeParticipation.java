@@ -5,8 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.example.rspcm.model.enums.PracticeParticipationStatus;
-
 import java.time.LocalDateTime;
 
 @Entity
@@ -14,7 +12,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @Getter
 @Setter
-public class PracticeParticipation  {
+public class PracticeParticipation {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,8 +24,4 @@ public class PracticeParticipation  {
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private PracticeParticipationStatus status;
 }
