@@ -3,7 +3,6 @@ package org.example.rspcm.model.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.example.rspcm.model.enums.PracticeAssignmentStatus;
 import org.example.rspcm.model.enums.PracticeSubmissionStatus;
 
 import java.time.LocalDateTime;
@@ -15,10 +14,6 @@ import java.time.LocalDateTime;
                 @UniqueConstraint(
                         name = "uk_exam_student_assignment",
                         columnNames = {"exam_id", "student_id"}
-                ),
-                @UniqueConstraint(
-                        name = "uk_exam_team_assignment",
-                        columnNames = {"exam_id", "team_id"}
                 ),
                 @UniqueConstraint(
                         name = "uk_exam_task_assignment",

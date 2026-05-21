@@ -1,7 +1,8 @@
 package org.example.rspcm.model.enums;
 
 public enum PracticeParticipationStatus {
-    DRAFT,      // выбор создан, можно менять участников
-    CONFIRMED,  // выбор подтверждён, менять нельзя
-    CANCELLED   // выбор
+    FORMING,          // members are being invited
+    READY_TO_CHOOSE,  // all members accepted
+    PRACTICE_CHOSEN,  // examPractice selected
+    CANCELLED
 }

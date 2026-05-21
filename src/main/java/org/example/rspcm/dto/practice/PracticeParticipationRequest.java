@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotNull;
 import org.example.rspcm.model.enums.PracticeParticipationStatus;
 
 public record PracticeParticipationRequest(
-        @NotNull Long examPracticeId
+        @NotNull Long examId,
+        Long examPracticeId
 ) {
 }

@@ -62,7 +62,7 @@ public class PracticeParticipationController {
 
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
     public ResponseEntity<PracticeParticipationResponse> update(
             @PathVariable Long id,
             @Valid @RequestBody PracticeParticipationRequest request,

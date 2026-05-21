@@ -8,5 +8,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface PracticeParticipationRepository extends JpaRepository<PracticeParticipation, Long> {
-    Page<PracticeParticipation> findByExamPracticeExamId(Long examId, Pageable pageable);
+    Page<PracticeParticipation> findByExamId(Long examId, Pageable pageable);
 }
