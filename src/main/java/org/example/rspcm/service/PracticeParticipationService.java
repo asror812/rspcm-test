@@ -1,8 +1,9 @@
 package org.example.rspcm.service;
 
 import lombok.RequiredArgsConstructor;
-import org.example.rspcm.dto.practice.PracticeParticipationRequest;
+import org.example.rspcm.dto.practice.PracticeParticipationCreateRequest;
 import org.example.rspcm.dto.practice.PracticeParticipationResponse;
+import org.example.rspcm.dto.practice.PracticeParticipationUpdateRequest;
 import org.example.rspcm.exception.ErrorCodes;
 import org.example.rspcm.exception.ErrorMessageException;
 import org.example.rspcm.exception.NotFoundException;
@@ -41,7 +42,7 @@ public class PracticeParticipationService {
     private final ExamRepository examRepository;
 
     @Transactional
-    public PracticeParticipationResponse create(PracticeParticipationRequest request, User user) {
+    public PracticeParticipationResponse create(PracticeParticipationCreateRequest request, User user) {
         Exam exam = resolveExam(request.examId());
         checkPracticeExam(exam);
 
@@ -85,7 +86,7 @@ public class PracticeParticipationService {
     }
 
     @Transactional
-    public PracticeParticipationResponse update(Long id, PracticeParticipationRequest request, User user) {
+    public PracticeParticipationResponse update(Long id, PracticeParticipationUpdateRequest request, User user) {
         PracticeParticipation participation = findEntityById(id);
         Exam exam = resolveExam(request.examId());
         checkPracticeExam(exam);

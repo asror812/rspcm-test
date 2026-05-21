@@ -2,8 +2,9 @@ package org.example.rspcm.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.example.rspcm.dto.practice.PracticeParticipationRequest;
+import org.example.rspcm.dto.practice.PracticeParticipationCreateRequest;
 import org.example.rspcm.dto.practice.PracticeParticipationResponse;
+import org.example.rspcm.dto.practice.PracticeParticipationUpdateRequest;
 import org.example.rspcm.model.entity.User;
 import org.example.rspcm.service.PracticeParticipationService;
 import org.springframework.data.domain.Page;
@@ -32,7 +33,7 @@ public class PracticeParticipationController {
     @PostMapping
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<PracticeParticipationResponse> create(
-            @Valid @RequestBody PracticeParticipationRequest request,
+            @Valid @RequestBody PracticeParticipationCreateRequest request,
             @AuthenticationPrincipal User user
     ) {
         return ResponseEntity.ok(practiceParticipationService.create(request, user));
@@ -65,7 +66,7 @@ public class PracticeParticipationController {
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
     public ResponseEntity<PracticeParticipationResponse> update(
             @PathVariable Long id,
-            @Valid @RequestBody PracticeParticipationRequest request,
+            @Valid @RequestBody PracticeParticipationUpdateRequest request,
             @AuthenticationPrincipal User user
     ) {
         return ResponseEntity.ok(practiceParticipationService.update(id, request, user));
