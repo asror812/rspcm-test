@@ -6,9 +6,15 @@ import org.example.rspcm.model.enums.PracticeParticipationMemberStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+import java.util.Optional;
+
 @Repository
 public interface PracticeParticipationMemberRepository extends JpaRepository<PracticeParticipationMember, Long> {
-    boolean existsByPracticeParticipationIdAndUserId(Long practiceParticipationId, Long userId);
+
+    Optional<PracticeParticipationMember> findByPracticeParticipationIdAndUserId(Long practiceParticipationId, Long userId);
+
+    List<PracticeParticipationMember> findByPracticeParticipationId(Long practiceParticipationId);
 
     boolean existsByPracticeParticipationIdAndUserIdAndRoleAndStatus(
             Long practiceParticipationId,
@@ -16,6 +22,8 @@ public interface PracticeParticipationMemberRepository extends JpaRepository<Pra
             PracticeMemberRole role,
             PracticeParticipationMemberStatus status
     );
+
+    boolean existsByPracticeParticipationIdAndUserId(Long practiceParticipationId, Long userId);
 
     boolean existsByPracticeParticipationIdAndStatusNot(Long practiceParticipationId, PracticeParticipationMemberStatus status);
 }

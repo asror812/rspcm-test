@@ -38,10 +38,6 @@ public class PracticeJournalService {
         return journalRepository.findByStudentId(student.getId()).stream().map(practiceJournalMapper::toResponse).toList();
     }
 
-    public List<PracticeLogbook> findByPractice(Long practiceId) {
-        return journalRepository.findByPracticeId(practiceId);
-    }
-
     public List<PracticeJournalResponse> findByPracticeResponse(Long practiceId) {
         return journalRepository.findByPracticeId(practiceId).stream().map(practiceJournalMapper::toResponse).toList();
     }
