@@ -389,6 +389,28 @@ public class PracticeParticipationService {
 
     private PracticeParticipationResponse toResponse(PracticeParticipation participation) {
         ExamPractice examPractice = participation.getExamPractice();
+        PracticeParticipationTeamResponse team = null;
+
+        if (examPractice != null && examPractice.getPractice().getWorkMode() == WorkMode.TEAM) {
+            List<PracticeParticipationTeamMemberResponse> members = participationMemberRepository
+                    .findByPracticeParticipationId(participation.getId())
+                    .stream()
+                    .filter(member -> member.getStatus() != PracticeParticipationMemberStatus.REMOVED)
+                    .map(member -> new PracticeParticipationTeamMemberResponse(
+                            member.getUser().getId(),
+                            (member.getUser().getFirstName() + " " + member.getUser().getLastName()).trim(),
+                            member.getRole(),
+                            member.getStatus()
+                    ))
+                    .toList();
+
+            team = new PracticeParticipationTeamResponse(
+                    members.size(),
+                    examPractice.getPractice().getTeamSize(),
+                    members
+            );
+        }
+
         return new PracticeParticipationResponse(
                 participation.getId(),
                 examPractice == null ? null : examPractice.getId(),
@@ -401,7 +423,8 @@ public class PracticeParticipationService {
                         examPractice.getPractice().isSchedulingRequired()
                 ),
                 participation.getCreatedAt(),
-                participation.getStatus()
+                participation.getStatus(),
+                team
         );
     }
 

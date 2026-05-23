@@ -10,6 +10,7 @@ public record PracticeParticipationResponse(
         Long examId,
         PracticeParticipationPracticeSummary practice,
         LocalDateTime createdAt,
-        PracticeParticipationStatus status
+        PracticeParticipationStatus status,
+        PracticeParticipationTeamResponse team
 ) {
 }
