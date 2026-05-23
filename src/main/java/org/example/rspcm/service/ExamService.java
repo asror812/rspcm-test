@@ -58,6 +58,20 @@ public class ExamService {
 
     }
 
+    public Page<ExamResponse> findMyExams(
+            User user,
+            String query,
+            ExamType examType,
+            Long subjectId,
+            Pageable pageable
+    ) {
+        if (!isStudent(user)) {
+            throw new ErrorMessageException("Ruxsat etilmagan amal", ErrorCodes.Forbidden);
+        }
+        return examRepository.findStudentExams(user.getId(), examType, subjectId, query, pageable)
+                .map(examMapper::toResponse);
+    }
+
     public ExamResponse findById(Long id, User user) {
         Exam exam = examRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Imtihon topilmadi: " + id));

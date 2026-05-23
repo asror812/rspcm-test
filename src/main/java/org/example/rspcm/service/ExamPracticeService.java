@@ -11,6 +11,7 @@ import org.example.rspcm.model.entity.Exam;
 import org.example.rspcm.model.entity.ExamPractice;
 import org.example.rspcm.model.entity.Practice;
 import org.example.rspcm.model.entity.User;
+import org.example.rspcm.model.enums.ExamStatus;
 import org.example.rspcm.model.enums.ExamType;
 import org.example.rspcm.model.enums.RoleName;
 import org.example.rspcm.repository.ExamPracticeRepository;
@@ -21,6 +22,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -40,6 +43,26 @@ public class ExamPracticeService {
         Exam exam = resolveExam(examId);
         validateTeacherAccess(user, exam);
         return examPracticeRepository.findByExamId(examId, pageable).map(this::toResponse);
+    }
+
+    public List<ExamPracticeResponse> findAllForStudent(Long examId, User user) {
+        Exam exam = resolveExam(examId);
+
+        if (exam.getType() != ExamType.PRACTICE) {
+            throw new ErrorMessageException("Faqat PRACTICE turidagi examda amaliyotlar mavjud", ErrorCodes.BadRequest);
+        }
+
+        if (exam.getStatus() != ExamStatus.PUBLISHED) {
+            throw new NotFoundException("Imtihon topilmadi: " + examId);
+        }
+
+        if (!isAssignedToStudent(exam, user.getId())) {
+            throw new NotFoundException("Imtihon topilmadi: " + examId);
+        }
+
+        return examPracticeRepository.findByExamId(examId, Pageable.unpaged())
+                .map(this::toResponse)
+                .getContent();
     }
 
     public ExamPracticeResponse findById(Long id, User user) {
@@ -131,6 +154,16 @@ public class ExamPracticeService {
 
     private boolean isTeacher(User user) {
         return user.getRoles().stream().anyMatch(role -> role.getRoleName() == RoleName.ROLE_TEACHER);
+    }
+
+    private boolean isAssignedToStudent(Exam exam, Long studentId) {
+        boolean assignedDirectly = exam.getTargetStudents().stream()
+                .anyMatch(student -> student.getId().equals(studentId));
+
+        boolean assignedByGroup = exam.getGroups().stream()
+                .anyMatch(group -> group.getStudents().stream().anyMatch(student -> student.getId().equals(studentId)));
+
+        return assignedDirectly || assignedByGroup;
     }
 
     private ExamPracticeResponse toResponse(ExamPractice link) {

@@ -13,11 +13,18 @@ import org.example.rspcm.model.entity.Exam;
 import org.example.rspcm.model.entity.ExamPractice;
 import org.example.rspcm.model.entity.ExamQuestion;
 import org.example.rspcm.model.entity.Practice;
+import org.example.rspcm.model.entity.PracticeParticipation;
+import org.example.rspcm.model.entity.PracticeParticipationMember;
+import org.example.rspcm.model.entity.PracticeSubmission;
 import org.example.rspcm.model.enums.GroupLanguage;
 import org.example.rspcm.model.enums.QuestionType;
 import org.example.rspcm.model.enums.RoleName;
 import org.example.rspcm.model.enums.ExamType;
 import org.example.rspcm.model.enums.ExamStatus;
+import org.example.rspcm.model.enums.PracticeMemberRole;
+import org.example.rspcm.model.enums.PracticeParticipationMemberStatus;
+import org.example.rspcm.model.enums.PracticeParticipationStatus;
+import org.example.rspcm.model.enums.PracticeSubmissionStatus;
 import org.example.rspcm.model.enums.WorkMode;
 import org.example.rspcm.model.enums.SubmissionType;
 import org.example.rspcm.repository.UserRepository;
@@ -30,8 +37,12 @@ import org.example.rspcm.repository.QuestionRepository;
 import org.example.rspcm.repository.ExamRepository;
 import org.example.rspcm.repository.ExamQuestionRepository;
 import org.example.rspcm.repository.PracticeRepository;
+import org.example.rspcm.repository.PracticeParticipationRepository;
+import org.example.rspcm.repository.PracticeParticipationMemberRepository;
+import org.example.rspcm.repository.PracticeSubmissionRepository;
 import org.example.rspcm.service.UserProfileSyncService;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -58,6 +69,9 @@ public class DataInitializer implements CommandLineRunner {
     private final ExamRepository examRepository;
     private final ExamQuestionRepository examQuestionRepository;
     private final PracticeRepository practiceRepository;
+    private final PracticeParticipationRepository practiceParticipationRepository;
+    private final PracticeParticipationMemberRepository practiceParticipationMemberRepository;
+    private final PracticeSubmissionRepository practiceSubmissionRepository;
     private final UserProfileSyncService userProfileSyncService;
     private final PasswordEncoder passwordEncoder;
 
@@ -218,7 +232,119 @@ public class DataInitializer implements CommandLineRunner {
         );
 
         attachPracticesToExam(practicalExam, List.of(practices.get(2), practices.get(3), practices.get(4)));
+        seedPracticeParticipations(practicalExam);
         backfillExamAndExamQuestionAuditData(getUser("admin@rspcm.local"));
+    }
+
+    private void seedPracticeParticipations(Exam practicalExam) {
+        if (!practiceParticipationRepository.findByExamId(practicalExam.getId(), Pageable.unpaged()).isEmpty()) {
+            return;
+        }
+
+        User k1Student1 = getUser("k1.anvar.rasulov@rspcm.local");
+        User k1Student2 = getUser("k1.alisher.nazarov@rspcm.local");
+        User k1Student3 = getUser("k1.axror.karimov@rspcm.local");
+        User k1Student4 = getUser("k1.asror.abdullayeva@rspcm.local");
+        User k1Student5 = getUser("k1.abror.rahimov@rspcm.local");
+        User l1Student1 = getUser("l1.bahrom.rasulov@rspcm.local");
+        User l1Student2 = getUser("l1.bahodir.nazarov@rspcm.local");
+        User l1Student3 = getUser("l1.bobur.karimov@rspcm.local");
+        User l1Student4 = getUser("l1.botir.abdullayeva@rspcm.local");
+        User l1Student5 = getUser("l1.bekzod.rahimov@rspcm.local");
+
+        ExamPractice teamExamPractice = practicalExam.getPractices().stream()
+                .filter(link -> link.getPractice().getWorkMode() == WorkMode.TEAM)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("TEAM exam practice topilmadi"));
+
+        ExamPractice individualExamPractice = practicalExam.getPractices().stream()
+                .filter(link -> link.getPractice().getWorkMode() == WorkMode.INDIVIDUAL)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("INDIVIDUAL exam practice topilmadi"));
+
+        // WAITING_MEMBERS: leader + invited + accepted
+        PracticeParticipation waitingMembers = createParticipation(
+                practicalExam,
+                teamExamPractice,
+                PracticeParticipationStatus.WAITING_MEMBERS,
+                LocalDateTime.now().minusDays(2),
+                null,
+                null
+        );
+        addMember(waitingMembers, k1Student1, PracticeMemberRole.LEADER, PracticeParticipationMemberStatus.ACCEPTED);
+        addMember(waitingMembers, k1Student2, PracticeMemberRole.MEMBER, PracticeParticipationMemberStatus.INVITED);
+        addMember(waitingMembers, k1Student3, PracticeMemberRole.MEMBER, PracticeParticipationMemberStatus.ACCEPTED);
+
+        // READY_TO_CHOOSE: full accepted team
+        PracticeParticipation readyToChoose = createParticipation(
+                practicalExam,
+                teamExamPractice,
+                PracticeParticipationStatus.READY_TO_CHOOSE,
+                LocalDateTime.now().minusDays(3),
+                LocalDateTime.now().minusDays(2),
+                null
+        );
+        addMember(readyToChoose, l1Student1, PracticeMemberRole.LEADER, PracticeParticipationMemberStatus.ACCEPTED);
+        addMember(readyToChoose, l1Student2, PracticeMemberRole.MEMBER, PracticeParticipationMemberStatus.ACCEPTED);
+        addMember(readyToChoose, l1Student3, PracticeMemberRole.MEMBER, PracticeParticipationMemberStatus.ACCEPTED);
+
+        // PRACTICE_CHOSEN + submission
+        PracticeParticipation chosen = createParticipation(
+                practicalExam,
+                individualExamPractice,
+                PracticeParticipationStatus.PRACTICE_CHOSEN,
+                LocalDateTime.now().minusDays(4),
+                LocalDateTime.now().minusDays(4),
+                LocalDateTime.now().minusDays(3)
+        );
+        addMember(chosen, k1Student4, PracticeMemberRole.LEADER, PracticeParticipationMemberStatus.ACCEPTED);
+
+        PracticeSubmission submission = PracticeSubmission.builder()
+                .examParticipation(chosen)
+                .student(k1Student4)
+                .textAnswer("Auto-seeded submission content")
+                .fileUrl("https://example.com/submissions/auto-seeded-1")
+                .submittedAt(LocalDateTime.now().minusDays(2))
+                .status(PracticeSubmissionStatus.GRADED)
+                .teacherComment("Auto-seeded: looks good")
+                .build();
+        practiceSubmissionRepository.save(submission);
+
+        // Additional member states for realism
+        addMember(waitingMembers, l1Student4, PracticeMemberRole.MEMBER, PracticeParticipationMemberStatus.DECLINED);
+        addMember(waitingMembers, l1Student5, PracticeMemberRole.MEMBER, PracticeParticipationMemberStatus.REMOVED);
+    }
+
+    private PracticeParticipation createParticipation(
+            Exam exam,
+            ExamPractice examPractice,
+            PracticeParticipationStatus status,
+            LocalDateTime createdAt,
+            LocalDateTime readyAt,
+            LocalDateTime chosenAt
+    ) {
+        PracticeParticipation participation = new PracticeParticipation();
+        participation.setExam(exam);
+        participation.setExamPractice(examPractice);
+        participation.setStatus(status);
+        participation.setCreatedAt(createdAt);
+        participation.setReadyAt(readyAt);
+        participation.setChosenAt(chosenAt);
+        return practiceParticipationRepository.save(participation);
+    }
+
+    private void addMember(
+            PracticeParticipation participation,
+            User user,
+            PracticeMemberRole role,
+            PracticeParticipationMemberStatus status
+    ) {
+        PracticeParticipationMember member = new PracticeParticipationMember();
+        member.setPracticeParticipation(participation);
+        member.setUser(user);
+        member.setRole(role);
+        member.setStatus(status);
+        practiceParticipationMemberRepository.save(member);
     }
 
     private void createOrUpdateUser(
