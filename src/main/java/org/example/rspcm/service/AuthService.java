@@ -23,6 +23,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -105,16 +107,16 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest request) {
-        UserDetails userDetails = userDetailsService.loadUserByUsername(request.identifier());
-
-        if(!passwordEncoder.matches(request.password(), userDetails.getPassword())) {
+        final Authentication authentication;
+        try {
+            authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.identifier(), request.password()));
+        } catch (BadCredentialsException | UsernameNotFoundException ex) {
             throw new ErrorMessageException("Email yoki parol noto'g'ri", ErrorCodes.InvalidParams);
         }
 
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.identifier(), request.password()));
-
         SecurityContextHolder.getContext().setAuthentication(authentication);
+        UserDetails userDetails = userDetailsService.loadUserByUsername(authentication.getName());
 
         return authMapper.toAuthResponse(
                 userDetails.getUsername(),
