@@ -153,13 +153,13 @@ public class DataInitializer implements CommandLineRunner {
         assignStudentProfile(l1Student4, 1);
         assignStudentProfile(l1Student5, 1);
 
-        math.setTeachers(Set.of(teacherMath));
+        math.setTeachers(new HashSet<>(Set.of(teacherMath)));
         subjectRepository.save(math);
 
-        physics.setTeachers(Set.of(teacherPhysics));
+        physics.setTeachers(new HashSet<>(Set.of(teacherPhysics)));
         subjectRepository.save(physics);
 
-        programming.setTeachers(Set.of(teacherProgramming));
+        programming.setTeachers(new HashSet<>(Set.of(teacherProgramming)));
         subjectRepository.save(programming);
 
         createOrUpdateGroup(
@@ -575,7 +575,7 @@ public class DataInitializer implements CommandLineRunner {
                         .workMode(index % 2 == 0 ? WorkMode.INDIVIDUAL : WorkMode.TEAM)
                         .teamSize(index % 2 == 0 ? null : 3)
                         .schedulingRequired(false)
-                        .allowedSubmissionTypes(Set.of(SubmissionType.TEXT, SubmissionType.FILE, SubmissionType.CODE))
+                        .allowedSubmissionTypes(new HashSet<>(Set.of(SubmissionType.TEXT, SubmissionType.FILE, SubmissionType.CODE)))
                         .createdBy(createdBy)
                         .build();
                 task = practiceRepository.save(task);
