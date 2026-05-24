@@ -34,6 +34,12 @@ public class AnswerController {
         return ResponseEntity.ok(answerService.findAll());
     }
 
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<List<AnswerResponse>> getMine() {
+        return ResponseEntity.ok(answerService.findMineResponse());
+    }
+
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
     public ResponseEntity<AnswerResponse> getById(@PathVariable Long id) {

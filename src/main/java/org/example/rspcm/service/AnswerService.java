@@ -34,6 +34,13 @@ public class AnswerService {
         return answerRepository.findAll().stream().map(answerMapper::toResponse).toList();
     }
 
+    public List<AnswerResponse> findMineResponse() {
+        User currentUser = currentUser();
+        return answerRepository.findByStudentId(currentUser.getId()).stream()
+                .map(answerMapper::toResponse)
+                .toList();
+    }
+
     public StudentAnswer findById(Long id) {
         StudentAnswer answer = answerRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Answer topilmadi: " + id));
