@@ -45,6 +45,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
 import java.util.ArrayList;
@@ -76,6 +77,7 @@ public class DataInitializer implements CommandLineRunner {
     private final PasswordEncoder passwordEncoder;
 
     @Override
+    @Transactional
     public void run(String ... args) {
         Map<RoleName, Role> roles = Arrays.stream(RoleName.values())
                 .map(roleName -> 
@@ -600,7 +602,7 @@ public class DataInitializer implements CommandLineRunner {
                 .toList();
 
         if (!staleLinks.isEmpty()) {
-            exam.getPractices().removeAll(staleLinks);
+            existingLinks.removeAll(staleLinks);
         }
 
         List<ExamPractice> normalized = new ArrayList<>();
