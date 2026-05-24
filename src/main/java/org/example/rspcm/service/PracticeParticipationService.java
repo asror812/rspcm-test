@@ -651,13 +651,21 @@ public class PracticeParticipationService {
             throw new ErrorMessageException("Tanlangan practice ushbu examga tegishli emas", ErrorCodes.BadRequest);
         }
 
-        boolean alreadyChosen = participationMemberRepository.existsByPracticeParticipationExamIdAndUserIdAndStatus(
-                exam.getId(),
-                user.getId(),
-                PracticeParticipationMemberStatus.ACCEPTED
-        );
-        if (alreadyChosen) {
-            throw new ErrorMessageException("Siz ushbu examda allaqachon practice tanlagansiz", ErrorCodes.AlreadyExists);
+        var existingMembership = participationMemberRepository
+                .findByPracticeParticipationExamIdAndUserIdAndStatusNot(
+                        exam.getId(),
+                        user.getId(),
+                        PracticeParticipationMemberStatus.REMOVED
+                );
+        if (existingMembership.isPresent()) {
+            PracticeParticipation existingParticipation = existingMembership.get().getPracticeParticipation();
+            String existingPracticeName = existingParticipation.getExamPractice() == null
+                    ? "nomalum practice"
+                    : existingParticipation.getExamPractice().getPractice().getName();
+            throw new ErrorMessageException(
+                    "Siz allaqachon practice tanlagansiz: " + existingPracticeName + ". Boshqasini tanlash uchun avval participationni bekor qiling yoki teamdan chiqing.",
+                    ErrorCodes.AlreadyExists
+            );
         }
 
         if (examPractice.getPractice().getWorkMode() == WorkMode.INDIVIDUAL) {

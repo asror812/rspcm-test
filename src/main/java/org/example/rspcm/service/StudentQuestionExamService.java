@@ -66,6 +66,14 @@ public class StudentQuestionExamService {
     }
 
     @Transactional(readOnly = true)
+    public StudentExamAttemptResponse getMyAttempt(Long examId, User user) {
+        resolvePublishedQuestionExam(examId, user);
+        ExamAttempt attempt = examAttemptRepository.findByExamIdAndStudentId(examId, user.getId())
+                .orElseThrow(() -> new ErrorMessageException("Imtihon hali boshlanmagan", ErrorCodes.NotFound));
+        return toAttemptResponse(attempt);
+    }
+
+    @Transactional(readOnly = true)
     public List<StudentExamQuestionResponse> getQuestions(Long examId, User user) {
         resolvePublishedQuestionExam(examId, user);
         ExamAttempt attempt = requireStartedAttempt(examId, user.getId());
