@@ -3,12 +3,14 @@ package org.example.rspcm.service;
 import org.example.rspcm.config.AppProperties;
 import org.example.rspcm.dto.auth.AuthResponse;
 import org.example.rspcm.dto.auth.LoginRequest;
+import org.example.rspcm.dto.auth.RegisterRequest;
 import org.example.rspcm.dto.auth.VerifyOtpRequest;
 import org.example.rspcm.exception.ErrorCodes;
 import org.example.rspcm.exception.ErrorMessageException;
 import org.example.rspcm.exception.NotFoundException;
 import org.example.rspcm.model.entity.User;
 import org.example.rspcm.model.entity.OtpVerification;
+import org.example.rspcm.model.enums.RoleName;
 import org.example.rspcm.mapper.AuthMapper;
 import org.example.rspcm.repository.OtpVerificationRepository;
 import org.example.rspcm.repository.UserRepository;
@@ -44,6 +46,30 @@ public class AuthService {
     private final Random random = new Random();
     private final UserDetailsService userDetailsService;
     private final PasswordEncoder passwordEncoder;
+    private final RoleService roleService;
+    private final UserProfileSyncService userProfileSyncService;
+
+    @Transactional
+    public String register(RegisterRequest request) {
+        if (userRepository.existsByEmail(request.email())) {
+            throw new ErrorMessageException("Email allaqachon mavjud", ErrorCodes.AlreadyExists);
+        }
+
+        User user = User.builder()
+                .firstName(request.firstName())
+                .lastName(request.lastName())
+                .email(request.email())
+                .password(passwordEncoder.encode(request.password()))
+                .roles(roleService.resolveRoles(java.util.Set.of(RoleName.ROLE_STUDENT)))
+                .enabled(false)
+                .build();
+
+        User savedUser = userRepository.save(user);
+        userProfileSyncService.sync(savedUser);
+        sendOtp(savedUser.getEmail());
+
+        return "Ro'yxatdan o'tish yakunlandi. OTP emailingizga yuborildi.";
+    }
 
     @Transactional
     public String resendOtp(String email) {
