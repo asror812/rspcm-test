@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Service
@@ -130,7 +131,11 @@ public class ProfileService {
         if (ids == null || ids.isEmpty()) {
             return new HashSet<>();
         }
-        return new HashSet<>(subjectRepository.findAllById(ids));
+        List<Subject> subjects = subjectRepository.findAllById(ids);
+        if (subjects.size() != ids.size()) {
+            throw new NotFoundException("Ba'zi fanlar topilmadi");
+        }
+        return new HashSet<>(subjects);
     }
 
     private StudyGroup resolveGroup(Long groupId) {

@@ -35,6 +35,17 @@ public class SummaryMapper {
         );
     }
 
+    public PracticeSummary toPracticeSummaryWithoutSubject(Practice practice) {
+        return new PracticeSummary(
+                practice.getId(),
+                practice.getName(),
+                null,
+                practice.getWorkMode(),
+                practice.getTeamSize(),
+                practice.isSchedulingRequired()
+        );
+    }
+
     public ExamSummary toExamSummary(Exam exam) {
         return new ExamSummary(exam.getId(), exam.getTitle(), exam.getEndAt());
     }

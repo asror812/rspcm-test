@@ -2,10 +2,9 @@ package org.example.rspcm.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.example.rspcm.dto.practice.PracticeParticipationCreateRequest;
-import org.example.rspcm.dto.practice.PracticeParticipationResponse;
-import org.example.rspcm.dto.practice.PracticeParticipationUpdateRequest;
+import org.example.rspcm.dto.practice.*;
 import org.example.rspcm.model.entity.User;
+import org.example.rspcm.model.enums.PracticeParticipationStatus;
 import org.example.rspcm.service.PracticeParticipationService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -17,11 +16,12 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -30,55 +30,89 @@ public class PracticeParticipationController {
 
     private final PracticeParticipationService practiceParticipationService;
 
-    @PostMapping
-    @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<PracticeParticipationResponse> create(
-            @Valid @RequestBody PracticeParticipationCreateRequest request,
-            @AuthenticationPrincipal User user
-    ) {
-        return ResponseEntity.ok(practiceParticipationService.create(request, user));
-    }
-
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<Page<PracticeParticipationResponse>> getAll(
             @RequestParam Long examId,
+            @RequestParam(required = false) PracticeParticipationStatus status,
             @RequestParam(required = false, defaultValue = "0") int page,
             @RequestParam(required = false, defaultValue = "10") int size,
             @AuthenticationPrincipal User user
     ) {
         Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(practiceParticipationService.findAll(examId, user, pageable));
+        return ResponseEntity.ok(practiceParticipationService.findAll(examId, status, user, pageable));
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{participationId}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<PracticeParticipationResponse> getById(
-            @PathVariable Long id,
+            @PathVariable Long participationId,
             @AuthenticationPrincipal User user
     ) {
-        return ResponseEntity.ok(practiceParticipationService.findById(id, user));
+        return ResponseEntity.ok(practiceParticipationService.findById(participationId, user));
     }
 
-
-
-    @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
-    public ResponseEntity<PracticeParticipationResponse> update(
-            @PathVariable Long id,
-            @Valid @RequestBody PracticeParticipationUpdateRequest request,
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<List<MyPracticeParticipationResponse>> getMyParticipations(
             @AuthenticationPrincipal User user
     ) {
-        return ResponseEntity.ok(practiceParticipationService.update(id, request, user));
+        return ResponseEntity.ok(practiceParticipationService.getMyParticipations(user));
     }
 
-    @DeleteMapping("/{id}")
+    @GetMapping("/members/invitations/me")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<List<MyTeamInvitationResponse>> getMyTeamInvitations(
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(practiceParticipationService.getMyTeamInvitations(user));
+    }
+
+    @PostMapping("/{participationId}/members/invite")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<PracticeParticipationResponse> inviteMembers(
+            @PathVariable Long participationId,
+            @Valid @RequestBody PracticeParticipationMembersInviteRequest request,
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(practiceParticipationService.inviteMembers(participationId, request, user));
+    }
+
+    @PostMapping("/{participationId}/members/accept")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<PracticeParticipationResponse> acceptInvitation(
+            @PathVariable Long participationId,
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(practiceParticipationService.acceptInvitation(participationId, user));
+    }
+
+    @PostMapping("/{participationId}/members/decline")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<PracticeParticipationResponse> declineInvitation(
+            @PathVariable Long participationId,
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(practiceParticipationService.declineInvitation(participationId, user));
+    }
+
+    @DeleteMapping("/{participationId}/members/me")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<Void> leaveMyTeam(
+            @PathVariable Long participationId,
+            @AuthenticationPrincipal User user
+    ) {
+        practiceParticipationService.leaveMyTeam(participationId, user);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{participationId}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<Void> delete(
-            @PathVariable Long id,
+            @PathVariable Long participationId,
             @AuthenticationPrincipal User user
     ) {
-        practiceParticipationService.delete(id, user);
+        practiceParticipationService.delete(participationId, user);
         return ResponseEntity.noContent().build();
     }
 }

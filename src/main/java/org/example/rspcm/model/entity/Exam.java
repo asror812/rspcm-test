@@ -91,31 +91,4 @@ public class Exam {
     @JoinColumn(name = "created_by")
     private User createdBy;
 
-    public void addPractice(Practice practice, Integer score) {
-        ExamPractice examPractice = ExamPractice.builder()
-                .exam(this)
-                .practice(practice)
-                .build();
-
-        this.practices.add(examPractice);
-    }
-
-    public void removePractice(ExamPractice examPractice) {
-        this.practices.remove(examPractice);
-        examPractice.setExam(null);
-    }
-
-    public void addQuestion(Practice practice, Integer score, Integer orderIndex) {
-        ExamPractice examPractice = ExamPractice.builder()
-                .exam(this)
-                .practice(practice)
-                .build();
-
-        this.practices.add(examPractice);
-    }
-
-    public void removeQuestion(ExamQuestion examQuestion) {
-        this.questions.remove(examQuestion);
-        examQuestion.setExam(null);
-    }
 }

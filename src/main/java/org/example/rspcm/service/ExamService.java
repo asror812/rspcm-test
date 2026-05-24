@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Service
@@ -58,6 +59,20 @@ public class ExamService {
 
     }
 
+    public Page<ExamResponse> findMyExams(
+            User user,
+            String query,
+            ExamType examType,
+            Long subjectId,
+            Pageable pageable
+    ) {
+        if (!isStudent(user)) {
+            throw new ErrorMessageException("Ruxsat etilmagan amal", ErrorCodes.Forbidden);
+        }
+        return examRepository.findStudentExams(user.getId(), examType, subjectId, query, pageable)
+                .map(examMapper::toResponse);
+    }
+
     public ExamResponse findById(Long id, User user) {
         Exam exam = examRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Imtihon topilmadi: " + id));
@@ -75,12 +90,20 @@ public class ExamService {
             throw new NotFoundException("Imtihon topilmadi: " + id);
         }
 
+        if (isStudent(user)) {
+            return examMapper.toResponse(exam);
+        }
+
         throw new ErrorMessageException("Ruxsat etilmagan amal", ErrorCodes.NotFound);
     }
 
     @Transactional
     public ExamResponse create(User user, ExamRequest request) {
+        validateExamRequest(request);
         Subject subject = resolveSubject(request.subjectId());
+        if (subject == null) {
+            throw new ErrorMessageException("subjectId kiritilishi shart", ErrorCodes.BadRequest);
+        }
 
         validateTeacherSubjectAccess(user.getId(), subject.getId());
 
@@ -99,12 +122,17 @@ public class ExamService {
 
     @Transactional
     public ExamResponse update(Long id, ExamRequest request, User user) {
+        validateExamRequest(request);
         Exam exam = examRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Imtihon topilmadi: " + id));
 
         validateTeacherSubjectAccess(user.getId(), exam.getSubject() == null ? null : exam.getSubject().getId());
 
         Subject subject = resolveSubject(request.subjectId());
+        if (subject == null) {
+            throw new ErrorMessageException("subjectId kiritilishi shart", ErrorCodes.BadRequest);
+        }
+        validateTeacherSubjectAccess(user.getId(), subject.getId());
 
         examMapper.updateEntity(
                 exam,
@@ -119,9 +147,13 @@ public class ExamService {
     }
 
     @Transactional
-    public void delete(Long id) {
+    public void delete(Long id, User user) {
         Exam exam = examRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Imtihon topilmadi: " + id));
+
+        if (isTeacher(user)) {
+            validateTeacherSubjectAccess(user.getId(), exam.getSubject() == null ? null : exam.getSubject().getId());
+        }
 
         examRepository.delete(exam);
     }
@@ -138,6 +170,12 @@ public class ExamService {
         exam.setStatus(status);
         exam.setUpdatedAt(LocalDateTime.now());
         return examMapper.toResponse(examRepository.save(exam));
+    }
+
+    private void validateExamRequest(ExamRequest request) {
+        if (request.startAt() != null && request.endAt() != null && !request.endAt().isAfter(request.startAt())) {
+            throw new ErrorMessageException("endAt startAt dan keyin bo'lishi shart", ErrorCodes.BadRequest);
+        }
     }
 
     private void validateTeacherSubjectAccess(Long userId, Long subjectId) {
@@ -188,14 +226,22 @@ public class ExamService {
         if (groupIds == null || groupIds.isEmpty()) {
             return new HashSet<>();
         }
-        return new HashSet<>(groupRepository.findAllById(groupIds));
+        List<StudyGroup> groups = groupRepository.findAllById(groupIds);
+        if (groups.size() != groupIds.size()) {
+            throw new NotFoundException("Ba'zi group lar topilmadi");
+        }
+        return new HashSet<>(groups);
     }
 
     private Set<User> resolveStudents(Set<Long> studentIds) {
         if (studentIds == null || studentIds.isEmpty()) {
             return new HashSet<>();
         }
-        return new HashSet<>(userRepository.findAllById(studentIds));
+        List<User> students = userRepository.findAllById(studentIds);
+        if (students.size() != studentIds.size()) {
+            throw new NotFoundException("Ba'zi student lar topilmadi");
+        }
+        return new HashSet<>(students);
     }
 
     private boolean hasRole(User user, RoleName roleName) {
