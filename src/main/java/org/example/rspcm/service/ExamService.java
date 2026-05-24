@@ -70,7 +70,8 @@ public class ExamService {
             throw new ErrorMessageException("Ruxsat etilmagan amal", ErrorCodes.Forbidden);
         }
         return examRepository.findStudentExams(user.getId(), examType, subjectId, query, pageable)
-                .map(examMapper::toResponse);
+                .map(examMapper::toResponse)
+                .map(this::sanitizeStudentExamResponse);
     }
 
     public ExamResponse findById(Long id, User user) {
@@ -91,7 +92,10 @@ public class ExamService {
         }
 
         if (isStudent(user)) {
-            return examMapper.toResponse(exam);
+            if (exam.getStatus() != ExamStatus.PUBLISHED) {
+                throw new NotFoundException("Imtihon topilmadi: " + id);
+            }
+            return sanitizeStudentExamResponse(examMapper.toResponse(exam));
         }
 
         throw new ErrorMessageException("Ruxsat etilmagan amal", ErrorCodes.NotFound);
@@ -212,6 +216,31 @@ public class ExamService {
             }
             exam.setQuestions(new ArrayList<>());
         }
+    }
+
+    private ExamResponse sanitizeStudentExamResponse(ExamResponse response) {
+        if (response.status() == ExamStatus.PUBLISHED) {
+            return response;
+        }
+        return new ExamResponse(
+                response.id(),
+                response.title(),
+                response.description(),
+                response.startAt(),
+                response.endAt(),
+                response.maxScore(),
+                response.taskLimit(),
+                response.type(),
+                response.status(),
+                response.groups(),
+                response.students(),
+                List.of(),
+                List.of(),
+                response.createdBy(),
+                response.subject(),
+                response.createdAt(),
+                response.updatedAt()
+        );
     }
 
     private Subject resolveSubject(Long subjectId) {
