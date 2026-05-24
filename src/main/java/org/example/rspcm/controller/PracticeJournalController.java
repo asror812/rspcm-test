@@ -30,10 +30,10 @@ public class PracticeJournalController {
         return ResponseEntity.ok(journalService.findMineResponse());
     }
 
-    @GetMapping({"/practice/{practiceId}", "/practice/{practiceId}"})
+    @GetMapping("/practice/{practiceId}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<List<PracticeJournalResponse>> byPractice(
-            @PathVariable(value = "practiceId", required = false) Long practiceId
+            @PathVariable("practiceId") Long practiceId
     ) {
         return ResponseEntity.ok(journalService.findByPracticeResponse(practiceId));
     }

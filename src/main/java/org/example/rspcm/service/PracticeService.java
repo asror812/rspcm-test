@@ -6,13 +6,14 @@ import org.example.rspcm.exception.ErrorCodes;
 import org.example.rspcm.exception.ErrorMessageException;
 import org.example.rspcm.exception.NotFoundException;
 import org.example.rspcm.model.entity.Practice;
+import org.example.rspcm.model.entity.Subject;
 import org.example.rspcm.model.entity.User;
 import org.example.rspcm.model.enums.RoleName;
 import org.example.rspcm.model.enums.SubmissionType;
-import org.example.rspcm.model.enums.WorkMode;
 import org.example.rspcm.repository.PracticeRepository;
 import org.example.rspcm.mapper.PracticeMapper;
 import lombok.RequiredArgsConstructor;
+import org.example.rspcm.repository.SubjectRepository;
 import org.example.rspcm.repository.TeacherProfileRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,13 +29,18 @@ public class PracticeService {
     private final PracticeRepository practiceRepository;
     private final PracticeMapper practiceMapper;
     private final TeacherProfileRepository teacherProfileRepository;
+    private final SubjectRepository subjectRepository;
 
     public PracticeResponse create(PracticeRequest request, User user) {
+        Subject subject = resolveSubject(request.subjectId());
+        validateCreateOrUpdateAccess(user, subject.getId());
+
         Practice practice = practiceMapper.toEntity(
                 request,
                 resolveSubmissionTypes(request.allowedSubmissionTypes()),
                 user
         );
+        practice.setSubject(subject);
         return practiceMapper.toResponse(practiceRepository.save(practice));
     }
 
@@ -80,7 +86,11 @@ public class PracticeService {
     @Transactional
     public PracticeResponse update(Long id, PracticeRequest request, User user) {
         Practice practice = findById(id, user);
+        Subject subject = resolveSubject(request.subjectId());
+        validateCreateOrUpdateAccess(user, subject.getId());
+
         practiceMapper.updateEntity(practice, request, resolveSubmissionTypes(request.allowedSubmissionTypes()));
+        practice.setSubject(subject);
         return practiceMapper.toResponse(practiceRepository.save(practice));
     }
 
@@ -96,6 +106,7 @@ public class PracticeService {
         if (isAdmin(user)) {
             practice.setDeleted(true);
             practiceRepository.save(practice);
+            return;
         }
 
         validateTeacherSubjectAccess(user.getId(), practice.getSubject().getId());
@@ -108,6 +119,14 @@ public class PracticeService {
             return Set.of(SubmissionType.TEXT);
         }
         return requestedTypes;
+    }
+
+    private Subject resolveSubject(Long subjectId) {
+        if (subjectId == null) {
+            throw new ErrorMessageException("subjectId kiritilishi shart", ErrorCodes.BadRequest);
+        }
+        return subjectRepository.findById(subjectId)
+                .orElseThrow(() -> new NotFoundException("Subject topilmadi: " + subjectId));
     }
 
     private void validateTeacherSubjectAccess(Long userId, Long subjectId) {
@@ -135,5 +154,11 @@ public class PracticeService {
 
     private boolean isStudent(User user) {
         return hasRole(user, RoleName.ROLE_STUDENT);
+    }
+
+    private void validateCreateOrUpdateAccess(User user, Long subjectId) {
+        if (!isAdmin(user)) {
+            validateTeacherSubjectAccess(user.getId(), subjectId);
+        }
     }
 }

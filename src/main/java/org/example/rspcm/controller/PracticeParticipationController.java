@@ -21,6 +21,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/practice-participations")
@@ -41,13 +43,29 @@ public class PracticeParticipationController {
         return ResponseEntity.ok(practiceParticipationService.findAll(examId, status, user, pageable));
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{participationId}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<PracticeParticipationResponse> getById(
-            @PathVariable Long id,
+            @PathVariable Long participationId,
             @AuthenticationPrincipal User user
     ) {
-        return ResponseEntity.ok(practiceParticipationService.findById(id, user));
+        return ResponseEntity.ok(practiceParticipationService.findById(participationId, user));
+    }
+
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<List<MyPracticeParticipationResponse>> getMyParticipations(
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(practiceParticipationService.getMyParticipations(user));
+    }
+
+    @GetMapping("/members/invitations/me")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<List<MyTeamInvitationResponse>> getMyTeamInvitations(
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(practiceParticipationService.getMyTeamInvitations(user));
     }
 
     @PostMapping("/{participationId}/members/invite")
@@ -78,13 +96,23 @@ public class PracticeParticipationController {
         return ResponseEntity.ok(practiceParticipationService.declineInvitation(participationId, user));
     }
 
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
-    public ResponseEntity<Void> delete(
-            @PathVariable Long id,
+    @DeleteMapping("/{participationId}/members/me")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<Void> leaveMyTeam(
+            @PathVariable Long participationId,
             @AuthenticationPrincipal User user
     ) {
-        practiceParticipationService.delete(id, user);
+        practiceParticipationService.leaveMyTeam(participationId, user);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{participationId}")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    public ResponseEntity<Void> delete(
+            @PathVariable Long participationId,
+            @AuthenticationPrincipal User user
+    ) {
+        practiceParticipationService.delete(participationId, user);
         return ResponseEntity.noContent().build();
     }
 }

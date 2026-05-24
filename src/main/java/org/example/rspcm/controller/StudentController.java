@@ -16,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -66,23 +67,23 @@ public class StudentController {
         return ResponseEntity.ok(practiceParticipationService.getMyParticipationByExam(examId, user));
     }
 
-    @PostMapping("/{examId}/practices/{examPracticeId}/choose")
+    @PostMapping("/{examId}/practices/{examPracticeId}/select")
     @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<PracticeParticipationResponse> choosePractice(
+    public ResponseEntity<PracticeParticipationResponse> selectPractice(
             @PathVariable Long examId,
             @PathVariable Long examPracticeId,
             @AuthenticationPrincipal User user
     ) {
-        return ResponseEntity.ok(practiceParticipationService.chooseIndividualPractice(examId, examPracticeId, user));
+        return ResponseEntity.ok(practiceParticipationService.selectPractice(examId, examPracticeId, user));
     }
 
-    @PostMapping("/{examId}/practices/{examPracticeId}/team")
+    @DeleteMapping("/{examId}/participation/me")
     @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<PracticeParticipationResponse> createTeamParticipation(
+    public ResponseEntity<Void> cancelMyParticipation(
             @PathVariable Long examId,
-            @PathVariable Long examPracticeId,
             @AuthenticationPrincipal User user
     ) {
-        return ResponseEntity.ok(practiceParticipationService.createTeamParticipation(examId, examPracticeId, user));
+        practiceParticipationService.cancelMyParticipation(examId, user);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -3,6 +3,7 @@ package org.example.rspcm.repository;
 import org.example.rspcm.model.entity.PracticeParticipationMember;
 import org.example.rspcm.model.enums.PracticeMemberRole;
 import org.example.rspcm.model.enums.PracticeParticipationMemberStatus;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -64,7 +65,27 @@ public interface PracticeParticipationMemberRepository extends JpaRepository<Pra
             PracticeParticipationMemberStatus status
     );
 
+    @EntityGraph(attributePaths = {
+            "practiceParticipation",
+            "practiceParticipation.exam",
+            "practiceParticipation.examPractice",
+            "practiceParticipation.examPractice.practice",
+            "user"
+    })
+    List<PracticeParticipationMember> findByUserIdAndStatusNot(Long userId, PracticeParticipationMemberStatus status);
+
+    @EntityGraph(attributePaths = {
+            "practiceParticipation",
+            "practiceParticipation.exam",
+            "practiceParticipation.examPractice",
+            "practiceParticipation.examPractice.practice",
+            "user"
+    })
+    List<PracticeParticipationMember> findByUserIdAndStatus(Long userId, PracticeParticipationMemberStatus status);
+
     List<PracticeParticipationMember> findByPracticeParticipationId(Long practiceParticipationId);
 
     Optional<PracticeParticipationMember> findByIdAndPracticeParticipationId(Long id, Long practiceParticipationId);
+
+    void deleteByPracticeParticipationId(Long practiceParticipationId);
 }

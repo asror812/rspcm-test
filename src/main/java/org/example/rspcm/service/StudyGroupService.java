@@ -134,14 +134,22 @@ public class StudyGroupService {
         if (ids == null || ids.isEmpty()) {
             return new HashSet<>();
         }
-        return new HashSet<>(userRepository.findAllById(ids));
+        List<User> users = userRepository.findAllById(ids);
+        if (users.size() != ids.size()) {
+            throw new NotFoundException("Ba'zi foydalanuvchilar topilmadi");
+        }
+        return new HashSet<>(users);
     }
 
     private Set<Subject> resolveSubjects(Set<Long> ids) {
         if (ids == null || ids.isEmpty()) {
             return new HashSet<>();
         }
-        return new HashSet<>(subjectRepository.findAllById(ids));
+        List<Subject> subjects = subjectRepository.findAllById(ids);
+        if (subjects.size() != ids.size()) {
+            throw new NotFoundException("Ba'zi fanlar topilmadi");
+        }
+        return new HashSet<>(subjects);
     }
 
     private User resolveStudentFromCell(String value) {

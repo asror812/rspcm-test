@@ -35,7 +35,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Comparator;
 import java.util.Set;
+import java.util.LinkedHashMap;
 
 @Service
 @RequiredArgsConstructor
@@ -209,6 +211,10 @@ public class PracticeParticipationService {
                 .findByPracticeParticipationIdAndUserId(participationId, user.getId())
                 .orElseThrow(() -> new NotFoundException("Participation member topilmadi"));
 
+        if (member.getStatus() != PracticeParticipationMemberStatus.INVITED) {
+            throw new ErrorMessageException("Faqat INVITED holatdagi taklifni rad qilish mumkin", ErrorCodes.BadRequest);
+        }
+
         member.setStatus(PracticeParticipationMemberStatus.DECLINED);
         participationMemberRepository.save(member);
 
@@ -236,37 +242,39 @@ public class PracticeParticipationService {
                 )
                 .orElseThrow(() -> new NotFoundException("Participation topilmadi"));
 
-        PracticeParticipation participation = member.getPracticeParticipation();
-        PracticeSubmission submission = submissionRepository.findByExamParticipationId(participation.getId()).orElse(null);
-        var members = participationMemberRepository.findByPracticeParticipationId(participation.getId()).stream()
-                .map(m -> new PracticeParticipationMemberResponse(
-                        m.getId(),
-                        summaryMapper.toUserSummary(m.getUser()),
-                        m.getRole(),
-                        m.getStatus()
-                ))
-                .toList();
+        return toMyParticipationResponse(member.getPracticeParticipation());
+    }
 
-        return new MyPracticeParticipationResponse(
-                participation.getId(),
-                participation.getExam().getId(),
-                participation.getExamPractice() == null ? null : participation.getExamPractice().getId(),
-                participation.getExamPractice() == null ? null : summaryMapper.toPracticeSummaryWithoutSubject(participation.getExamPractice().getPractice()),
-                participation.getStatus(),
-                members,
-                submission == null ? null : new PracticeSubmissionResponse(
-                        submission.getId(),
-                        participation.getId(),
-                        participation.getExam().getId(),
-                        participation.getExamPractice() == null ? null : participation.getExamPractice().getId(),
-                        submission.getStudent() == null ? null : summaryMapper.toUserSummary(submission.getStudent()),
-                        submission.getTextAnswer(),
-                        submission.getFileUrl(),
-                        submission.getSubmittedAt(),
-                        submission.getStatus(),
-                        submission.getTeacherComment()
-                )
-        );
+    public List<MyPracticeParticipationResponse> getMyParticipations(User user) {
+        if (!isStudent(user)) {
+            throw new ErrorMessageException("Ruxsat yo'q", ErrorCodes.Forbidden);
+        }
+
+        List<PracticeParticipationMember> myMembers = participationMemberRepository
+                .findByUserIdAndStatusNot(user.getId(), PracticeParticipationMemberStatus.REMOVED);
+
+        LinkedHashMap<Long, PracticeParticipation> uniqParticipations = new LinkedHashMap<>();
+        for (PracticeParticipationMember member : myMembers) {
+            PracticeParticipation participation = member.getPracticeParticipation();
+            uniqParticipations.putIfAbsent(participation.getId(), participation);
+        }
+
+        return uniqParticipations.values().stream()
+                .map(this::toMyParticipationResponse)
+                .toList();
+    }
+
+    public List<MyTeamInvitationResponse> getMyTeamInvitations(User user) {
+        if (!isStudent(user)) {
+            throw new ErrorMessageException("Ruxsat yo'q", ErrorCodes.Forbidden);
+        }
+
+        List<PracticeParticipationMember> invitedMembers = participationMemberRepository
+                .findByUserIdAndStatus(user.getId(), PracticeParticipationMemberStatus.INVITED);
+
+        return invitedMembers.stream()
+                .map(this::toMyTeamInvitationResponse)
+                .toList();
     }
 
     public List<UserSummary> getAvailableStudentsForInvite(Long participationId, User user) {
@@ -319,10 +327,149 @@ public class PracticeParticipationService {
     }
 
     @Transactional
+    public void leaveMyTeam(Long participationId, User user) {
+        if (!isStudent(user)) {
+            throw new ErrorMessageException("Faqat student jamoani tark eta oladi", ErrorCodes.Forbidden);
+        }
+
+        PracticeParticipation participation = findEntityById(participationId);
+        ensureTeamParticipation(participation);
+
+        PracticeParticipationMember myMember = participationMemberRepository
+                .findByPracticeParticipationIdAndUserId(participationId, user.getId())
+                .orElseThrow(() -> new NotFoundException("Participation member topilmadi"));
+        if (myMember.getStatus() == PracticeParticipationMemberStatus.REMOVED) {
+            throw new ErrorMessageException("Siz allaqachon jamoani tark etgansiz", ErrorCodes.BadRequest);
+        }
+
+        Exam exam = participation.getExam();
+        if (exam.getEndAt() != null && LocalDateTime.now().isAfter(exam.getEndAt())) {
+            throw new ErrorMessageException("Deadline o'tgan", ErrorCodes.AlreadyExists);
+        }
+
+        boolean hasSubmission = submissionRepository.findByExamParticipationId(participation.getId()).isPresent();
+        if (hasSubmission) {
+            throw new ErrorMessageException("Submission mavjud bo'lsa jamoani tark qilib bo'lmaydi", ErrorCodes.AlreadyExists);
+        }
+
+        List<PracticeParticipationMember> activeMembers = participationMemberRepository
+                .findByPracticeParticipationId(participationId)
+                .stream()
+                .filter(member -> member.getStatus() != PracticeParticipationMemberStatus.REMOVED)
+                .toList();
+
+        if (activeMembers.size() <= 1) {
+            participationMemberRepository.deleteByPracticeParticipationId(participationId);
+            practiceParticipationRepository.delete(participation);
+            return;
+        }
+
+        if (myMember.getRole() == PracticeMemberRole.LEADER) {
+            PracticeParticipationMember nextLeader = activeMembers.stream()
+                    .filter(member -> !member.getUser().getId().equals(user.getId()))
+                    .sorted(Comparator.comparing(member -> member.getStatus() == PracticeParticipationMemberStatus.ACCEPTED ? 0 : 1))
+                    .findFirst()
+                    .orElseThrow(() -> new ErrorMessageException("Yangi lider topilmadi", ErrorCodes.BadRequest));
+            nextLeader.setRole(PracticeMemberRole.LEADER);
+            participationMemberRepository.save(nextLeader);
+        }
+
+        myMember.setRole(PracticeMemberRole.MEMBER);
+        myMember.setStatus(PracticeParticipationMemberStatus.REMOVED);
+        participationMemberRepository.save(myMember);
+
+        participation.setStatus(PracticeParticipationStatus.WAITING_MEMBERS);
+        participation.setReadyAt(null);
+        participation.setChosenAt(null);
+        practiceParticipationRepository.save(participation);
+    }
+
+    @Transactional
     public void delete(Long id, User user) {
         PracticeParticipation participation = findEntityById(id);
         validateAccess(user, participation.getExam());
         practiceParticipationRepository.delete(participation);
+    }
+
+    @Transactional
+    public void cancelMyParticipation(Long examId, User user) {
+        if (!isStudent(user)) {
+            throw new ErrorMessageException("Faqat student participationni bekor qila oladi", ErrorCodes.Forbidden);
+        }
+
+        Exam exam = resolveExam(examId);
+        PracticeParticipationMember myMember = participationMemberRepository
+                .findByPracticeParticipationExamIdAndUserIdAndStatusNot(
+                        examId,
+                        user.getId(),
+                        PracticeParticipationMemberStatus.REMOVED
+                )
+                .orElseThrow(() -> new NotFoundException("Participation topilmadi"));
+
+        PracticeParticipation participation = myMember.getPracticeParticipation();
+        if (participation.getExamPractice() == null) {
+            throw new ErrorMessageException("Practice hali tanlanmagan", ErrorCodes.BadRequest);
+        }
+
+        if (exam.getEndAt() != null && LocalDateTime.now().isAfter(exam.getEndAt())) {
+            throw new ErrorMessageException("Deadline o'tgan", ErrorCodes.AlreadyExists);
+        }
+
+        boolean hasSubmission = submissionRepository.findByExamParticipationId(participation.getId()).isPresent();
+        if (hasSubmission) {
+            throw new ErrorMessageException("Submission mavjud bo'lsa bekor qilib bo'lmaydi", ErrorCodes.AlreadyExists);
+        }
+
+        WorkMode workMode = participation.getExamPractice().getPractice().getWorkMode();
+        if (workMode == WorkMode.INDIVIDUAL) {
+            participationMemberRepository.deleteByPracticeParticipationId(participation.getId());
+            practiceParticipationRepository.delete(participation);
+            return;
+        }
+
+        if (workMode != WorkMode.TEAM) {
+            throw new ErrorMessageException("Noma'lum work mode", ErrorCodes.BadRequest);
+        }
+
+        List<PracticeParticipationMember> activeMembers = participationMemberRepository
+                .findByPracticeParticipationId(participation.getId())
+                .stream()
+                .filter(member -> member.getStatus() != PracticeParticipationMemberStatus.REMOVED)
+                .toList();
+
+        if (activeMembers.size() <= 1) {
+            participationMemberRepository.deleteByPracticeParticipationId(participation.getId());
+            practiceParticipationRepository.delete(participation);
+            return;
+        }
+
+        if (myMember.getRole() != PracticeMemberRole.LEADER) {
+            myMember.setStatus(PracticeParticipationMemberStatus.REMOVED);
+            participationMemberRepository.save(myMember);
+            participation.setStatus(PracticeParticipationStatus.WAITING_MEMBERS);
+            participation.setReadyAt(null);
+            participation.setChosenAt(null);
+            practiceParticipationRepository.save(participation);
+            return;
+        }
+
+        PracticeParticipationMember nextLeader = activeMembers.stream()
+                .filter(member -> !member.getUser().getId().equals(user.getId()))
+                .sorted(Comparator.comparing(member -> member.getStatus() == PracticeParticipationMemberStatus.ACCEPTED ? 0 : 1))
+                .findFirst()
+                .orElseThrow(() -> new ErrorMessageException("Yangi lider topilmadi", ErrorCodes.BadRequest));
+
+        nextLeader.setRole(PracticeMemberRole.LEADER);
+        participationMemberRepository.save(nextLeader);
+
+        myMember.setRole(PracticeMemberRole.MEMBER);
+        myMember.setStatus(PracticeParticipationMemberStatus.REMOVED);
+        participationMemberRepository.save(myMember);
+
+        participation.setStatus(PracticeParticipationStatus.WAITING_MEMBERS);
+        participation.setReadyAt(null);
+        participation.setChosenAt(null);
+        practiceParticipationRepository.save(participation);
     }
 
     private PracticeParticipation findEntityById(Long id) {
@@ -387,6 +534,60 @@ public class PracticeParticipationService {
         return user.getRoles().stream().anyMatch(role -> role.getRoleName() == RoleName.ROLE_STUDENT);
     }
 
+    private MyPracticeParticipationResponse toMyParticipationResponse(PracticeParticipation participation) {
+        PracticeSubmission submission = submissionRepository.findByExamParticipationId(participation.getId()).orElse(null);
+        var members = participationMemberRepository.findByPracticeParticipationId(participation.getId()).stream()
+                .map(m -> new PracticeParticipationMemberResponse(
+                        m.getId(),
+                        summaryMapper.toUserSummary(m.getUser()),
+                        m.getRole(),
+                        m.getStatus()
+                ))
+                .toList();
+
+        return new MyPracticeParticipationResponse(
+                participation.getId(),
+                participation.getExam().getId(),
+                participation.getExamPractice() == null ? null : participation.getExamPractice().getId(),
+                participation.getExamPractice() == null ? null : summaryMapper.toPracticeSummaryWithoutSubject(participation.getExamPractice().getPractice()),
+                participation.getStatus(),
+                members,
+                submission == null ? null : new PracticeSubmissionResponse(
+                        submission.getId(),
+                        participation.getId(),
+                        participation.getExam().getId(),
+                        participation.getExamPractice() == null ? null : participation.getExamPractice().getId(),
+                        submission.getStudent() == null ? null : summaryMapper.toUserSummary(submission.getStudent()),
+                        submission.getTextAnswer(),
+                        submission.getFileUrl(),
+                        submission.getSubmittedAt(),
+                        submission.getStatus(),
+                        submission.getTeacherComment()
+                )
+        );
+    }
+
+    private MyTeamInvitationResponse toMyTeamInvitationResponse(PracticeParticipationMember invitedMember) {
+        PracticeParticipation participation = invitedMember.getPracticeParticipation();
+        ExamPractice examPractice = participation.getExamPractice();
+
+        User leader = participationMemberRepository.findByPracticeParticipationId(participation.getId()).stream()
+                .filter(member -> member.getRole() == PracticeMemberRole.LEADER)
+                .filter(member -> member.getStatus() == PracticeParticipationMemberStatus.ACCEPTED)
+                .map(PracticeParticipationMember::getUser)
+                .findFirst()
+                .orElse(null);
+
+        return new MyTeamInvitationResponse(
+                participation.getId(),
+                participation.getExam().getId(),
+                examPractice == null ? null : examPractice.getId(),
+                participation.getExam().getTitle(),
+                examPractice == null ? null : summaryMapper.toPracticeSummaryWithoutSubject(examPractice.getPractice()),
+                leader == null ? null : summaryMapper.toUserSummary(leader)
+        );
+    }
+
     private PracticeParticipationResponse toResponse(PracticeParticipation participation) {
         ExamPractice examPractice = participation.getExamPractice();
         PracticeParticipationTeamResponse team = null;
@@ -429,7 +630,7 @@ public class PracticeParticipationService {
     }
 
     @Transactional
-    public PracticeParticipationResponse chooseIndividualPractice(Long examId, Long examPracticeId, User user) {
+    public PracticeParticipationResponse selectPractice(Long examId, Long examPracticeId, User user) {
         if (!isStudent(user)) {
             throw new ErrorMessageException("Faqat student practice tanlay oladi", ErrorCodes.Forbidden);
         }
@@ -450,10 +651,6 @@ public class PracticeParticipationService {
             throw new ErrorMessageException("Tanlangan practice ushbu examga tegishli emas", ErrorCodes.BadRequest);
         }
 
-        if (examPractice.getPractice().getWorkMode() != WorkMode.INDIVIDUAL) {
-            throw new ErrorMessageException("Faqat INDIVIDUAL work mode amaliyotni tanlash mumkin", ErrorCodes.BadRequest);
-        }
-
         boolean alreadyChosen = participationMemberRepository.existsByPracticeParticipationExamIdAndUserIdAndStatus(
                 exam.getId(),
                 user.getId(),
@@ -463,45 +660,28 @@ public class PracticeParticipationService {
             throw new ErrorMessageException("Siz ushbu examda allaqachon practice tanlagansiz", ErrorCodes.AlreadyExists);
         }
 
-        PracticeParticipation participation = new PracticeParticipation();
-        participation.setExam(exam);
-        participation.setExamPractice(examPractice);
-        participation.setCreatedAt(LocalDateTime.now());
-        participation.setReadyAt(LocalDateTime.now());
-        participation.setChosenAt(LocalDateTime.now());
-        participation.setStatus(PracticeParticipationStatus.PRACTICE_CHOSEN);
-        PracticeParticipation saved = practiceParticipationRepository.save(participation);
+        if (examPractice.getPractice().getWorkMode() == WorkMode.INDIVIDUAL) {
+            PracticeParticipation participation = new PracticeParticipation();
+            participation.setExam(exam);
+            participation.setExamPractice(examPractice);
+            participation.setCreatedAt(LocalDateTime.now());
+            participation.setReadyAt(LocalDateTime.now());
+            participation.setChosenAt(LocalDateTime.now());
+            participation.setStatus(PracticeParticipationStatus.PRACTICE_CHOSEN);
+            PracticeParticipation saved = practiceParticipationRepository.save(participation);
 
-        PracticeParticipationMember member = new PracticeParticipationMember();
-        member.setPracticeParticipation(saved);
-        member.setUser(user);
-        member.setRole(PracticeMemberRole.LEADER);
-        member.setStatus(PracticeParticipationMemberStatus.ACCEPTED);
-        participationMemberRepository.save(member);
+            PracticeParticipationMember member = new PracticeParticipationMember();
+            member.setPracticeParticipation(saved);
+            member.setUser(user);
+            member.setRole(PracticeMemberRole.LEADER);
+            member.setStatus(PracticeParticipationMemberStatus.ACCEPTED);
+            participationMemberRepository.save(member);
 
-        return toResponse(saved);
-    }
-
-    @Transactional
-    public PracticeParticipationResponse createTeamParticipation(Long examId, Long examPracticeId, User user) {
-        if (!isStudent(user)) {
-            throw new ErrorMessageException("Faqat student jamoa participation yarata oladi", ErrorCodes.Forbidden);
-        }
-
-        Exam exam = resolveExam(examId);
-        checkPracticeExam(exam);
-
-        if (!isAssignedToStudent(exam, user.getId())) {
-            throw new NotFoundException("Imtihon topilmadi: " + examId);
-        }
-
-        ExamPractice examPractice = resolveExamPractice(examPracticeId);
-        if (!examPractice.getExam().getId().equals(exam.getId())) {
-            throw new ErrorMessageException("Tanlangan practice ushbu examga tegishli emas", ErrorCodes.BadRequest);
+            return toResponse(saved);
         }
 
         if (examPractice.getPractice().getWorkMode() != WorkMode.TEAM) {
-            throw new ErrorMessageException("Faqat TEAM work mode amaliyot uchun jamoa participation yaratiladi", ErrorCodes.BadRequest);
+            throw new ErrorMessageException("Noma'lum work mode", ErrorCodes.BadRequest);
         }
 
         Integer teamSize = examPractice.getPractice().getTeamSize();

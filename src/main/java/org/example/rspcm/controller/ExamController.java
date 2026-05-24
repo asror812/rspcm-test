@@ -68,8 +68,11 @@ public class ExamController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        examService.delete(id);
+    public ResponseEntity<Void> delete(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user
+    ) {
+        examService.delete(id, user);
         return ResponseEntity.noContent().build();
     }
 

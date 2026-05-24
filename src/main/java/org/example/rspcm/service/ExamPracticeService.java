@@ -95,12 +95,18 @@ public class ExamPracticeService {
     @Transactional
     public ExamPracticeResponse update(Long id, ExamPracticeRequest request, User user) {
         ExamPractice existing = findEntityById(id);
+        validateTeacherAccess(user, existing.getExam());
+
         Exam exam = resolveExam(request.examId());
         validateTeacherAccess(user, exam);
         validateExamType(exam);
 
         Practice practice = practiceRepository.findById(request.practiceId())
                 .orElseThrow(() -> new NotFoundException("Practice topilmadi: " + request.practiceId()));
+
+        if (examPracticeRepository.existsByExamIdAndPracticeIdAndIdNot(exam.getId(), practice.getId(), existing.getId())) {
+            throw new ErrorMessageException("Bu practice allaqachon examga biriktirilgan", ErrorCodes.AlreadyExists);
+        }
 
         existing.setExam(exam);
         existing.setPractice(practice);

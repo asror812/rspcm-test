@@ -115,6 +115,9 @@ public class AnswerService {
             return;
         }
         List<QuestionOption> options = questionOptionRepository.findAllById(optionIds);
+        if (options.size() != optionIds.size()) {
+            throw new NotFoundException("Ba'zi question option lar topilmadi");
+        }
         answerMapper.applySelectedOptions(answer, options);
     }
 
