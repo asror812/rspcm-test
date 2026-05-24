@@ -466,31 +466,34 @@ public class DataInitializer implements CommandLineRunner {
                         .groups(new HashSet<>())
                         .targetStudents(new HashSet<>())
                         .build());
+        boolean isNew = exam.getId() == null;
 
-        exam.setDescription(description);
-        exam.setSubject(subject);
-        exam.setType(examType);
-        exam.setStatus(ExamStatus.READY);
-        exam.setMaxScore(100);
-        exam.setTaskLimit(10);
-        exam.setStartAt(LocalDateTime.now().plusDays(1));
-        exam.setEndAt(LocalDateTime.now().plusDays(8));
-        exam.setGroups(new HashSet<>(groups));
-        exam.setCreatedBy(teacher);
+        if (isNew) {
+            exam.setDescription(description);
+            exam.setSubject(subject);
+            exam.setType(examType);
+            exam.setStatus(ExamStatus.PUBLISHED);
+            exam.setMaxScore(100);
+            exam.setTaskLimit(10);
+            exam.setStartAt(LocalDateTime.now().minusDays(1));
+            exam.setEndAt(LocalDateTime.now().plusDays(8));
+            exam.setGroups(new HashSet<>(groups));
+            exam.setCreatedBy(teacher);
 
-        if (exam.getCreatedAt() == null) exam.setCreatedAt(LocalDateTime.now());
+            if (exam.getCreatedAt() == null) exam.setCreatedAt(LocalDateTime.now());
 
-        if (exam.getQuestions() == null) exam.setQuestions(new ArrayList<>());
-        if (exam.getPractices() == null) exam.setPractices(new ArrayList<>());
+            if (exam.getQuestions() == null) exam.setQuestions(new ArrayList<>());
+            if (exam.getPractices() == null) exam.setPractices(new ArrayList<>());
 
-        if (examType == ExamType.QUESTION) {
-            exam.setPractices(new ArrayList<>());
-        } else if (examType == ExamType.PRACTICE) {
-            List<ExamQuestion> existingQuestions = examQuestionRepository.findByExamId(exam.getId());
-            if (!existingQuestions.isEmpty()) {
-                examQuestionRepository.deleteAll(existingQuestions);
+            if (examType == ExamType.QUESTION) {
+                exam.setPractices(new ArrayList<>());
+            } else if (examType == ExamType.PRACTICE) {
+                List<ExamQuestion> existingQuestions = examQuestionRepository.findByExamId(exam.getId());
+                if (!existingQuestions.isEmpty()) {
+                    examQuestionRepository.deleteAll(existingQuestions);
+                }
+                exam.setQuestions(new ArrayList<>());
             }
-            exam.setQuestions(new ArrayList<>());
         }
 
         return examRepository.save(exam);
