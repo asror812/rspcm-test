@@ -21,6 +21,7 @@ public interface ExamRepository extends JpaRepository<Exam, Long> {
             left join e.groups g
             left join g.students gs
             where (ts.id = :userId or gs.id = :userId)
+            and e.status = org.example.rspcm.model.enums.ExamStatus.PUBLISHED
             and (:query is null or :query = ''
                 or lower(e.title) like lower(concat('%', :query, '%'))
                 or lower(e.description) like lower(concat('%', :query, '%'))
@@ -34,6 +35,7 @@ public interface ExamRepository extends JpaRepository<Exam, Long> {
                     left join e.groups g
                     left join g.students gs
                     where (ts.id = :userId or gs.id = :userId)
+                    and e.status = org.example.rspcm.model.enums.ExamStatus.PUBLISHED
                     and (:query is null or :query = ''
                         or lower(e.title) like lower(concat('%', :query, '%'))
                         or lower(e.description) like lower(concat('%', :query, '%'))
