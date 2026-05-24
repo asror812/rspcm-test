@@ -52,15 +52,18 @@ public class StudentQuestionExamService {
                         .build());
 
         if (attempt.getStatus() == ExamAttemptStatus.SUBMITTED || attempt.getStatus() == ExamAttemptStatus.GRADED) {
-            throw new ErrorMessageException("Imtihon allaqachon topshirilgan", ErrorCodes.AlreadyExists);
+            throw new ErrorMessageException("Экзамен уже сдан", ErrorCodes.AlreadyExists);
         }
 
         if (isExpired(exam)) {
-            throw new ErrorMessageException("Imtihon muddati tugagan", ErrorCodes.InvalidParams);
+            throw new ErrorMessageException("Срок экзамена истёк", ErrorCodes.InvalidParams);
         }
 
         if (attempt.getId() == null) {
             attempt = examAttemptRepository.save(attempt);
+        }
+        if (attempt.getStatus() == ExamAttemptStatus.STARTED && isAttemptExpired(attempt)) {
+            attempt = finalizeAttempt(attempt);
         }
         return toAttemptResponse(attempt);
     }
@@ -69,7 +72,10 @@ public class StudentQuestionExamService {
     public StudentExamAttemptResponse getMyAttempt(Long examId, User user) {
         resolvePublishedQuestionExam(examId, user);
         ExamAttempt attempt = examAttemptRepository.findByExamIdAndStudentId(examId, user.getId())
-                .orElseThrow(() -> new ErrorMessageException("Imtihon hali boshlanmagan", ErrorCodes.NotFound));
+                .orElseThrow(() -> new ErrorMessageException("Экзамен ещё не начался", ErrorCodes.NotFound));
+        if (attempt.getStatus() == ExamAttemptStatus.STARTED && isAttemptExpired(attempt)) {
+            attempt = finalizeAttempt(attempt);
+        }
         return toAttemptResponse(attempt);
     }
 
@@ -79,7 +85,11 @@ public class StudentQuestionExamService {
         ExamAttempt attempt = requireStartedAttempt(examId, user.getId());
 
         if (attempt.getStatus() != ExamAttemptStatus.STARTED) {
-            throw new ErrorMessageException("Imtihon topshirilgan", ErrorCodes.InvalidParams);
+            throw new ErrorMessageException("Экзамен сдан", ErrorCodes.InvalidParams);
+        }
+        if (isAttemptExpired(attempt)) {
+            finalizeAttempt(attempt);
+            throw new ErrorMessageException("Время экзамена истекло. Попытка отправлена автоматически", ErrorCodes.InvalidParams);
         }
 
         List<StudentAnswer> answers = answerRepository.findByStudentIdAndExamQuestionExamId(user.getId(), examId);
@@ -95,17 +105,21 @@ public class StudentQuestionExamService {
         resolvePublishedQuestionExam(examId, user);
         ExamAttempt attempt = requireStartedAttempt(examId, user.getId());
         if (attempt.getStatus() != ExamAttemptStatus.STARTED) {
-            throw new ErrorMessageException("Imtihon topshirilgan", ErrorCodes.InvalidParams);
+            throw new ErrorMessageException("Экзамен сдан", ErrorCodes.InvalidParams);
+        }
+        if (isAttemptExpired(attempt)) {
+            finalizeAttempt(attempt);
+            throw new ErrorMessageException("Время экзамена истекло. Попытка отправлена автоматически", ErrorCodes.InvalidParams);
         }
 
         if (isExpired(attempt.getExam())) {
-            throw new ErrorMessageException("Imtihon muddati tugagan", ErrorCodes.InvalidParams);
+            throw new ErrorMessageException("Срок экзамена истёк", ErrorCodes.InvalidParams);
         }
 
         ExamQuestion examQuestion = examQuestionRepository.findById(examQuestionId)
-                .orElseThrow(() -> new NotFoundException("ExamQuestion topilmadi: " + examQuestionId));
+                .orElseThrow(() -> new NotFoundException("Вопрос экзамена не найден: " + examQuestionId));
         if (!examQuestion.getExam().getId().equals(examId)) {
-            throw new ErrorMessageException("Savol ushbu imtihonga tegishli emas", ErrorCodes.InvalidParams);
+            throw new ErrorMessageException("Вопрос не относится к этому экзамену", ErrorCodes.InvalidParams);
         }
 
         StudentAnswer existing = answerRepository
@@ -128,7 +142,7 @@ public class StudentQuestionExamService {
     public StudentExamAttemptResponse submitAttempt(Long examId, User user) {
         ExamAttempt attempt = requireStartedAttempt(examId, user.getId());
         if (attempt.getStatus() != ExamAttemptStatus.STARTED) {
-            throw new ErrorMessageException("Imtihon allaqachon topshirilgan", ErrorCodes.AlreadyExists);
+            throw new ErrorMessageException("Экзамен уже сдан", ErrorCodes.AlreadyExists);
         }
         attempt.setStatus(ExamAttemptStatus.SUBMITTED);
         attempt.setSubmittedAt(LocalDateTime.now());
@@ -168,22 +182,22 @@ public class StudentQuestionExamService {
     private Exam resolvePublishedQuestionExam(Long examId, User user) {
         ensureStudent(user);
         Exam exam = examRepository.findById(examId)
-                .orElseThrow(() -> new NotFoundException("Imtihon topilmadi: " + examId));
+                .orElseThrow(() -> new NotFoundException("Экзамен не найден: " + examId));
         if (exam.getType() != ExamType.QUESTION) {
-            throw new ErrorMessageException("Bu imtihon savol turida emas", ErrorCodes.InvalidParams);
+            throw new ErrorMessageException("Этот экзамен не относится к типу QUESTION", ErrorCodes.InvalidParams);
         }
         if (exam.getStatus() != ExamStatus.PUBLISHED) {
-            throw new NotFoundException("Imtihon topilmadi: " + examId);
+            throw new NotFoundException("Экзамен не найден: " + examId);
         }
         if (!isAssignedToStudent(exam, user.getId())) {
-            throw new NotFoundException("Imtihon topilmadi: " + examId);
+            throw new NotFoundException("Экзамен не найден: " + examId);
         }
         return exam;
     }
 
     private ExamAttempt requireStartedAttempt(Long examId, Long studentId) {
         return examAttemptRepository.findByExamIdAndStudentId(examId, studentId)
-                .orElseThrow(() -> new ErrorMessageException("Avval imtihonni boshlang", ErrorCodes.InvalidParams));
+                .orElseThrow(() -> new ErrorMessageException("Сначала начните экзамен", ErrorCodes.InvalidParams));
     }
 
     private boolean isAssignedToStudent(Exam exam, Long studentId) {
@@ -198,21 +212,51 @@ public class StudentQuestionExamService {
         return exam.getEndAt() != null && LocalDateTime.now().isAfter(exam.getEndAt());
     }
 
+    private LocalDateTime resolveAttemptDeadline(ExamAttempt attempt) {
+        LocalDateTime byTaskLimit = null;
+        Integer taskLimit = attempt.getExam().getTaskLimit();
+        if (taskLimit != null && taskLimit > 0 && attempt.getStartedAt() != null) {
+            byTaskLimit = attempt.getStartedAt().plusMinutes(taskLimit);
+        }
+
+        LocalDateTime examEnd = attempt.getExam().getEndAt();
+        if (byTaskLimit == null) return examEnd;
+        if (examEnd == null) return byTaskLimit;
+        return byTaskLimit.isBefore(examEnd) ? byTaskLimit : examEnd;
+    }
+
+    private boolean isAttemptExpired(ExamAttempt attempt) {
+        LocalDateTime deadline = resolveAttemptDeadline(attempt);
+        return deadline != null && !LocalDateTime.now().isBefore(deadline);
+    }
+
+    private ExamAttempt finalizeAttempt(ExamAttempt attempt) {
+        attempt.setStatus(ExamAttemptStatus.SUBMITTED);
+        if (attempt.getSubmittedAt() == null) {
+            attempt.setSubmittedAt(LocalDateTime.now());
+        }
+        return examAttemptRepository.save(attempt);
+    }
+
     private void ensureStudent(User user) {
         boolean isStudent = user.getRoles().stream().map(Role::getRoleName)
                 .anyMatch(roleName -> roleName == RoleName.ROLE_STUDENT);
         if (!isStudent) {
-            throw new ErrorMessageException("Ruxsat etilmagan amal", ErrorCodes.Forbidden);
+            throw new ErrorMessageException("Недопустимое действие", ErrorCodes.Forbidden);
         }
     }
 
     private StudentExamAttemptResponse toAttemptResponse(ExamAttempt attempt) {
+        LocalDateTime deadline = resolveAttemptDeadline(attempt);
+        long remainingSeconds = deadline == null ? Long.MAX_VALUE : java.time.Duration.between(LocalDateTime.now(), deadline).getSeconds();
         return new StudentExamAttemptResponse(
                 attempt.getExam().getId(),
                 attempt.getStudent().getId(),
                 attempt.getStatus(),
                 attempt.getStartedAt(),
-                attempt.getSubmittedAt()
+                attempt.getSubmittedAt(),
+                deadline,
+                Math.max(0L, remainingSeconds)
         );
     }
 }

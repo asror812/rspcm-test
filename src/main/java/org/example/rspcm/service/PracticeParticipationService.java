@@ -54,7 +54,7 @@ public class PracticeParticipationService {
 
     private void checkPracticeExam(Exam exam) {
         if (exam.getType() != ExamType.PRACTICE) {
-            throw new ErrorMessageException("Faqat PRACTICE turidagi exam uchun participation yaratiladi", ErrorCodes.BadRequest);
+            throw new ErrorMessageException("Participation создаётся только для экзаменов типа PRACTICE", ErrorCodes.BadRequest);
         }
     }
 
@@ -64,7 +64,7 @@ public class PracticeParticipationService {
             User user,
             Pageable pageable
     ) {
-        Exam exam = examRepository.findById(examId).orElseThrow(() -> new NotFoundException("Exam topilmadi: " + examId));
+        Exam exam = examRepository.findById(examId).orElseThrow(() -> new NotFoundException("Экзамен не найден: " + examId));
 
         validateAccess(user, exam);
 
@@ -93,22 +93,22 @@ public class PracticeParticipationService {
                 PracticeParticipationMemberStatus.ACCEPTED
         );
         if (!isLeader) {
-            throw new ErrorMessageException("Faqat lider ishtirokchilarni taklif qila oladi", ErrorCodes.Forbidden);
+            throw new ErrorMessageException("Только лидер может приглашать участников", ErrorCodes.Forbidden);
         }
 
         ExamPractice examPractice = participation.getExamPractice();
         if (examPractice == null || examPractice.getPractice().getWorkMode() != WorkMode.TEAM) {
-            throw new ErrorMessageException("Faqat TEAM practice uchun invite mumkin", ErrorCodes.BadRequest);
+            throw new ErrorMessageException("Приглашения доступны только для TEAM-практики", ErrorCodes.BadRequest);
         }
 
         Integer teamSize = examPractice.getPractice().getTeamSize();
         if (teamSize == null || teamSize <= 1) {
-            throw new ErrorMessageException("TEAM practice uchun teamSize 1 dan katta bo'lishi shart", ErrorCodes.BadRequest);
+            throw new ErrorMessageException("Для TEAM-практики teamSize должен быть больше 1", ErrorCodes.BadRequest);
         }
 
         Set<Long> studentIds = new HashSet<>(request.studentIds());
         if (studentIds.contains(user.getId())) {
-            throw new ErrorMessageException("Lider o'zini taklif qila olmaydi", ErrorCodes.BadRequest);
+            throw new ErrorMessageException("Лидер не может пригласить самого себя", ErrorCodes.BadRequest);
         }
 
         long activeMembers = participationMemberRepository.countByPracticeParticipationIdAndStatusNot(
@@ -116,19 +116,19 @@ public class PracticeParticipationService {
                 PracticeParticipationMemberStatus.REMOVED
         );
         if (activeMembers + studentIds.size() > teamSize) {
-            throw new ErrorMessageException("Ishtirokchilar soni teamSize dan oshib ketadi", ErrorCodes.BadRequest);
+            throw new ErrorMessageException("Количество участников превышает teamSize", ErrorCodes.BadRequest);
         }
 
         for (Long studentId : studentIds) {
             User invitee = userRepository.findById(studentId)
-                    .orElseThrow(() -> new NotFoundException("Foydalanuvchi topilmadi: " + studentId));
+                    .orElseThrow(() -> new NotFoundException("Пользователь не найден: " + studentId));
 
             if (!isStudent(invitee)) {
-                throw new ErrorMessageException("Faqat student taklif qilinadi", ErrorCodes.BadRequest);
+                throw new ErrorMessageException("Можно приглашать только студентов", ErrorCodes.BadRequest);
             }
 
             if (!isAssignedToStudent(participation.getExam(), invitee.getId())) {
-                throw new ErrorMessageException("Taklif qilinayotgan student ushbu examga kira olmaydi", ErrorCodes.BadRequest);
+                throw new ErrorMessageException("Приглашаемый студент не может участвовать в этом экзамене", ErrorCodes.BadRequest);
             }
 
             boolean usedInAnotherParticipation = participationMemberRepository
@@ -139,20 +139,20 @@ public class PracticeParticipationService {
                             participation.getId()
                     );
             if (usedInAnotherParticipation) {
-                throw new ErrorMessageException("Bu student ushbu examda boshqa practice tanlagan", ErrorCodes.BadRequest);
+                throw new ErrorMessageException("Этот студент выбрал другую практику для данного экзамена", ErrorCodes.BadRequest);
             }
 
             boolean alreadyInParticipation = participationMemberRepository
                     .findByPracticeParticipationIdAndUserId(participation.getId(), invitee.getId())
                     .isPresent();
             if (alreadyInParticipation) {
-                throw new ErrorMessageException("Bu student allaqachon ushbu participationda mavjud", ErrorCodes.AlreadyExists);
+                throw new ErrorMessageException("Этот студент уже состоит в данном participation", ErrorCodes.AlreadyExists);
             }
         }
 
         for (Long studentId : studentIds) {
             User invitee = userRepository.findById(studentId)
-                    .orElseThrow(() -> new NotFoundException("Foydalanuvchi topilmadi: " + studentId));
+                    .orElseThrow(() -> new NotFoundException("Пользователь не найден: " + studentId));
 
             PracticeParticipationMember member = new PracticeParticipationMember();
             member.setPracticeParticipation(participation);
@@ -174,10 +174,10 @@ public class PracticeParticipationService {
 
         PracticeParticipationMember member = participationMemberRepository
                 .findByPracticeParticipationIdAndUserId(participationId, user.getId())
-                .orElseThrow(() -> new NotFoundException("Participation member topilmadi"));
+                .orElseThrow(() -> new NotFoundException("Участник участия не найден"));
 
         if (member.getStatus() != PracticeParticipationMemberStatus.INVITED) {
-            throw new ErrorMessageException("Faqat INVITED holatdagi taklifni qabul qilish mumkin", ErrorCodes.BadRequest);
+            throw new ErrorMessageException("Принять можно только приглашение в статусе INVITED", ErrorCodes.BadRequest);
         }
 
         member.setStatus(PracticeParticipationMemberStatus.ACCEPTED);
@@ -209,10 +209,10 @@ public class PracticeParticipationService {
 
         PracticeParticipationMember member = participationMemberRepository
                 .findByPracticeParticipationIdAndUserId(participationId, user.getId())
-                .orElseThrow(() -> new NotFoundException("Participation member topilmadi"));
+                .orElseThrow(() -> new NotFoundException("Участник участия не найден"));
 
         if (member.getStatus() != PracticeParticipationMemberStatus.INVITED) {
-            throw new ErrorMessageException("Faqat INVITED holatdagi taklifni rad qilish mumkin", ErrorCodes.BadRequest);
+            throw new ErrorMessageException("Отклонить можно только приглашение в статусе INVITED", ErrorCodes.BadRequest);
         }
 
         member.setStatus(PracticeParticipationMemberStatus.DECLINED);
@@ -226,12 +226,12 @@ public class PracticeParticipationService {
 
     public MyPracticeParticipationResponse getMyParticipationByExam(Long examId, User user) {
         if (!isStudent(user)) {
-            throw new ErrorMessageException("Ruxsat yo'q", ErrorCodes.Forbidden);
+            throw new ErrorMessageException("Нет доступа", ErrorCodes.Forbidden);
         }
 
         Exam exam = resolveExam(examId);
         if (!isAssignedToStudent(exam, user.getId())) {
-            throw new NotFoundException("Imtihon topilmadi: " + examId);
+            throw new NotFoundException("Экзамен не найден: " + examId);
         }
 
         PracticeParticipationMember member = participationMemberRepository
@@ -240,14 +240,14 @@ public class PracticeParticipationService {
                         user.getId(),
                         PracticeParticipationMemberStatus.REMOVED
                 )
-                .orElseThrow(() -> new NotFoundException("Participation topilmadi"));
+                .orElseThrow(() -> new NotFoundException("Участие не найдено"));
 
         return toMyParticipationResponse(member.getPracticeParticipation());
     }
 
     public List<MyPracticeParticipationResponse> getMyParticipations(User user) {
         if (!isStudent(user)) {
-            throw new ErrorMessageException("Ruxsat yo'q", ErrorCodes.Forbidden);
+            throw new ErrorMessageException("Нет доступа", ErrorCodes.Forbidden);
         }
 
         List<PracticeParticipationMember> myMembers = participationMemberRepository
@@ -266,7 +266,7 @@ public class PracticeParticipationService {
 
     public List<MyTeamInvitationResponse> getMyTeamInvitations(User user) {
         if (!isStudent(user)) {
-            throw new ErrorMessageException("Ruxsat yo'q", ErrorCodes.Forbidden);
+            throw new ErrorMessageException("Нет доступа", ErrorCodes.Forbidden);
         }
 
         List<PracticeParticipationMember> invitedMembers = participationMemberRepository
@@ -313,10 +313,10 @@ public class PracticeParticipationService {
 
         PracticeParticipationMember member = participationMemberRepository
                 .findByIdAndPracticeParticipationId(memberId, participationId)
-                .orElseThrow(() -> new NotFoundException("Participation member topilmadi"));
+                .orElseThrow(() -> new NotFoundException("Участник участия не найден"));
 
         if (member.getRole() == PracticeMemberRole.LEADER) {
-            throw new ErrorMessageException("Liderni o'chirib bo'lmaydi", ErrorCodes.BadRequest);
+            throw new ErrorMessageException("Нельзя удалить лидера", ErrorCodes.BadRequest);
         }
 
         member.setStatus(PracticeParticipationMemberStatus.REMOVED);
@@ -329,7 +329,7 @@ public class PracticeParticipationService {
     @Transactional
     public void leaveMyTeam(Long participationId, User user) {
         if (!isStudent(user)) {
-            throw new ErrorMessageException("Faqat student jamoani tark eta oladi", ErrorCodes.Forbidden);
+            throw new ErrorMessageException("Только студент может покинуть команду", ErrorCodes.Forbidden);
         }
 
         PracticeParticipation participation = findEntityById(participationId);
@@ -337,19 +337,19 @@ public class PracticeParticipationService {
 
         PracticeParticipationMember myMember = participationMemberRepository
                 .findByPracticeParticipationIdAndUserId(participationId, user.getId())
-                .orElseThrow(() -> new NotFoundException("Participation member topilmadi"));
+                .orElseThrow(() -> new NotFoundException("Участник участия не найден"));
         if (myMember.getStatus() == PracticeParticipationMemberStatus.REMOVED) {
-            throw new ErrorMessageException("Siz allaqachon jamoani tark etgansiz", ErrorCodes.BadRequest);
+            throw new ErrorMessageException("Вы уже покинули команду", ErrorCodes.BadRequest);
         }
 
         Exam exam = participation.getExam();
         if (exam.getEndAt() != null && LocalDateTime.now().isAfter(exam.getEndAt())) {
-            throw new ErrorMessageException("Deadline o'tgan", ErrorCodes.AlreadyExists);
+            throw new ErrorMessageException("Срок истёк", ErrorCodes.AlreadyExists);
         }
 
         boolean hasSubmission = submissionRepository.findByExamParticipationId(participation.getId()).isPresent();
         if (hasSubmission) {
-            throw new ErrorMessageException("Submission mavjud bo'lsa jamoani tark qilib bo'lmaydi", ErrorCodes.AlreadyExists);
+            throw new ErrorMessageException("Нельзя покинуть команду при наличии submission", ErrorCodes.AlreadyExists);
         }
 
         List<PracticeParticipationMember> activeMembers = participationMemberRepository
@@ -369,7 +369,7 @@ public class PracticeParticipationService {
                     .filter(member -> !member.getUser().getId().equals(user.getId()))
                     .sorted(Comparator.comparing(member -> member.getStatus() == PracticeParticipationMemberStatus.ACCEPTED ? 0 : 1))
                     .findFirst()
-                    .orElseThrow(() -> new ErrorMessageException("Yangi lider topilmadi", ErrorCodes.BadRequest));
+                    .orElseThrow(() -> new ErrorMessageException("Новый лидер не найден", ErrorCodes.BadRequest));
             nextLeader.setRole(PracticeMemberRole.LEADER);
             participationMemberRepository.save(nextLeader);
         }
@@ -394,7 +394,7 @@ public class PracticeParticipationService {
     @Transactional
     public void cancelMyParticipation(Long examId, User user) {
         if (!isStudent(user)) {
-            throw new ErrorMessageException("Faqat student participationni bekor qila oladi", ErrorCodes.Forbidden);
+            throw new ErrorMessageException("Только студент может отменить participation", ErrorCodes.Forbidden);
         }
 
         Exam exam = resolveExam(examId);
@@ -404,20 +404,20 @@ public class PracticeParticipationService {
                         user.getId(),
                         PracticeParticipationMemberStatus.REMOVED
                 )
-                .orElseThrow(() -> new NotFoundException("Participation topilmadi"));
+                .orElseThrow(() -> new NotFoundException("Участие не найдено"));
 
         PracticeParticipation participation = myMember.getPracticeParticipation();
         if (participation.getExamPractice() == null) {
-            throw new ErrorMessageException("Practice hali tanlanmagan", ErrorCodes.BadRequest);
+            throw new ErrorMessageException("Практика ещё не выбрана", ErrorCodes.BadRequest);
         }
 
         if (exam.getEndAt() != null && LocalDateTime.now().isAfter(exam.getEndAt())) {
-            throw new ErrorMessageException("Deadline o'tgan", ErrorCodes.AlreadyExists);
+            throw new ErrorMessageException("Срок истёк", ErrorCodes.AlreadyExists);
         }
 
         boolean hasSubmission = submissionRepository.findByExamParticipationId(participation.getId()).isPresent();
         if (hasSubmission) {
-            throw new ErrorMessageException("Submission mavjud bo'lsa bekor qilib bo'lmaydi", ErrorCodes.AlreadyExists);
+            throw new ErrorMessageException("Нельзя отменить при наличии submission", ErrorCodes.AlreadyExists);
         }
 
         WorkMode workMode = participation.getExamPractice().getPractice().getWorkMode();
@@ -428,7 +428,7 @@ public class PracticeParticipationService {
         }
 
         if (workMode != WorkMode.TEAM) {
-            throw new ErrorMessageException("Noma'lum work mode", ErrorCodes.BadRequest);
+            throw new ErrorMessageException("Неизвестный режим работы", ErrorCodes.BadRequest);
         }
 
         List<PracticeParticipationMember> activeMembers = participationMemberRepository
@@ -457,7 +457,7 @@ public class PracticeParticipationService {
                 .filter(member -> !member.getUser().getId().equals(user.getId()))
                 .sorted(Comparator.comparing(member -> member.getStatus() == PracticeParticipationMemberStatus.ACCEPTED ? 0 : 1))
                 .findFirst()
-                .orElseThrow(() -> new ErrorMessageException("Yangi lider topilmadi", ErrorCodes.BadRequest));
+                .orElseThrow(() -> new ErrorMessageException("Новый лидер не найден", ErrorCodes.BadRequest));
 
         nextLeader.setRole(PracticeMemberRole.LEADER);
         participationMemberRepository.save(nextLeader);
@@ -474,17 +474,17 @@ public class PracticeParticipationService {
 
     private PracticeParticipation findEntityById(Long id) {
         return practiceParticipationRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("PracticeParticipation topilmadi: " + id));
+                .orElseThrow(() -> new NotFoundException("Участие в практике не найдено: " + id));
     }
 
     private ExamPractice resolveExamPractice(Long examPracticeId) {
         return examPracticeRepository.findById(examPracticeId)
-                .orElseThrow(() -> new NotFoundException("ExamPractice topilmadi: " + examPracticeId));
+                .orElseThrow(() -> new NotFoundException("ExamПрактика не найдена: " + examPracticeId));
     }
 
     private Exam resolveExam(Long examId) {
         return examRepository.findById(examId)
-                .orElseThrow(() -> new NotFoundException("Exam topilmadi: " + examId));
+                .orElseThrow(() -> new NotFoundException("Экзамен не найден: " + examId));
     }
 
     private void requireLeader(User user, PracticeParticipation participation) {
@@ -495,20 +495,20 @@ public class PracticeParticipationService {
                 PracticeParticipationMemberStatus.ACCEPTED
         );
         if (!isLeader) {
-            throw new ErrorMessageException("Faqat liderga ruxsat", ErrorCodes.Forbidden);
+            throw new ErrorMessageException("Доступ только для лидера", ErrorCodes.Forbidden);
         }
     }
 
     private void ensureTeamParticipation(PracticeParticipation participation) {
         ExamPractice examPractice = participation.getExamPractice();
         if (examPractice == null || examPractice.getPractice().getWorkMode() != WorkMode.TEAM) {
-            throw new ErrorMessageException("Faqat TEAM participation uchun amal mavjud", ErrorCodes.BadRequest);
+            throw new ErrorMessageException("Операция доступна только для TEAM participation", ErrorCodes.BadRequest);
         }
     }
 
     private void validateAccess(User user, Exam exam) {
         if (!canAccess(user, exam)) {
-            throw new ErrorMessageException("Faqat o'zingizga biriktirilgan fan examlarini boshqara olasiz", ErrorCodes.Forbidden);
+            throw new ErrorMessageException("Вы можете управлять экзаменами только по закреплённым за вами предметам", ErrorCodes.Forbidden);
         }
     }
 
@@ -632,23 +632,23 @@ public class PracticeParticipationService {
     @Transactional
     public PracticeParticipationResponse selectPractice(Long examId, Long examPracticeId, User user) {
         if (!isStudent(user)) {
-            throw new ErrorMessageException("Faqat student practice tanlay oladi", ErrorCodes.Forbidden);
+            throw new ErrorMessageException("Только студент может выбрать практику", ErrorCodes.Forbidden);
         }
 
         Exam exam = resolveExam(examId);
         checkPracticeExam(exam);
 
         if (exam.getStatus() != ExamStatus.PUBLISHED) {
-            throw new ErrorMessageException("Faqat PUBLISHED holatdagi exam uchun practice tanlanadi", ErrorCodes.BadRequest);
+            throw new ErrorMessageException("Практику можно выбрать только для экзамена в статусе PUBLISHED", ErrorCodes.BadRequest);
         }
 
         if (!isAssignedToStudent(exam, user.getId())) {
-            throw new NotFoundException("Imtihon topilmadi: " + examId);
+            throw new NotFoundException("Экзамен не найден: " + examId);
         }
 
         ExamPractice examPractice = resolveExamPractice(examPracticeId);
         if (!examPractice.getExam().getId().equals(exam.getId())) {
-            throw new ErrorMessageException("Tanlangan practice ushbu examga tegishli emas", ErrorCodes.BadRequest);
+            throw new ErrorMessageException("Выбранная практика не относится к этому экзамену", ErrorCodes.BadRequest);
         }
 
         var existingMembership = participationMemberRepository
@@ -689,12 +689,12 @@ public class PracticeParticipationService {
         }
 
         if (examPractice.getPractice().getWorkMode() != WorkMode.TEAM) {
-            throw new ErrorMessageException("Noma'lum work mode", ErrorCodes.BadRequest);
+            throw new ErrorMessageException("Неизвестный режим работы", ErrorCodes.BadRequest);
         }
 
         Integer teamSize = examPractice.getPractice().getTeamSize();
         if (teamSize == null || teamSize <= 1) {
-            throw new ErrorMessageException("TEAM practice uchun teamSize 1 dan katta bo'lishi shart", ErrorCodes.BadRequest);
+            throw new ErrorMessageException("Для TEAM-практики teamSize должен быть больше 1", ErrorCodes.BadRequest);
         }
 
         PracticeParticipation participation = new PracticeParticipation();

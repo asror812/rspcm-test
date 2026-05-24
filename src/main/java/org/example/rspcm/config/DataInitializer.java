@@ -100,7 +100,7 @@ public class DataInitializer implements CommandLineRunner {
         createOrUpdateUser("k1.anvar.rasulov@rspcm.local", "202400101", "Anvar Rasulov", "123", Set.of(RoleName.ROLE_STUDENT), roles);
         createOrUpdateUser("k1.alisher.nazarov@rspcm.local", "202400102", "Alisher Nazarov", "123", Set.of(RoleName.ROLE_STUDENT), roles);
         createOrUpdateUser("k1.axror.karimov@rspcm.local", "202400103", "Axror Karimov", "123", Set.of(RoleName.ROLE_STUDENT), roles);
-        createOrUpdateUser("k1.asror.abdullayeva@rspcm.local", "202400104", "Asror Abdullayeva", "123", Set.of(RoleName.ROLE_STUDENT), roles);
+        createOrUpdateUser("k1.asror.abdullayev@rspcm.local", "202400104", "Asror Abdullayeva", "123", Set.of(RoleName.ROLE_STUDENT), roles);
         createOrUpdateUser("k1.abror.rahimov@rspcm.local", "202400105", "Abror Rahimov", "123", Set.of(RoleName.ROLE_STUDENT), roles);
 
         // L1 group students (second five)
@@ -120,7 +120,7 @@ public class DataInitializer implements CommandLineRunner {
         User k1Student1 = getUser("k1.anvar.rasulov@rspcm.local");
         User k1Student2 = getUser("k1.alisher.nazarov@rspcm.local");
         User k1Student3 = getUser("k1.axror.karimov@rspcm.local");
-        User k1Student4 = getUser("k1.asror.abdullayeva@rspcm.local");
+        User k1Student4 = getUser("k1.asror.abdullayev@rspcm.local");
         User k1Student5 = getUser("k1.abror.rahimov@rspcm.local");
 
         User l1Student1 = getUser("l1.bahrom.rasulov@rspcm.local");
@@ -225,8 +225,8 @@ public class DataInitializer implements CommandLineRunner {
         );
 
         Exam practicalExam = createOrUpdateExam(
-                "Umumiy amaliy imtihon",
-                "Amaliy topshiriqlar asosidagi auto-seeded imtihon.",
+                "Практическая сессия по программированию",
+                "Практические задания: проекты и задачи на реализацию.",
                 programming,
                 teacherProgramming,
                 Set.of(k1Group, l1Group),
@@ -246,7 +246,7 @@ public class DataInitializer implements CommandLineRunner {
         User k1Student1 = getUser("k1.anvar.rasulov@rspcm.local");
         User k1Student2 = getUser("k1.alisher.nazarov@rspcm.local");
         User k1Student3 = getUser("k1.axror.karimov@rspcm.local");
-        User k1Student4 = getUser("k1.asror.abdullayeva@rspcm.local");
+        User k1Student4 = getUser("k1.asror.abdullayev@rspcm.local");
         User k1Student5 = getUser("k1.abror.rahimov@rspcm.local");
         User l1Student1 = getUser("l1.bahrom.rasulov@rspcm.local");
         User l1Student2 = getUser("l1.bahodir.nazarov@rspcm.local");
@@ -435,32 +435,122 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void ensureMinimumQuestions(Subject subject, User teacher, int minimumCount) {
-        for (int index = 1; index <= minimumCount; index++) {
-            String text = subject.getName() + " question " + index;
-            Question question = questionRepository.findBySubjectIdAndText(subject.getId(), text)
-                    .orElse(null);
+        List<Question> existing = questionRepository.findBySubjectIdAndDeletedFalse(subject.getId());
+        if (existing.size() >= minimumCount) {
+            return;
+        }
 
-            if (question != null) {
+        List<QuestionSpec> specs = new ArrayList<>();
+        String nameLower = subject.getName() == null ? "" : subject.getName().toLowerCase();
+
+        if (nameLower.contains("матем")) {
+            specs.add(new QuestionSpec("Вычислите интеграл ∫ x^2 dx.", QuestionType.OPEN, null));
+            specs.add(new QuestionSpec("Чему равна производная функции f(x)=x^3?", QuestionType.CLOSED,
+                    List.of(new OptionSpec("3x^2", true), new OptionSpec("2x", false))));
+            specs.add(new QuestionSpec("Какие из перечисленных чисел являются простыми?", QuestionType.MULTIPLE_CHOICE,
+                    List.of(new OptionSpec("2", true), new OptionSpec("4", false), new OptionSpec("5", true), new OptionSpec("9", false))));
+            specs.add(new QuestionSpec("Решите уравнение: 2x + 3 = 11.", QuestionType.CLOSED,
+                    List.of(new OptionSpec("x=4", true), new OptionSpec("x=3", false))));
+            specs.add(new QuestionSpec("Найдите площадь треугольника со сторонами 3, 4, 5.", QuestionType.OPEN, null));
+            specs.add(new QuestionSpec("Что такое логарифм?", QuestionType.MULTIPLE_CHOICE,
+                    List.of(new OptionSpec("Обратная функция к экспоненте", true), new OptionSpec("Производная функции", false), new OptionSpec("Интеграл функции", false), new OptionSpec("Первообразная", false))));
+            specs.add(new QuestionSpec("Чему равна сумма углов треугольника?", QuestionType.CLOSED,
+                    List.of(new OptionSpec("180°", true), new OptionSpec("360°", false))));
+            specs.add(new QuestionSpec("Разложите число 24 на простые множители.", QuestionType.OPEN, null));
+            specs.add(new QuestionSpec("Какая формула используется для решения квадратного уравнения?", QuestionType.MULTIPLE_CHOICE,
+                    List.of(new OptionSpec("x = (-b ± √(b²-4ac)) / 2a", true), new OptionSpec("x = b/a", false), new OptionSpec("x = √(a²+b²)", false))));
+            specs.add(new QuestionSpec("Чему равно число Пи (приблизительно)?", QuestionType.CLOSED,
+                    List.of(new OptionSpec("3.14", true), new OptionSpec("2.71", false))));
+        } else if (nameLower.contains("физ")) {
+            specs.add(new QuestionSpec("Запишите второй закон Ньютона.", QuestionType.OPEN, null));
+            specs.add(new QuestionSpec("Каково направление центростремительной силы при круговом движении?", QuestionType.CLOSED,
+                    List.of(new OptionSpec("К центру круга", true), new OptionSpec("По касательной", false))));
+            specs.add(new QuestionSpec("Какие величины являются векторами?", QuestionType.MULTIPLE_CHOICE,
+                    List.of(new OptionSpec("Скорость", true), new OptionSpec("Масса", false), new OptionSpec("Ускорение", true), new OptionSpec("Температура", false))));
+            specs.add(new QuestionSpec("Что такое идеальный газ?", QuestionType.OPEN, null));
+            specs.add(new QuestionSpec("Какой закон описывает зависимость давления газа от температуры?", QuestionType.CLOSED,
+                    List.of(new OptionSpec("Закон Гей-Люссака", true), new OptionSpec("Закон Бойля", false))));
+            specs.add(new QuestionSpec("Единица измерения энергии в СИ:", QuestionType.MULTIPLE_CHOICE,
+                    List.of(new OptionSpec("Джоуль", true), new OptionSpec("Ватт", false), new OptionSpec("Вольт", false), new OptionSpec("Ньютон", false))));
+            specs.add(new QuestionSpec("Чему равна скорость света в вакууме?", QuestionType.CLOSED,
+                    List.of(new OptionSpec("3×10⁸ м/с", true), new OptionSpec("3×10⁶ м/с", false))));
+            specs.add(new QuestionSpec("Объясните понятие инерции.", QuestionType.OPEN, null));
+            specs.add(new QuestionSpec("Какие типы сил действуют в природе?", QuestionType.MULTIPLE_CHOICE,
+                    List.of(new OptionSpec("Гравитационные", true), new OptionSpec("Электромагнитные", true), new OptionSpec("Слабые", true), new OptionSpec("Механические", false))));
+            specs.add(new QuestionSpec("Что такое потенциальная энергия?", QuestionType.CLOSED,
+                    List.of(new OptionSpec("Энергия, связанная с положением", true), new OptionSpec("Энергия движения", false))));
+        } else if (nameLower.contains("программ")) {
+            specs.add(new QuestionSpec("Опишите принцип работы сборщика мусора в JVM.", QuestionType.OPEN, null));
+            specs.add(new QuestionSpec("Какой модификатор видимости в Java делает поле доступным только внутри класса?", QuestionType.CLOSED,
+                    List.of(new OptionSpec("private", true), new OptionSpec("public", false))));
+            specs.add(new QuestionSpec("Какие структуры данных подходят для реализации очереди?", QuestionType.MULTIPLE_CHOICE,
+                    List.of(new OptionSpec("ArrayList", false), new OptionSpec("LinkedList", true), new OptionSpec("Stack", false), new OptionSpec("Deque", true))));
+            specs.add(new QuestionSpec("Что такое полиморфизм в ООП?", QuestionType.OPEN, null));
+            specs.add(new QuestionSpec("Какая сложность алгоритма быстрой сортировки в среднем случае?", QuestionType.CLOSED,
+                    List.of(new OptionSpec("O(n log n)", true), new OptionSpec("O(n²)", false))));
+            specs.add(new QuestionSpec("Какие из следующих являются SOLID принципами?", QuestionType.MULTIPLE_CHOICE,
+                    List.of(new OptionSpec("Single Responsibility", true), new OptionSpec("Open/Closed", true), new OptionSpec("Liskov Substitution", true), new OptionSpec("Multiple Inheritance", false))));
+            specs.add(new QuestionSpec("Что такое REST API?", QuestionType.OPEN, null));
+            specs.add(new QuestionSpec("Какой паттерн проектирования используется для создания единственного экземпляра класса?", QuestionType.CLOSED,
+                    List.of(new OptionSpec("Singleton", true), new OptionSpec("Factory", false))));
+            specs.add(new QuestionSpec("В каком порядке выполняются исключения в Java?", QuestionType.MULTIPLE_CHOICE,
+                    List.of(new OptionSpec("try -> catch -> finally", true), new OptionSpec("catch -> try -> finally", false), new OptionSpec("finally -> try -> catch", false))));
+            specs.add(new QuestionSpec("Что такое рекурсия в программировании?", QuestionType.CLOSED,
+                    List.of(new OptionSpec("Функция, вызывающая саму себя", true), new OptionSpec("Цикл с переменным условием", false))));
+        }
+
+        int order = existing.size() + 1;
+        for (QuestionSpec spec : specs) {
+            if (questionRepository.findBySubjectIdAndText(subject.getId(), spec.text).isPresent()) {
                 continue;
             }
-            question = Question.builder()
-                    .text(text)
+            Question q = Question.builder()
+                    .text(spec.text)
                     .subject(subject)
                     .createdBy(teacher)
+                    .type(spec.type)
                     .options(new ArrayList<>())
                     .build();
 
-            if (index == 1) {
-                question.setType(QuestionType.OPEN);
-                question.setOptions(new ArrayList<>());
-            } else if (index % 2 == 0) {
-                question.setType(QuestionType.CLOSED);
-                question.setOptions(buildClosedOptions(question));
+            if (spec.options != null && !spec.options.isEmpty()) {
+                List<QuestionOption> opts = new ArrayList<>();
+                int idx = 1;
+                for (OptionSpec os : spec.options) {
+                    QuestionOption option = new QuestionOption();
+                    option.setQuestion(q);
+                    option.setText(os.text);
+                    option.setCorrect(os.correct);
+                    option.setOrderIndex(idx++);
+                    opts.add(option);
+                }
+                q.setOptions(opts);
             } else {
-                question.setType(QuestionType.MULTIPLE_CHOICE);
-                question.setOptions(buildMultipleChoiceOptions(question));
+                q.setOptions(new ArrayList<>());
             }
-            questionRepository.save(question);
+
+            questionRepository.save(q);
+            order++;
+            if (order > minimumCount) break;
+        }
+    }
+
+    private static class QuestionSpec {
+        final String text;
+        final QuestionType type;
+        final List<OptionSpec> options;
+        QuestionSpec(String text, QuestionType type, List<OptionSpec> options) {
+            this.text = text;
+            this.type = type;
+            this.options = options;
+        }
+    }
+
+    private static class OptionSpec {
+        final String text;
+        final boolean correct;
+        OptionSpec(String text, boolean correct) {
+            this.text = text;
+            this.correct = correct;
         }
     }
 
@@ -485,6 +575,19 @@ public class DataInitializer implements CommandLineRunner {
         boolean isNew = exam.getId() == null;
 
         if (!isNew) {
+            boolean changed = false;
+            if (exam.getStatus() != ExamStatus.PUBLISHED) {
+                exam.setStatus(ExamStatus.PUBLISHED);
+                changed = true;
+            }
+            if (examType == ExamType.QUESTION && (exam.getTaskLimit() == null || exam.getTaskLimit() <= 0)) {
+                exam.setTaskLimit(10);
+                changed = true;
+            }
+            if (changed) {
+                exam.setUpdatedAt(LocalDateTime.now());
+                return examRepository.save(exam);
+            }
             return exam;
         }
 
@@ -623,17 +726,17 @@ public class DataInitializer implements CommandLineRunner {
 
     private List<QuestionOption> buildClosedOptions(Question question) {
         List<QuestionOption> options = new ArrayList<>();
-        options.add(option(question, "True", true, 1));
-        options.add(option(question, "False", false, 2));
+        options.add(option(question, "Да", true, 1));
+        options.add(option(question, "Нет", false, 2));
         return options;
     }
 
     private List<QuestionOption> buildMultipleChoiceOptions(Question question) {
         List<QuestionOption> options = new ArrayList<>();
-        options.add(option(question, "Option A", true, 1));
-        options.add(option(question, "Option B", false, 2));
-        options.add(option(question, "Option C", true, 3));
-        options.add(option(question, "Option D", false, 4));
+        options.add(option(question, "Вариант 1", true, 1));
+        options.add(option(question, "Вариант 2", false, 2));
+        options.add(option(question, "Вариант 3", true, 3));
+        options.add(option(question, "Вариант 4", false, 4));
         return options;
     }
 

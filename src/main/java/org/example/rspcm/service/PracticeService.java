@@ -72,7 +72,7 @@ public class PracticeService {
 
     public Practice findById(Long id, User user) {
         Practice practice = practiceRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Practice topilmadi: " + id));
+                .orElseThrow(() -> new NotFoundException("Практика не найдена: " + id));
 
         if (isAdmin(user)) {
             return practice;
@@ -123,20 +123,20 @@ public class PracticeService {
 
     private Subject resolveSubject(Long subjectId) {
         if (subjectId == null) {
-            throw new ErrorMessageException("subjectId kiritilishi shart", ErrorCodes.BadRequest);
+            throw new ErrorMessageException("Необходимо указать subjectId", ErrorCodes.BadRequest);
         }
         return subjectRepository.findById(subjectId)
-                .orElseThrow(() -> new NotFoundException("Subject topilmadi: " + subjectId));
+                .orElseThrow(() -> new NotFoundException("Предмет не найден: " + subjectId));
     }
 
     private void validateTeacherSubjectAccess(Long userId, Long subjectId) {
         if (subjectId == null) {
-            throw new ErrorMessageException("Fan bo'yicha filtr kiritilishi shart", ErrorCodes.BadRequest);
+            throw new ErrorMessageException("Необходимо указать фильтр по предмету", ErrorCodes.BadRequest);
         }
 
         boolean teachesSubject = teacherProfileRepository.existsByUserIdAndTeachingSubjectsId(userId, subjectId);
         if (!teachesSubject) {
-            throw new ErrorMessageException("Faqat o'zingizga biriktirilgan fan imtihonlarini ko'ra olasiz", ErrorCodes.Forbidden);
+            throw new ErrorMessageException("Вы можете просматривать только экзамены по закреплённым за вами предметам", ErrorCodes.Forbidden);
         }
     }
 

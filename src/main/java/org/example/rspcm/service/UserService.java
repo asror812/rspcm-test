@@ -35,16 +35,16 @@ public class UserService {
     }
 
     public User findById(Long id) {
-        return userRepository.findById(id).orElseThrow(() -> new NotFoundException("User topilmadi: " + id));
+        return userRepository.findById(id).orElseThrow(() -> new NotFoundException("Пользователь не найден: " + id));
     }
 
     public UserResponse findResponseById(Long id) {
-        return userMapper.toResponse(userRepository.findById(id).orElseThrow(() -> new NotFoundException("User topilmadi: " + id)));
+        return userMapper.toResponse(userRepository.findById(id).orElseThrow(() -> new NotFoundException("Пользователь не найден: " + id)));
     }
 
     public UserResponse createResponse(UserCreateRequest request) {
         if (userRepository.existsByEmail(request.email())) {
-            throw new ErrorMessageException("Email allaqachon mavjud", ErrorCodes.AlreadyExists);
+            throw new ErrorMessageException("Email уже существует", ErrorCodes.AlreadyExists);
         }
 
         User user = userMapper.toEntity(

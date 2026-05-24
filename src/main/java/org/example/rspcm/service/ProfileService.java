@@ -44,22 +44,22 @@ public class ProfileService {
 
     public StudentProfile getStudentProfile(Long userId) {
         return studentProfileRepository.findByUserId(userId)
-                .orElseThrow(() -> new NotFoundException("Student profile topilmadi: " + userId));
+                .orElseThrow(() -> new NotFoundException("Профиль студента не найден: " + userId));
     }
 
     public StudentProfileResponse getStudentProfileResponse(Long userId) {
         return studentProfileMapper.toResponse(studentProfileRepository.findByUserId(userId)
-                .orElseThrow(() -> new NotFoundException("Student profile topilmadi: " + userId)));
+                .orElseThrow(() -> new NotFoundException("Профиль студента не найден: " + userId)));
     }
 
     public TeacherProfile getTeacherProfile(Long userId) {
         return teacherProfileRepository.findByUserId(userId)
-                .orElseThrow(() -> new NotFoundException("Teacher profile topilmadi: " + userId));
+                .orElseThrow(() -> new NotFoundException("Профиль преподавателя не найден: " + userId));
     }
 
     public TeacherProfileResponse getTeacherProfileResponse(Long userId) {
         return teacherProfileMapper.toResponse(teacherProfileRepository.findByUserId(userId)
-                .orElseThrow(() -> new NotFoundException("Teacher profile topilmadi: " + userId)));
+                .orElseThrow(() -> new NotFoundException("Профиль преподавателя не найден: " + userId)));
     }
 
     @Transactional
@@ -81,7 +81,7 @@ public class ProfileService {
 
     public StudentProfileResponse updateMyStudentProfileResponse(Long userId, StudentProfileUpdateRequest request) {
         if (request.groupId() != null) {
-            throw new ErrorMessageException("Talaba o'z guruhini o'zgartira olmaydi", ErrorCodes.InvalidParams);
+            throw new ErrorMessageException("Студент не может изменить свою группу", ErrorCodes.InvalidParams);
         }
         StudentProfile profile = studentProfileRepository.findByUserId(userId)
                 .orElseGet(() -> studentProfileRepository.save(StudentProfile.builder().user(getUser(userId)).build()));
@@ -124,7 +124,7 @@ public class ProfileService {
     }
 
     private User getUser(Long userId) {
-        return userRepository.findById(userId).orElseThrow(() -> new NotFoundException("User topilmadi: " + userId));
+        return userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Пользователь не найден: " + userId));
     }
 
     private Set<Subject> resolveSubjects(Set<Long> ids) {
@@ -133,7 +133,7 @@ public class ProfileService {
         }
         List<Subject> subjects = subjectRepository.findAllById(ids);
         if (subjects.size() != ids.size()) {
-            throw new NotFoundException("Ba'zi fanlar topilmadi");
+            throw new NotFoundException("Некоторые предметы не найдены");
         }
         return new HashSet<>(subjects);
     }
@@ -143,13 +143,13 @@ public class ProfileService {
             return null;
         }
         return studyGroupRepository.findById(groupId)
-                .orElseThrow(() -> new NotFoundException("Group topilmadi: " + groupId));
+                .orElseThrow(() -> new NotFoundException("Группа не найдена: " + groupId));
     }
 
     private void updateSelfEditableUserFields(User user, TeacherSelfProfileUpdateRequest request) {
         if (request.email() != null && !request.email().equals(user.getEmail())) {
             if (userRepository.existsByEmail(request.email())) {
-                throw new ErrorMessageException("Bu email allaqachon mavjud", ErrorCodes.AlreadyExists);
+                throw new ErrorMessageException("Этот email уже существует", ErrorCodes.AlreadyExists);
             }
             user.setEmail(request.email());
         }
@@ -161,7 +161,7 @@ public class ProfileService {
         if (request.newPassword() != null) {
             if (request.currentPassword() == null
                     || !passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
-                throw new ErrorMessageException("Joriy parol noto'g'ri", ErrorCodes.InvalidParams);
+                throw new ErrorMessageException("Текущий пароль неверный", ErrorCodes.InvalidParams);
             }
             user.setPassword(passwordEncoder.encode(request.newPassword()));
         }

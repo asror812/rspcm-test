@@ -45,7 +45,7 @@ public class PracticeSubmissionService {
         validateCanView(user, participation);
 
         PracticeSubmission submission = submissionRepository.findByExamParticipationId(participationId)
-                .orElseThrow(() -> new NotFoundException("PracticeSubmission topilmadi"));
+                .orElseThrow(() -> new NotFoundException("Отправка практики не найдена"));
         return toResponse(submission);
     }
 
@@ -57,7 +57,7 @@ public class PracticeSubmissionService {
 
     public Page<PracticeSubmissionResponse> findAllByExam(Long examId, PracticeSubmissionStatus status, User user, Pageable pageable) {
         Exam exam = examRepository.findById(examId)
-                .orElseThrow(() -> new NotFoundException("Exam topilmadi: " + examId));
+                .orElseThrow(() -> new NotFoundException("Экзамен не найден: " + examId));
         validateStaffAccess(user, exam);
 
         Page<PracticeSubmission> page = status == null
@@ -93,7 +93,7 @@ public class PracticeSubmissionService {
         validateStaffAccess(user, submission.getExamParticipation().getExam());
 
         if (submission.getStatus() != PracticeSubmissionStatus.SUBMITTED) {
-            throw new ErrorMessageException("Faqat SUBMITTED holatdagi ish baholanadi", ErrorCodes.BadRequest);
+            throw new ErrorMessageException("Оценивать можно только работы в статусе SUBMITTED", ErrorCodes.BadRequest);
         }
 
         submission.setStatus(PracticeSubmissionStatus.GRADED);
@@ -107,7 +107,7 @@ public class PracticeSubmissionService {
         validateStaffAccess(user, submission.getExamParticipation().getExam());
 
         if (submission.getStatus() == PracticeSubmissionStatus.RETURNED) {
-            throw new ErrorMessageException("Submission allaqachon RETURNED holatda", ErrorCodes.BadRequest);
+            throw new ErrorMessageException("Submission уже в статусе RETURNED", ErrorCodes.BadRequest);
         }
 
         submission.setStatus(PracticeSubmissionStatus.RETURNED);
@@ -117,17 +117,17 @@ public class PracticeSubmissionService {
 
     private PracticeParticipation findParticipation(Long participationId) {
         return participationRepository.findById(participationId)
-                .orElseThrow(() -> new NotFoundException("PracticeParticipation topilmadi: " + participationId));
+                .orElseThrow(() -> new NotFoundException("Участие в практике не найдено: " + participationId));
     }
 
     private PracticeSubmission findSubmission(Long submissionId) {
         return submissionRepository.findById(submissionId)
-                .orElseThrow(() -> new NotFoundException("PracticeSubmission topilmadi: " + submissionId));
+                .orElseThrow(() -> new NotFoundException("Отправка практики не найдена: " + submissionId));
     }
 
     private void validateLeaderSubmit(User user, PracticeParticipation participation) {
         if (participation.getStatus() != PracticeParticipationStatus.PRACTICE_CHOSEN || participation.getExamPractice() == null) {
-            throw new ErrorMessageException("Avval practice tanlanishi kerak", ErrorCodes.BadRequest);
+            throw new ErrorMessageException("Сначала нужно выбрать практику", ErrorCodes.BadRequest);
         }
 
         boolean isAcceptedLeader = participationMemberRepository.existsByPracticeParticipationIdAndUserIdAndRoleAndStatus(
@@ -137,7 +137,7 @@ public class PracticeSubmissionService {
                 PracticeParticipationMemberStatus.ACCEPTED
         );
         if (!isAcceptedLeader) {
-            throw new ErrorMessageException("Faqat participation lideri submission yubora oladi", ErrorCodes.Forbidden);
+            throw new ErrorMessageException("Только лидер участия может отправить submission", ErrorCodes.Forbidden);
         }
     }
 
@@ -152,7 +152,7 @@ public class PracticeSubmissionService {
                 PracticeParticipationMemberStatus.ACCEPTED
         );
         if (!isMember) {
-            throw new ErrorMessageException("Ruxsat yo'q", ErrorCodes.Forbidden);
+            throw new ErrorMessageException("Нет доступа", ErrorCodes.Forbidden);
         }
     }
 
@@ -161,11 +161,11 @@ public class PracticeSubmissionService {
             return;
         }
         if (!isTeacher(user)) {
-            throw new ErrorMessageException("Ruxsat yo'q", ErrorCodes.Forbidden);
+            throw new ErrorMessageException("Нет доступа", ErrorCodes.Forbidden);
         }
         Long subjectId = exam.getSubject() == null ? null : exam.getSubject().getId();
         if (subjectId == null || !teacherProfileRepository.existsByUserIdAndTeachingSubjectsId(user.getId(), subjectId)) {
-            throw new ErrorMessageException("Faqat o'zingizga biriktirilgan fan submissionslarini boshqara olasiz", ErrorCodes.Forbidden);
+            throw new ErrorMessageException("Вы можете управлять submissions только по закреплённым за вами предметам", ErrorCodes.Forbidden);
         }
     }
 

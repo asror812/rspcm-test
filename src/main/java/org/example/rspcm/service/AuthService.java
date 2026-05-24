@@ -54,7 +54,7 @@ public class AuthService {
     @Transactional
     public String register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.email())) {
-            throw new ErrorMessageException("Email allaqachon mavjud", ErrorCodes.AlreadyExists);
+            throw new ErrorMessageException("Email уже существует", ErrorCodes.AlreadyExists);
         }
 
         User user = User.builder()
@@ -76,10 +76,10 @@ public class AuthService {
     @Transactional
     public String resendOtp(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException("Foydalanuvchi topilmadi"));
+                .orElseThrow(() -> new NotFoundException("Пользователь не найден"));
 
         if (user.isEnabled()) {
-            throw new ErrorMessageException("Bu akkaunt allaqachon tasdiqlangan", ErrorCodes.AlreadyExists);
+            throw new ErrorMessageException("Этот аккаунт уже подтверждён", ErrorCodes.AlreadyExists);
         }
 
         sendOtp(email);
@@ -90,14 +90,14 @@ public class AuthService {
     public String verifyOtp(VerifyOtpRequest request) {
         OtpVerification otp = otpRepository
                 .findFirstByEmailAndCodeAndUsedFalseOrderByIdDesc(request.email(), request.code())
-                .orElseThrow(() -> new ErrorMessageException("OTP noto'g'ri", ErrorCodes.InvalidParams));
+                .orElseThrow(() -> new ErrorMessageException("Неверный OTP", ErrorCodes.InvalidParams));
 
         if (otp.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new ErrorMessageException("OTP muddati tugagan", ErrorCodes.InvalidParams);
+            throw new ErrorMessageException("Срок действия OTP истёк", ErrorCodes.InvalidParams);
         }
 
         User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new NotFoundException("Foydalanuvchi topilmadi"));
+                .orElseThrow(() -> new NotFoundException("Пользователь не найден"));
         user.setEnabled(true);
         otp.setUsed(true);
         userRepository.save(user);
@@ -112,7 +112,7 @@ public class AuthService {
             authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.identifier(), request.password()));
         } catch (BadCredentialsException | UsernameNotFoundException ex) {
-            throw new ErrorMessageException("Email yoki parol noto'g'ri", ErrorCodes.InvalidParams);
+            throw new ErrorMessageException("Неверный email или пароль", ErrorCodes.InvalidParams);
         }
 
         SecurityContextHolder.getContext().setAuthentication(authentication);

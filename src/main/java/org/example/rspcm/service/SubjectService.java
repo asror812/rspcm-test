@@ -45,7 +45,7 @@ public class SubjectService {
 
     public Subject findById(Long id) {
         return subjectRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Subject topilmadi: " + id));
+                .orElseThrow(() -> new NotFoundException("Предмет не найден: " + id));
     }
 
     public SubjectResponse findByIdResponse(Long id) {
@@ -75,7 +75,7 @@ public class SubjectService {
         }
         List<User> users = userRepository.findAllById(ids);
         if (users.size() != ids.size()) {
-            throw new NotFoundException("Ba'zi o'qituvchilar topilmadi");
+            throw new NotFoundException("Некоторые преподаватели не найдены");
         }
         return new HashSet<>(users);
     }

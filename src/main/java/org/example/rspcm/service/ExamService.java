@@ -67,7 +67,7 @@ public class ExamService {
             Pageable pageable
     ) {
         if (!isStudent(user)) {
-            throw new ErrorMessageException("Ruxsat etilmagan amal", ErrorCodes.Forbidden);
+            throw new ErrorMessageException("Недопустимое действие", ErrorCodes.Forbidden);
         }
         return examRepository.findStudentExams(user.getId(), examType, subjectId, query, pageable)
                 .map(examMapper::toResponse)
@@ -76,7 +76,7 @@ public class ExamService {
 
     public ExamResponse findById(Long id, User user) {
         Exam exam = examRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Imtihon topilmadi: " + id));
+                .orElseThrow(() -> new NotFoundException("Экзамен не найден: " + id));
 
         if (isAdmin(user)) {
             return examMapper.toResponse(exam);
@@ -88,17 +88,17 @@ public class ExamService {
         }
 
         if (isStudent(user) && !isAssignedToStudent(exam, user.getId())) {
-            throw new NotFoundException("Imtihon topilmadi: " + id);
+            throw new NotFoundException("Экзамен не найден: " + id);
         }
 
         if (isStudent(user)) {
             if (exam.getStatus() != ExamStatus.PUBLISHED) {
-                throw new NotFoundException("Imtihon topilmadi: " + id);
+                throw new NotFoundException("Экзамен не найден: " + id);
             }
             return sanitizeStudentExamResponse(examMapper.toResponse(exam));
         }
 
-        throw new ErrorMessageException("Ruxsat etilmagan amal", ErrorCodes.NotFound);
+        throw new ErrorMessageException("Недопустимое действие", ErrorCodes.NotFound);
     }
 
     @Transactional
@@ -106,7 +106,7 @@ public class ExamService {
         validateExamRequest(request);
         Subject subject = resolveSubject(request.subjectId());
         if (subject == null) {
-            throw new ErrorMessageException("subjectId kiritilishi shart", ErrorCodes.BadRequest);
+            throw new ErrorMessageException("Необходимо указать subjectId", ErrorCodes.BadRequest);
         }
 
         validateTeacherSubjectAccess(user.getId(), subject.getId());
@@ -128,13 +128,13 @@ public class ExamService {
     public ExamResponse update(Long id, ExamRequest request, User user) {
         validateExamRequest(request);
         Exam exam = examRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Imtihon topilmadi: " + id));
+                .orElseThrow(() -> new NotFoundException("Экзамен не найден: " + id));
 
         validateTeacherSubjectAccess(user.getId(), exam.getSubject() == null ? null : exam.getSubject().getId());
 
         Subject subject = resolveSubject(request.subjectId());
         if (subject == null) {
-            throw new ErrorMessageException("subjectId kiritilishi shart", ErrorCodes.BadRequest);
+            throw new ErrorMessageException("Необходимо указать subjectId", ErrorCodes.BadRequest);
         }
         validateTeacherSubjectAccess(user.getId(), subject.getId());
 
@@ -153,7 +153,7 @@ public class ExamService {
     @Transactional
     public void delete(Long id, User user) {
         Exam exam = examRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Imtihon topilmadi: " + id));
+                .orElseThrow(() -> new NotFoundException("Экзамен не найден: " + id));
 
         if (isTeacher(user)) {
             validateTeacherSubjectAccess(user.getId(), exam.getSubject() == null ? null : exam.getSubject().getId());
@@ -165,7 +165,7 @@ public class ExamService {
     @Transactional
     public ExamResponse updateStatus(Long id, ExamStatus status, User user) {
         Exam exam = examRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Imtihon topilmadi: " + id));
+                .orElseThrow(() -> new NotFoundException("Экзамен не найден: " + id));
 
         if (isTeacher(user)) {
             validateTeacherSubjectAccess(user.getId(), exam.getSubject() == null ? null : exam.getSubject().getId());
@@ -178,18 +178,18 @@ public class ExamService {
 
     private void validateExamRequest(ExamRequest request) {
         if (request.startAt() != null && request.endAt() != null && !request.endAt().isAfter(request.startAt())) {
-            throw new ErrorMessageException("endAt startAt dan keyin bo'lishi shart", ErrorCodes.BadRequest);
+            throw new ErrorMessageException("endAt должен быть позже startAt", ErrorCodes.BadRequest);
         }
     }
 
     private void validateTeacherSubjectAccess(Long userId, Long subjectId) {
         if (subjectId == null) {
-            throw new ErrorMessageException("Fan bo'yicha filtr kiritilishi shart", ErrorCodes.BadRequest);
+            throw new ErrorMessageException("Необходимо указать фильтр по предмету", ErrorCodes.BadRequest);
         }
 
         boolean teachesSubject = teacherProfileRepository.existsByUserIdAndTeachingSubjectsId(userId, subjectId);
         if (!teachesSubject) {
-            throw new ErrorMessageException("Faqat o'zingizga biriktirilgan fan imtihonlarini ko'ra olasiz", ErrorCodes.Forbidden);
+            throw new ErrorMessageException("Вы можете просматривать только экзамены по закреплённым за вами предметам", ErrorCodes.Forbidden);
         }
     }
 
@@ -248,7 +248,7 @@ public class ExamService {
             return null;
         }
         return subjectRepository.findById(subjectId)
-                .orElseThrow(() -> new NotFoundException("Fan topilmadi: " + subjectId));
+                .orElseThrow(() -> new NotFoundException("Предмет не найден: " + subjectId));
     }
 
     private Set<StudyGroup> resolveGroups(Set<Long> groupIds) {
@@ -257,7 +257,7 @@ public class ExamService {
         }
         List<StudyGroup> groups = groupRepository.findAllById(groupIds);
         if (groups.size() != groupIds.size()) {
-            throw new NotFoundException("Ba'zi group lar topilmadi");
+            throw new NotFoundException("Некоторые группы не найдены");
         }
         return new HashSet<>(groups);
     }
@@ -268,7 +268,7 @@ public class ExamService {
         }
         List<User> students = userRepository.findAllById(studentIds);
         if (students.size() != studentIds.size()) {
-            throw new NotFoundException("Ba'zi student lar topilmadi");
+            throw new NotFoundException("Некоторые студенты не найдены");
         }
         return new HashSet<>(students);
     }

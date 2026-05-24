@@ -20,7 +20,7 @@ public class RoleService {
     public Set<Role> resolveRoles(Set<RoleName> roleNames) {
         return roleNames.stream()
                 .map(name -> roleRepository.findByName(name)
-                        .orElseThrow(() -> new ErrorMessageException("Role not found: " + name, ErrorCodes.NotFound)))
+                        .orElseThrow(() -> new ErrorMessageException("Роль не найдена: " + name, ErrorCodes.NotFound)))
                 .collect(Collectors.toSet());
     }
 }

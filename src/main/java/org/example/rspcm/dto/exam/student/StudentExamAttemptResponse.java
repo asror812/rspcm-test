@@ -9,6 +9,8 @@ public record StudentExamAttemptResponse(
         Long studentId,
         ExamAttemptStatus status,
         LocalDateTime startedAt,
-        LocalDateTime submittedAt
+        LocalDateTime submittedAt,
+        LocalDateTime attemptDeadlineAt,
+        Long remainingSeconds
 ) {
 }

@@ -44,14 +44,14 @@ public class AnswerService {
 
     public StudentAnswer findById(Long id) {
         StudentAnswer answer = answerRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Answer topilmadi: " + id));
+                .orElseThrow(() -> new NotFoundException("Ответ не найден: " + id));
         validateCanAccess(answer);
         return answer;
     }
 
     public AnswerResponse findResponseById(Long id) {
         StudentAnswer answer = answerRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Answer topilmadi: " + id));
+                .orElseThrow(() -> new NotFoundException("Ответ не найден: " + id));
         validateCanAccess(answer);
         return answerMapper.toResponse(answer);
     }
@@ -59,7 +59,7 @@ public class AnswerService {
     @Transactional
     public StudentAnswer create(AnswerRequest request, User user) {
         ExamQuestion examQuestion = examQuestionRepository.findById(request.examQuestionId())
-                .orElseThrow(() -> new NotFoundException("ExamQuestion topilmadi: " + request.examQuestionId()));
+                .orElseThrow(() -> new NotFoundException("Вопрос экзамена не найден: " + request.examQuestionId()));
         validateStudentQuestionExamWrite(examQuestion, user);
 
         StudentAnswer answer = answerMapper.toEntity(
@@ -75,7 +75,7 @@ public class AnswerService {
     public AnswerResponse createResponse(AnswerRequest request) {
         User user = currentUser();
         ExamQuestion examQuestion = examQuestionRepository.findById(request.examQuestionId())
-                .orElseThrow(() -> new NotFoundException("ExamQuestion topilmadi: " + request.examQuestionId()));
+                .orElseThrow(() -> new NotFoundException("Вопрос экзамена не найден: " + request.examQuestionId()));
         validateStudentQuestionExamWrite(examQuestion, user);
         StudentAnswer answer = answerMapper.toEntity(
                 request,
@@ -96,7 +96,7 @@ public class AnswerService {
                 answer,
                 request,
                 examQuestionRepository.findById(request.examQuestionId())
-                        .orElseThrow(() -> new NotFoundException("ExamQuestion topilmadi: " + request.examQuestionId())),
+                        .orElseThrow(() -> new NotFoundException("Вопрос экзамена не найден: " + request.examQuestionId())),
                 LocalDateTime.now()
         );
         applySelectedOptions(answer, request.selectedOptionIds());
@@ -129,7 +129,7 @@ public class AnswerService {
         }
         List<QuestionOption> options = questionOptionRepository.findAllById(optionIds);
         if (options.size() != optionIds.size()) {
-            throw new NotFoundException("Ba'zi question option lar topilmadi");
+            throw new NotFoundException("Некоторые варианты ответа не найдены");
         }
         answerMapper.applySelectedOptions(answer, options);
     }
@@ -143,7 +143,7 @@ public class AnswerService {
             return;
         }
         if (!answer.getStudent().getId().equals(currentUser.getId())) {
-            throw new ErrorMessageException("Siz bu javobga kira olmaysiz", ErrorCodes.Forbidden);
+            throw new ErrorMessageException("У вас нет доступа к этому ответу", ErrorCodes.Forbidden);
         }
     }
 
@@ -158,7 +158,7 @@ public class AnswerService {
                 .anyMatch(roleName -> roleName == RoleName.ROLE_STUDENT);
         if (isStudent && examQuestion.getExam().getType() == ExamType.QUESTION) {
             throw new ErrorMessageException(
-                    "Savolli imtihon javoblari uchun /api/exams/{examId}/questions/{examQuestionId}/answer endpointidan foydalaning",
+                    "Для ответов на экзамен типа QUESTION используйте endpoint /api/exams/{examId}/questions/{examQuestionId}/answer",
                     ErrorCodes.Forbidden
             );
         }

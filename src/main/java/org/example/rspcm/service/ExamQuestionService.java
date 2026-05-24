@@ -34,7 +34,7 @@ public class ExamQuestionService {
         validateRequest(request);
 
         var exam = examRepository.findById(request.examId())
-                .orElseThrow(() -> new NotFoundException("Exam topilmadi: " + request.examId()));
+                .orElseThrow(() -> new NotFoundException("Экзамен не найден: " + request.examId()));
 
         checkForDuplicate(exam, request.questionId());
         validateQuestionCapacityAndScoreForCreate(exam, request.score());
@@ -43,14 +43,14 @@ public class ExamQuestionService {
 
         if (exam.getQuestions().stream()
                 .anyMatch(eq -> eq.getOrderIndex().equals(request.orderIndex()))) {
-            throw new ErrorMessageException("Bu orderIndex imtihonda allaqachon mavjud", ErrorCodes.BadRequest);
+            throw new ErrorMessageException("Этот orderIndex уже существует в экзамене", ErrorCodes.BadRequest);
         }
 
         ExamQuestion examQuestion = examQuestionMapper.toEntity(
                 request,
                 exam,
                 questionRepository.findById(request.questionId())
-                        .orElseThrow(() -> new NotFoundException("Question topilmadi: " + request.questionId())),
+                        .orElseThrow(() -> new NotFoundException("Вопрос не найден: " + request.questionId())),
                 user
         );
 
@@ -59,7 +59,7 @@ public class ExamQuestionService {
 
     public Page<ExamQuestionResponse> findAll(Long examId, Long subjectId, boolean own, User user, Pageable pageable) {
         var exam = examRepository.findById(examId)
-                .orElseThrow(() -> new NotFoundException("Exam topilmadi: " + examId));
+                .orElseThrow(() -> new NotFoundException("Экзамен не найден: " + examId));
 
         validateTeacherAccess(user, exam);
 
@@ -68,7 +68,7 @@ public class ExamQuestionService {
     }
 
     public ExamQuestion findById(Long id) {
-        return examQuestionRepository.findById(id).orElseThrow(() -> new NotFoundException("ExamQuestion topilmadi: " + id));
+        return examQuestionRepository.findById(id).orElseThrow(() -> new NotFoundException("Вопрос экзамена не найден: " + id));
     }
 
     public ExamQuestionResponse findResponseById(Long id) {
@@ -88,14 +88,14 @@ public class ExamQuestionService {
                 request,
                 exam,
                 questionRepository.findById(request.questionId())
-                        .orElseThrow(() -> new NotFoundException("Question topilmadi: " + request.questionId()))
+                        .orElseThrow(() -> new NotFoundException("Вопрос не найден: " + request.questionId()))
         );
         return examQuestionMapper.toResponse(examQuestionRepository.save(examQuestion));
     }
 
     @Transactional
     public void delete(Long id, User user) {
-        ExamQuestion examQuestion = examQuestionRepository.findById(id).orElseThrow(() -> new NotFoundException("Exam topilmadi: " + id));
+        ExamQuestion examQuestion = examQuestionRepository.findById(id).orElseThrow(() -> new NotFoundException("Экзамен не найден: " + id));
 
         validateTeacherAccess(user, examQuestion.getExam());
         examQuestionRepository.delete(findById(id));
@@ -103,20 +103,20 @@ public class ExamQuestionService {
 
     private void validateRequest(ExamQuestionRequest request) {
         if (request.orderIndex() <= 0) {
-            throw new ErrorMessageException("orderIndex 0 dan katta bo'lishi kerak", ErrorCodes.BadRequest);
+            throw new ErrorMessageException("orderIndex должен быть больше 0", ErrorCodes.BadRequest);
         }
     }
 
     private Exam validateExamTypeForQuestion(Long examId) {
         var exam = examRepository.findById(examId)
-                .orElseThrow(() -> new NotFoundException("Exam topilmadi: " + examId));
+                .orElseThrow(() -> new NotFoundException("Экзамен не найден: " + examId));
 
         if (exam.getStatus() != ExamStatus.DRAFT) {
-            throw new ErrorMessageException("Examni faqat Draft statusida yangilab buladi", ErrorCodes.BadRequest);
+            throw new ErrorMessageException("Экзамен можно обновлять только в статусе DRAFT", ErrorCodes.BadRequest);
         }
 
         if (exam.getType() != ExamType.QUESTION) {
-            throw new ErrorMessageException("Faqat QUESTION turidagi imtihonga savol qo'shish mumkin", ErrorCodes.BadRequest);
+            throw new ErrorMessageException("Вопросы можно добавлять только в экзамен типа QUESTION", ErrorCodes.BadRequest);
         }
 
         return exam;
@@ -125,7 +125,7 @@ public class ExamQuestionService {
     private void checkForDuplicate(Exam exam, Long questionId) {
         boolean exists = examQuestionRepository.existsByExamIdAndQuestionId(exam.getId(), questionId);
         if (exists) {
-            throw new ErrorMessageException("Bu imtihonda bu savol allaqachon mavjud", ErrorCodes.BadRequest);
+            throw new ErrorMessageException("Этот вопрос уже добавлен в экзамен", ErrorCodes.BadRequest);
         }
     }
 
@@ -133,7 +133,7 @@ public class ExamQuestionService {
         long currentCount = examQuestionRepository.countByExamId(exam.getId());
 
         if (exam.getTaskLimit() != null && currentCount >= exam.getTaskLimit()) {
-            throw new ErrorMessageException("Bu imtihonda savollar soni yetarli", ErrorCodes.BadRequest);
+            throw new ErrorMessageException("В этом экзамене уже достаточно вопросов", ErrorCodes.BadRequest);
         }
 
         Integer currentTotalScore = examQuestionRepository.sumScoreByExamId(exam.getId());
@@ -148,7 +148,7 @@ public class ExamQuestionService {
     private void validateQuestionCapacityForUpdate(Long examId, Integer limit, Long examQuestionId) {
         long currentCount = examQuestionRepository.countByExamIdAndIdNot(examId, examQuestionId);
         if (limit != null && currentCount >= limit) {
-            throw new ErrorMessageException("Bu imtihonda savollar soni yetarli", ErrorCodes.BadRequest);
+            throw new ErrorMessageException("В этом экзамене уже достаточно вопросов", ErrorCodes.BadRequest);
         }
     }
 
@@ -156,15 +156,15 @@ public class ExamQuestionService {
         if (isAdmin(user)) return;
 
         if (!isTeacher(user))
-            throw new ErrorMessageException("Ruxsat etilmagan amal", ErrorCodes.Forbidden);
+            throw new ErrorMessageException("Недопустимое действие", ErrorCodes.Forbidden);
 
         if (exam.getSubject() == null) {
-            throw new ErrorMessageException("Examga subject biriktirilmagan", ErrorCodes.BadRequest);
+            throw new ErrorMessageException("К экзамену не привязан предмет", ErrorCodes.BadRequest);
         }
 
         boolean teaches = teacherProfileRepository.existsByUserIdAndTeachingSubjectsId(user.getId(), exam.getSubject().getId());
         if (!teaches) {
-            throw new ErrorMessageException("Faqat o'zingizga biriktirilgan fan examlarini boshqara olasiz", ErrorCodes.Forbidden);
+            throw new ErrorMessageException("Вы можете управлять экзаменами только по закреплённым за вами предметам", ErrorCodes.Forbidden);
         }
     }
 

@@ -45,11 +45,11 @@ public class StudyGroupService {
     }
 
     public StudyGroup findById(Long id) {
-        return groupRepository.findById(id).orElseThrow(() -> new NotFoundException("Group topilmadi: " + id));
+        return groupRepository.findById(id).orElseThrow(() -> new NotFoundException("Группа не найдена: " + id));
     }
 
     public AdminGroupResponse findAdminResponseById(Long id) {
-        return groupMapper.toAdminResponse(groupRepository.findById(id).orElseThrow(() -> new NotFoundException("Group topilmadi: " + id)));
+        return groupMapper.toAdminResponse(groupRepository.findById(id).orElseThrow(() -> new NotFoundException("Группа не найдена: " + id)));
     }
 
     @Transactional
@@ -122,7 +122,7 @@ public class StudyGroupService {
                 }
             }
         } catch (IOException e) {
-            throw new ErrorMessageException("Excel faylni o'qishda xatolik: " + e.getMessage(), ErrorCodes.InvalidParams);
+            throw new ErrorMessageException("Ошибка чтения Excel файла: " + e.getMessage(), ErrorCodes.InvalidParams);
         }
 
         group.setStudents(students);
@@ -136,7 +136,7 @@ public class StudyGroupService {
         }
         List<User> users = userRepository.findAllById(ids);
         if (users.size() != ids.size()) {
-            throw new NotFoundException("Ba'zi foydalanuvchilar topilmadi");
+            throw new NotFoundException("Некоторые пользователи не найдены");
         }
         return new HashSet<>(users);
     }
@@ -147,7 +147,7 @@ public class StudyGroupService {
         }
         List<Subject> subjects = subjectRepository.findAllById(ids);
         if (subjects.size() != ids.size()) {
-            throw new NotFoundException("Ba'zi fanlar topilmadi");
+            throw new NotFoundException("Некоторые предметы не найдены");
         }
         return new HashSet<>(subjects);
     }
@@ -167,7 +167,7 @@ public class StudyGroupService {
 
     public TeacherGroupResponse findOwnTeacherGroupById(Long groupId, User user) {
         StudyGroup group = groupRepository.findByIdAndTeacherId(groupId, user.getId())
-                .orElseThrow(() -> new NotFoundException("Group topilmadi: " + groupId));
+                .orElseThrow(() -> new NotFoundException("Группа не найдена: " + groupId));
         return groupMapper.toTeacherResponse(group);
     }
 

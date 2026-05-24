@@ -44,12 +44,12 @@ public class PracticeJournalService {
     public List<PracticeJournalResponse> findByPracticeResponse(Long practiceId) {
         User user = currentUser();
         Practice practice = practiceRepository.findById(practiceId)
-                .orElseThrow(() -> new NotFoundException("Practice topilmadi: " + practiceId));
+                .orElseThrow(() -> new NotFoundException("Практика не найдена: " + practiceId));
 
         if (hasRole(user, RoleName.ROLE_TEACHER)) {
             Long subjectId = practice.getSubject() == null ? null : practice.getSubject().getId();
             if (subjectId == null || !teacherProfileRepository.existsByUserIdAndTeachingSubjectsId(user.getId(), subjectId)) {
-                throw new NotFoundException("Practice topilmadi: " + practiceId);
+                throw new NotFoundException("Практика не найдена: " + practiceId);
             }
         }
 
@@ -61,7 +61,7 @@ public class PracticeJournalService {
         User student = currentUser();
         PracticeLogbook savedLogbook = saveLogbookAndEntry(student, request);
         return journalRepository.findById(savedLogbook.getId())
-                .orElseThrow(() -> new NotFoundException("Logbook topilmadi: " + savedLogbook.getId()));
+                .orElseThrow(() -> new NotFoundException("Журнал практики не найден: " + savedLogbook.getId()));
     }
 
     public PracticeJournalResponse submitResponse(PracticeJournalRequest request) {
@@ -69,13 +69,13 @@ public class PracticeJournalService {
         PracticeLogbook savedLogbook = saveLogbookAndEntry(student, request);
 
         PracticeLogbook reloaded = journalRepository.findById(savedLogbook.getId())
-                .orElseThrow(() -> new NotFoundException("Logbook topilmadi: " + savedLogbook.getId()));
+                .orElseThrow(() -> new NotFoundException("Журнал практики не найден: " + savedLogbook.getId()));
         return practiceJournalMapper.toResponse(reloaded);
     }
 
     private PracticeLogbook saveLogbookAndEntry(User student, PracticeJournalRequest request) {
         Practice practice = practiceRepository.findById(request.practiceId())
-                .orElseThrow(() -> new NotFoundException("Practice topilmadi: " + request.practiceId()));
+                .orElseThrow(() -> new NotFoundException("Практика не найдена: " + request.practiceId()));
 
         boolean isDraft = Boolean.TRUE.equals(request.draft());
         LocalDateTime now = LocalDateTime.now();
