@@ -359,45 +359,54 @@ public class DataInitializer implements CommandLineRunner {
                 .map(roles::get)
                 .collect(Collectors.toSet());
 
-        User user = userRepository.findByEmail(email)
-                .orElseGet(() -> User.builder()
-                        .email(email)
-                        .password(passwordEncoder.encode(passwordRaw))
-                        .enabled(true)
-                        .build());
+        if (userRepository.findByEmail(email).isPresent()) {
+            return;
+        }
 
-        user.setFirstName(extractFirstName(fullName));
-        user.setLastName(extractLastName(fullName));
-        user.setUniversityId(universityId);
-        user.setEnabled(true);
-        user.setRoles(new HashSet<>(resolvedRoles));
+        User user = User.builder()
+                .email(email)
+                .password(passwordEncoder.encode(passwordRaw))
+                .firstName(extractFirstName(fullName))
+                .lastName(extractLastName(fullName))
+                .universityId(universityId)
+                .enabled(true)
+                .roles(new HashSet<>(resolvedRoles))
+                .build();
+
         User saved = userRepository.save(user);
         userProfileSyncService.sync(saved);
     }
 
     private Subject createOrUpdateSubject(String name, String description) {
-        Subject subject = subjectRepository.findByName(name)
-                .orElseGet(() -> Subject.builder().name(name).build());
-        subject.setDescription(description);
-        return subjectRepository.save(subject);
+        return subjectRepository.findByName(name)
+                .orElseGet(() -> subjectRepository.save(
+                        Subject.builder()
+                                .name(name)
+                                .description(description)
+                                .build()
+                ));
     }
 
     private void assignTeacherProfile(User teacher, String degree, Set<Subject> subjects) {
-        TeacherProfile profile = teacherProfileRepository.findByUserId(teacher.getId())
-                .orElseGet(() -> TeacherProfile.builder().user(teacher).build());
-        profile.setAcademicDegree(degree);
-        profile.setTeachingSubjects(new HashSet<>(subjects));
+        if (teacherProfileRepository.findByUserId(teacher.getId()).isPresent()) {
+            return;
+        }
+        TeacherProfile profile = TeacherProfile.builder()
+                .user(teacher)
+                .academicDegree(degree)
+                .teachingSubjects(new HashSet<>(subjects))
+                .build();
         teacherProfileRepository.save(profile);
     }
 
     private void assignStudentProfile(User student, Integer course) {
-        StudentProfile profile = studentProfileRepository.findByUserId(student.getId())
-                .orElseGet(() ->
-                        StudentProfile.builder()
-                                .user(student)
-                                .build());
-
-        profile.setCourse(course);
+        if (studentProfileRepository.findByUserId(student.getId()).isPresent()) {
+            return;
+        }
+        StudentProfile profile = StudentProfile.builder()
+                .user(student)
+                .course(course)
+                .build();
         studentProfileRepository.save(profile);
     }
 
@@ -409,13 +418,17 @@ public class DataInitializer implements CommandLineRunner {
             Set<User> teachers,
             Set<User> students
     ) {
-        StudyGroup group = studyGroupRepository.findByName(name)
-                .orElseGet(() -> StudyGroup.builder().name(name).build());
-        group.setDescription(description);
-        group.setLanguage(language);
-        group.setSubjects(new HashSet<>(subjects));
-        group.setTeachers(new HashSet<>(teachers));
-        group.setStudents(new HashSet<>(students));
+        if (studyGroupRepository.findByName(name).isPresent()) {
+            return;
+        }
+        StudyGroup group = StudyGroup.builder()
+                .name(name)
+                .description(description)
+                .language(language)
+                .subjects(new HashSet<>(subjects))
+                .teachers(new HashSet<>(teachers))
+                .students(new HashSet<>(students))
+                .build();
         studyGroupRepository.save(group);
     }
 
@@ -423,16 +436,17 @@ public class DataInitializer implements CommandLineRunner {
         for (int index = 1; index <= minimumCount; index++) {
             String text = subject.getName() + " question " + index;
             Question question = questionRepository.findBySubjectIdAndText(subject.getId(), text)
-                    .orElseGet(() -> Question.builder()
-                            .text(text)
-                            .subject(subject)
-                            .createdBy(teacher)
-                            .options(new ArrayList<>())
-                            .build());
+                    .orElse(null);
 
-            question.setText(text);
-            question.setSubject(subject);
-            question.setCreatedBy(teacher);
+            if (question != null) {
+                continue;
+            }
+            question = Question.builder()
+                    .text(text)
+                    .subject(subject)
+                    .createdBy(teacher)
+                    .options(new ArrayList<>())
+                    .build();
 
             if (index == 1) {
                 question.setType(QuestionType.OPEN);
@@ -468,6 +482,10 @@ public class DataInitializer implements CommandLineRunner {
                         .build());
         boolean isNew = exam.getId() == null;
 
+        if (!isNew) {
+            return exam;
+        }
+
         if (isNew) {
             exam.setDescription(description);
             exam.setSubject(subject);
@@ -500,6 +518,9 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void attachSubjectQuestionsToExam(Exam exam, Subject subject) {
+        if (!examQuestionRepository.findByExamId(exam.getId()).isEmpty()) {
+            return;
+        }
         List<Question> subjectQuestions = questionRepository.findBySubjectIdAndDeletedFalse(subject.getId());
         Map<Long, ExamQuestion> existingByQuestionId = examQuestionRepository.findByExamId(exam.getId()).stream()
                 .collect(Collectors.toMap(eq -> eq.getQuestion().getId(), eq -> eq));
@@ -540,26 +561,32 @@ public class DataInitializer implements CommandLineRunner {
             Practice task = practiceRepository.findAll().stream()
                     .filter(existing -> taskName.equals(existing.getName()))
                     .findFirst()
-                    .orElseGet(() -> Practice.builder()
-                            .name(taskName)
-                            .allowedSubmissionTypes(new HashSet<>())
-                            .build());
+                    .orElse(null);
 
-            task.setDescription("Auto-seeded practical task: " + taskName);
-            task.setSubject(subject);
-            task.setResourceUrl("https://example.com/tasks/" + (index + 1));
-            task.setRequirements("Task requirements for " + taskName);
-            task.setWorkMode(index % 2 == 0 ? WorkMode.INDIVIDUAL : WorkMode.TEAM);
-            task.setTeamSize(task.getWorkMode() == WorkMode.TEAM ? 3 : null);
-            task.setSchedulingRequired(false);
-            task.setAllowedSubmissionTypes(Set.of(SubmissionType.TEXT, SubmissionType.FILE, SubmissionType.CODE));
-            task.setCreatedBy(createdBy);
-            tasks.add(practiceRepository.save(task));
+            if (task == null) {
+                task = Practice.builder()
+                        .name(taskName)
+                        .description("Auto-seeded practical task: " + taskName)
+                        .subject(subject)
+                        .resourceUrl("https://example.com/tasks/" + (index + 1))
+                        .requirements("Task requirements for " + taskName)
+                        .workMode(index % 2 == 0 ? WorkMode.INDIVIDUAL : WorkMode.TEAM)
+                        .teamSize(index % 2 == 0 ? null : 3)
+                        .schedulingRequired(false)
+                        .allowedSubmissionTypes(Set.of(SubmissionType.TEXT, SubmissionType.FILE, SubmissionType.CODE))
+                        .createdBy(createdBy)
+                        .build();
+                task = practiceRepository.save(task);
+            }
+            tasks.add(task);
         }
         return tasks;
     }
 
     private void attachPracticesToExam(Exam exam, List<Practice> practices) {
+        if (exam.getPractices() != null && !exam.getPractices().isEmpty()) {
+            return;
+        }
         List<ExamPractice> existingLinks = new ArrayList<>(exam.getPractices() == null ? List.of() : exam.getPractices());
         Map<Long, ExamPractice> existingByPracticeId = existingLinks.stream()
                 .collect(Collectors.toMap(link -> link.getPractice().getId(), link -> link, (left, right) -> left));
@@ -589,33 +616,7 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void backfillExamAndExamQuestionAuditData(User fallbackUser) {
-        for (Exam exam : examRepository.findAll()) {
-            boolean examChanged = false;
-
-            if (exam.getTaskLimit() == null) {
-                exam.setTaskLimit(10);
-                examChanged = true;
-            }
-            if (exam.getCreatedBy() == null) {
-                exam.setCreatedBy(fallbackUser);
-                examChanged = true;
-            }
-            if (examChanged) {
-                examRepository.save(exam);
-            }
-
-            List<ExamQuestion> examQuestions = examQuestionRepository.findByExamId(exam.getId());
-            boolean questionsChanged = false;
-            for (ExamQuestion examQuestion : examQuestions) {
-                if (examQuestion.getCreatedBy() == null) {
-                    examQuestion.setCreatedBy(exam.getCreatedBy() == null ? fallbackUser : exam.getCreatedBy());
-                    questionsChanged = true;
-                }
-            }
-            if (questionsChanged) {
-                examQuestionRepository.saveAll(examQuestions);
-            }
-        }
+        // create-only mode: do not mutate existing records
     }
 
     private List<QuestionOption> buildClosedOptions(Question question) {
