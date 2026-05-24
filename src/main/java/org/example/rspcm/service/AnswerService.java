@@ -7,6 +7,7 @@ import org.example.rspcm.exception.ErrorCodes;
 import org.example.rspcm.exception.ErrorMessageException;
 import org.example.rspcm.exception.NotFoundException;
 import org.example.rspcm.model.entity.*;
+import org.example.rspcm.model.enums.ExamType;
 import org.example.rspcm.model.enums.RoleName;
 import org.example.rspcm.mapper.AnswerMapper;
 import org.example.rspcm.repository.AnswerRepository;
@@ -59,6 +60,7 @@ public class AnswerService {
     public StudentAnswer create(AnswerRequest request, User user) {
         ExamQuestion examQuestion = examQuestionRepository.findById(request.examQuestionId())
                 .orElseThrow(() -> new NotFoundException("ExamQuestion topilmadi: " + request.examQuestionId()));
+        validateStudentQuestionExamWrite(examQuestion, user);
 
         StudentAnswer answer = answerMapper.toEntity(
                 request,
@@ -71,12 +73,14 @@ public class AnswerService {
     }
 
     public AnswerResponse createResponse(AnswerRequest request) {
+        User user = currentUser();
         ExamQuestion examQuestion = examQuestionRepository.findById(request.examQuestionId())
                 .orElseThrow(() -> new NotFoundException("ExamQuestion topilmadi: " + request.examQuestionId()));
+        validateStudentQuestionExamWrite(examQuestion, user);
         StudentAnswer answer = answerMapper.toEntity(
                 request,
                 examQuestion,
-                currentUser(),
+                user,
                 LocalDateTime.now()
         );
         applySelectedOptions(answer, request.selectedOptionIds());
@@ -86,6 +90,8 @@ public class AnswerService {
     @Transactional
     public AnswerResponse update(Long id, AnswerRequest request) {
         StudentAnswer answer = findById(id);
+        User user = currentUser();
+        validateStudentQuestionExamWrite(answer.getExamQuestion(), user);
         answerMapper.updateEntity(
                 answer,
                 request,
@@ -144,5 +150,17 @@ public class AnswerService {
     private User currentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return (User) authentication.getPrincipal();
+    }
+
+    private void validateStudentQuestionExamWrite(ExamQuestion examQuestion, User user) {
+        boolean isStudent = user.getRoles().stream()
+                .map(Role::getRoleName)
+                .anyMatch(roleName -> roleName == RoleName.ROLE_STUDENT);
+        if (isStudent && examQuestion.getExam().getType() == ExamType.QUESTION) {
+            throw new ErrorMessageException(
+                    "Savolli imtihon javoblari uchun /api/exams/{examId}/questions/{examQuestionId}/answer endpointidan foydalaning",
+                    ErrorCodes.Forbidden
+            );
+        }
     }
 }

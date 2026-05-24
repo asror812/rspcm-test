@@ -105,6 +105,15 @@ public class StudentController {
         return ResponseEntity.ok(studentQuestionExamService.startAttempt(examId, user));
     }
 
+    @GetMapping("/{examId}/attempt/me")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<StudentExamAttemptResponse> getMyAttempt(
+            @PathVariable Long examId,
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(studentQuestionExamService.getMyAttempt(examId, user));
+    }
+
     @GetMapping("/{examId}/questions/me")
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<List<StudentExamQuestionResponse>> getMyExamQuestions(
