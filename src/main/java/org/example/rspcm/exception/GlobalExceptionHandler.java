@@ -8,6 +8,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.sql.Timestamp;
 import java.util.HashMap;
@@ -57,6 +58,16 @@ public class GlobalExceptionHandler {
                 .body(new ErrorMessage(
                         new Timestamp(System.currentTimeMillis()),
                         HttpStatus.FORBIDDEN.name(),
+                        ex.getMessage(),
+                        request.getDescription(false)));
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<?> handleNoResourceFound(NoResourceFoundException ex, WebRequest request) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorMessage(
+                        new Timestamp(System.currentTimeMillis()),
+                        HttpStatus.NOT_FOUND.name(),
                         ex.getMessage(),
                         request.getDescription(false)));
     }
