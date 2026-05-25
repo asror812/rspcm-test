@@ -139,7 +139,7 @@ public class PracticeParticipationService {
                             participation.getId()
                     );
             if (usedInAnotherParticipation) {
-                throw new ErrorMessageException("Этот студент выбрал другую практику для данного экзамена", ErrorCodes.BadRequest);
+                throw new ErrorMessageException("Студент уже в другой команде. Сначала нужно выйти из неё", ErrorCodes.BadRequest);
             }
 
             boolean alreadyInParticipation = participationMemberRepository

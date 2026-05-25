@@ -134,9 +134,9 @@ public class DataInitializer implements CommandLineRunner {
         User teacherProgramming = getUser("programming.teacher@rspcm.local");
 
 
-        Subject math = createOrUpdateSubject("Mathematics", "Algebra va Calculus asoslari.");
-        Subject physics = createOrUpdateSubject("Physics", "Mexanika va elektr bo'limlari.");
-        Subject programming = createOrUpdateSubject("Programming", "Java va backend dasturlash.");
+        Subject math = createOrUpdateSubject("Математика", "Алгебра и основы математического анализа.");
+        Subject physics = createOrUpdateSubject("Физика", "Механика и основы электродинамики.");
+        Subject programming = createOrUpdateSubject("Программирование", "Java, основы backend разработки и алгоритмы.");
 
         assignTeacherProfile(teacherMath, "PhD", Set.of(math));
         assignTeacherProfile(teacherPhysics, "MSc", Set.of(physics));
@@ -187,8 +187,8 @@ public class DataInitializer implements CommandLineRunner {
         StudyGroup l1Group = getGroup("L1");
 
         Exam questionExam = createOrUpdateExam(
-                "Umumiy savol imtihoni",
-                "Savollar asosidagi auto-seeded imtihon.",
+                "Общий тест по программированию",
+                "Тестовая сессия: вопросы по предмету Программирование.",
                 programming,
                 teacherProgramming,
                 Set.of(k1Group, l1Group),
@@ -197,8 +197,8 @@ public class DataInitializer implements CommandLineRunner {
         attachSubjectQuestionsToExam(questionExam, programming);
 
         Exam mathQuestionExam = createOrUpdateExam(
-                "Matematika savol imtihoni",
-                "Matematika fanidan savollar asosidagi auto-seeded imtihon.",
+                "Тест по математике",
+                "Контрольный тест по темам алгебры и анализа.",
                 math,
                 teacherMath,
                 Set.of(k1Group),
@@ -208,11 +208,11 @@ public class DataInitializer implements CommandLineRunner {
 
         List<Practice> practices = ensureMinimumPractices(
                 List.of(
-                        "Math practical task 1",
-                        "Physics practical task 1",
-                        "Programming practical task 1",
-                        "Programming practical task 2",
-                        "Cross-subject practical task 1"
+                        "Практическая по математике: Интегралы",
+                        "Практическая по физике: Законы Ньютона",
+                        "Практическая по программированию: Рефакторинг сервиса",
+                        "Практическая по программированию: Задача на алгоритмы",
+                        "Кросс-предметная практическая: Проект на Java"
                 ),
                 List.of(
                         math,
@@ -656,6 +656,13 @@ public class DataInitializer implements CommandLineRunner {
         }
         exam.setQuestions(examQuestions);
         examRepository.save(exam);
+
+        // Ensure all ExamQuestion links are persisted
+        for (ExamQuestion eq : examQuestions) {
+            if (eq.getId() == null) {
+                examQuestionRepository.save(eq);
+            }
+        }
     }
 
     private List<Practice> ensureMinimumPractices(List<String> taskNames, List<Subject> subjects, User createdBy) {
