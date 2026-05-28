@@ -12,10 +12,14 @@ import org.example.rspcm.model.entity.TeacherProfile;
 import org.example.rspcm.model.entity.Exam;
 import org.example.rspcm.model.entity.ExamPractice;
 import org.example.rspcm.model.entity.ExamQuestion;
+import org.example.rspcm.model.entity.Chat;
+import org.example.rspcm.model.entity.ChatMember;
 import org.example.rspcm.model.entity.Practice;
 import org.example.rspcm.model.entity.PracticeParticipation;
 import org.example.rspcm.model.entity.PracticeParticipationMember;
 import org.example.rspcm.model.entity.PracticeSubmission;
+import org.example.rspcm.model.enums.ChatMemberRole;
+import org.example.rspcm.model.enums.ChatType;
 import org.example.rspcm.model.enums.GroupLanguage;
 import org.example.rspcm.model.enums.QuestionType;
 import org.example.rspcm.model.enums.RoleName;
@@ -40,6 +44,8 @@ import org.example.rspcm.repository.PracticeRepository;
 import org.example.rspcm.repository.PracticeParticipationRepository;
 import org.example.rspcm.repository.PracticeParticipationMemberRepository;
 import org.example.rspcm.repository.PracticeSubmissionRepository;
+import org.example.rspcm.repository.ChatRepository;
+import org.example.rspcm.repository.ChatMemberRepository;
 import org.example.rspcm.service.UserProfileSyncService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.data.domain.Pageable;
@@ -73,6 +79,8 @@ public class DataInitializer implements CommandLineRunner {
     private final PracticeParticipationRepository practiceParticipationRepository;
     private final PracticeParticipationMemberRepository practiceParticipationMemberRepository;
     private final PracticeSubmissionRepository practiceSubmissionRepository;
+    private final ChatRepository chatRepository;
+    private final ChatMemberRepository chatMemberRepository;
     private final UserProfileSyncService userProfileSyncService;
     private final PasswordEncoder passwordEncoder;
 
@@ -178,6 +186,7 @@ public class DataInitializer implements CommandLineRunner {
                 Set.of(teacherPhysics, teacherProgramming),
                 Set.of(l1Student1, l1Student2, l1Student3, l1Student4, l1Student5)
         );
+        seedTeacherGroupChats();
 
         ensureMinimumQuestions(math, teacherMath, 10);
         ensureMinimumQuestions(physics, teacherPhysics, 10);
@@ -432,6 +441,39 @@ public class DataInitializer implements CommandLineRunner {
                 .students(new HashSet<>(students))
                 .build();
         studyGroupRepository.save(group);
+    }
+
+    private void seedTeacherGroupChats() {
+        List<StudyGroup> groups = studyGroupRepository.findAll();
+        for (StudyGroup group : groups) {
+            for (User teacher : group.getTeachers()) {
+                String chatTitle = "Teacher " + teacher.getFirstName() + " - " + group.getName();
+                Chat chat = chatRepository.findByStudyGroupIdAndTypeAndTitle(group.getId(), ChatType.TEACHER_GROUP, chatTitle)
+                        .orElseGet(() -> {
+                            Chat created = new Chat();
+                            created.setTitle(chatTitle);
+                            created.setStudyGroup(group);
+                            created.setType(ChatType.TEACHER_GROUP);
+                            return chatRepository.save(created);
+                        });
+
+                ensureChatMember(chat, teacher, ChatMemberRole.TEACHER);
+                for (User student : group.getStudents()) {
+                    ensureChatMember(chat, student, ChatMemberRole.STUDENT);
+                }
+            }
+        }
+    }
+
+    private void ensureChatMember(Chat chat, User user, ChatMemberRole role) {
+        if (chatMemberRepository.existsByChatIdAndUserId(chat.getId(), user.getId())) {
+            return;
+        }
+        ChatMember member = new ChatMember();
+        member.setChat(chat);
+        member.setUser(user);
+        member.setRole(role);
+        chatMemberRepository.save(member);
     }
 
     private void ensureMinimumQuestions(Subject subject, User teacher, int minimumCount) {
