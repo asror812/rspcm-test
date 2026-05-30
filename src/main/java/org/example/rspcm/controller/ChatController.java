@@ -1,6 +1,7 @@
 package org.example.rspcm.controller;
 
 import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
 import org.example.rspcm.dto.ChatMessageRequest;
 import org.example.rspcm.dto.chat.ChatMessageResponse;
 import org.example.rspcm.dto.chat.ChatSummaryResponse;
@@ -30,7 +31,7 @@ public class ChatController {
     @PostMapping("/{chatId}/messages")
     public ChatMessageResponse sendMessage(
             @PathVariable Long chatId,
-            @RequestBody ChatMessageRequest request,
+            @Valid @RequestBody ChatMessageRequest request,
             Principal principal) {
         return chatMessageService.sendMessage(chatId, request, principal.getName());
     }

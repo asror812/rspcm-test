@@ -11,17 +11,15 @@ import java.util.Optional;
 public interface ChatRepository extends JpaRepository<Chat, Long> {
     Optional<Chat> findByStudyGroupIdAndTypeAndTitle(Long studyGroupId, ChatType type, String title);
 
-    @Query(value = """
-            select exists(
-                select 1
-                from chats c
-                join chat_members cm on c.id = cm.chat_id
-                join users u on u.id = cm.user_id
-                where c.id = :chatId
-                  and (u.university_id = :name or u.email = :name)
-            )
-            """,
-            nativeQuery = true)
+    @Query("""
+            select (count(cm) > 0)
+            from ChatMember cm
+            join cm.user u
+            where cm.chat.id = :chatId
+              and (u.universityId = :name or u.email = :name)
+              and u.enabled = true
+              and u.deleted = false
+            """)
     boolean existsByIdAndMemberIdentifier(Long chatId, String name);
 
     @Query("""

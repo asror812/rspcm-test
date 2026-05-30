@@ -10,4 +10,6 @@ public class ChatSummaryResponse {
     private String title;
     private String type;
     private String lastMessage;
+    private long memberCount;
+    private long onlineCount;
 }

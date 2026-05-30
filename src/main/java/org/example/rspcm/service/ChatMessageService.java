@@ -10,6 +10,7 @@ import org.example.rspcm.exception.NotFoundException;
 import org.example.rspcm.model.entity.Chat;
 import org.example.rspcm.model.entity.ChatMessage;
 import org.example.rspcm.model.entity.User;
+import org.example.rspcm.repository.ChatMemberRepository;
 import org.example.rspcm.repository.ChatRepository;
 import org.example.rspcm.repository.ChatMessageRepository;
 import org.example.rspcm.repository.UserRepository;
@@ -18,6 +19,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -25,25 +29,27 @@ public class ChatMessageService {
 
     private final ChatMessageRepository repository;
     private final ChatRepository chatRepository;
+    private final ChatMemberRepository chatMemberRepository;
     private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final ChatPresenceService chatPresenceService;
 
     @Transactional
     public ChatMessageResponse sendMessage(Long chatId, ChatMessageRequest request, String name) {
         if (request == null || request.getMessage() == null || request.getMessage().trim().isEmpty()) {
-            throw new ErrorMessageException("Сообщение не может быть пустым", ErrorCodes.BadRequest);
+            throw new ErrorMessageException("Message must not be empty", ErrorCodes.BadRequest);
         }
 
         User sender = userRepository.findByEmailAndEnabledTrueAndDeletedFalse(name)
                 .or(() -> userRepository.findByUniversityIdAndEnabledTrueAndDeletedFalse(name))
-                .orElseThrow(() -> new NotFoundException("Пользователь не найден: " + name));
+                .orElseThrow(() -> new NotFoundException("User not found: " + name));
 
         Chat chat = chatRepository.findById(chatId)
-                .orElseThrow(() -> new NotFoundException("Чат не найден: " + chatId));
+                .orElseThrow(() -> new NotFoundException("Chat not found: " + chatId));
 
         boolean isMember = chatRepository.existsByIdAndMemberIdentifier(chatId, name);
         if (!isMember) {
-            throw new ErrorMessageException("Нет доступа к чату", ErrorCodes.Forbidden);
+            throw new ErrorMessageException("No access to chat", ErrorCodes.Forbidden);
         }
 
         ChatMessage message = new ChatMessage();
@@ -58,7 +64,17 @@ public class ChatMessageService {
 
     @Transactional(readOnly = true)
     public List<ChatSummaryResponse> getMyChats(String name) {
-        return chatRepository.findAllByMemberIdentifier(name).stream()
+        List<Chat> chats = chatRepository.findAllByMemberIdentifier(name);
+        Set<Long> chatIds = chats.stream().map(Chat::getId).collect(Collectors.toSet());
+
+        Map<Long, Long> memberCounts = chatMemberRepository.countMembersByChatIds(chatIds).stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> (Long) row[1]
+                ));
+        Map<Long, Integer> onlineCounts = chatPresenceService.onlineCounts(chatIds);
+
+        return chats.stream()
                 .map(chat -> {
                     ChatSummaryResponse response = new ChatSummaryResponse();
                     response.setId(chat.getId());
@@ -67,6 +83,8 @@ public class ChatMessageService {
                     response.setLastMessage(repository.findTopByChatIdOrderByIdDesc(chat.getId())
                             .map(ChatMessage::getContent)
                             .orElse(""));
+                    response.setMemberCount(memberCounts.getOrDefault(chat.getId(), 0L));
+                    response.setOnlineCount(onlineCounts.getOrDefault(chat.getId(), 0));
                     return response;
                 })
                 .toList();
@@ -93,10 +111,10 @@ public class ChatMessageService {
 
     private void ensureChatMembership(Long chatId, String name) {
         chatRepository.findById(chatId)
-                .orElseThrow(() -> new NotFoundException("Чат не найден: " + chatId));
+                .orElseThrow(() -> new NotFoundException("Chat not found: " + chatId));
 
         if (!chatRepository.existsByIdAndMemberIdentifier(chatId, name)) {
-            throw new ErrorMessageException("Нет доступа к чату", ErrorCodes.Forbidden);
+            throw new ErrorMessageException("No access to chat", ErrorCodes.Forbidden);
         }
     }
 }

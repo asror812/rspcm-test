@@ -1,32 +1,44 @@
-# Backend Context (Short)
+# Project Context
 
-## Role In System
-`rspcm` is the Spring Boot backend for the RSPCM education platform.
-It is the source of truth for business logic, data, auth, and permissions.
+## Authentication Identity
+- JWT subject/username is used as the principal identifier.
+- Identifier may be either `email` or `universityId`.
+- Chat authorization checks accept both.
 
-## Core Domains
-- Authentication (JWT + OTP).
-- Users/roles/profiles (admin, teacher, student).
-- Groups and subjects.
-- Exams/questions/answers.
-- Practices, participation teams, submissions, and journals.
-- Dashboards and chat.
+## Chat Rules
+- A user can read/send messages only if they are a member of that chat.
+- Membership checks are enforced for:
+  - REST endpoints
+  - WebSocket `SEND` and `SUBSCRIBE`
+- Chat message payload is validated:
+  - `message` is required (`@NotBlank`)
+  - max length is 300
 
-## Architecture
-- `controller/`: REST + websocket endpoints.
-- `service/`: business logic.
-- `repository/`: persistence access.
-- `model/entity/`: JPA entities.
-- `dto/` + `mapper/`: API contract and mapping.
+## Chat Presence and Counts
+- `memberCount` in chat summary = total `chat_members` rows for chat.
+- `onlineCount` in chat summary = users currently subscribed to that chat over WebSocket.
+- Online presence is tracked per session:
+  - `CONNECT` registers session
+  - `SUBSCRIBE` marks user online in a chat
+  - `UNSUBSCRIBE`/`DISCONNECT` removes presence
 
-## Runtime/Config
-- Java 17, Spring Boot, JPA, PostgreSQL, Gradle.
-- Config files: `src/main/resources/application*.yaml`.
-- Local run: `./gradlew bootRun` (default profile: `local`).
-- API docs: `/swagger-ui.html`, `/v3/api-docs`.
+## Data Initialization
+- Teacher-group chats are auto-created in `DataInitializer`.
+- For each teacher-group pair:
+  - one `TEACHER_GROUP` chat is created (idempotent)
+  - teacher is added as `TEACHER`
+  - group students are added as `STUDENT`
 
-## Integration Notes
-- Any contract change should be coordinated with mobile:
-  1. controller DTOs,
-  2. service behavior,
-  3. mobile models/services/screens.
+## Migrations
+- Flyway is enabled (`classpath:db/migration`).
+- Existing DBs are supported with `baseline-on-migrate=true`.
+- Current migration:
+  - `V1__create_fcm_table.sql`
+    - creates `fcm`
+    - FK to `users(id)`
+    - unique index `(user_id, fcm_token)`
+    - index on `user_id`
+
+## Notes
+- `ddl-auto` is still `update` in current profiles for backward compatibility.
+- Long-term: migrate fully to Flyway-owned schema and switch `ddl-auto` to `validate`.

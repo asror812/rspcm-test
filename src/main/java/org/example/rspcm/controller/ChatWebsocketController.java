@@ -1,6 +1,7 @@
 package org.example.rspcm.controller;
 
 import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
 import org.example.rspcm.dto.ChatMessageRequest;
 import org.example.rspcm.dto.chat.ChatMessageResponse;
 import org.example.rspcm.service.ChatMessageService;
@@ -18,7 +19,7 @@ public class ChatWebsocketController {
     @MessageMapping("/chats/{id}/messages")
     public ChatMessageResponse sendMessage(
             @DestinationVariable Long chatId,
-            ChatMessageRequest request,
+            @Valid ChatMessageRequest request,
             Principal principal) {
         return chatMessageService.sendMessage(chatId, request, principal.getName());
     }

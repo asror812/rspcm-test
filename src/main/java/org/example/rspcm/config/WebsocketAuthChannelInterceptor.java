@@ -8,6 +8,7 @@ import org.example.rspcm.exception.ErrorMessageException;
 import org.example.rspcm.repository.ChatRepository;
 import org.example.rspcm.security.JwtService;
 import org.example.rspcm.security.UserDetailsServiceImpl;
+import org.example.rspcm.service.ChatPresenceService;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompCommand;
@@ -24,11 +25,12 @@ import java.security.Principal;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class WebscocketAuthChannelInterceptor implements ChannelInterceptor {
+public class WebsocketAuthChannelInterceptor implements ChannelInterceptor {
 
     private final JwtService jwtService;
     private final UserDetailsServiceImpl userDetailsServiceImpl;
     private final ChatRepository chatRepository;
+    private final ChatPresenceService chatPresenceService;
 
     @Override
     public Message<?> preSend(
@@ -41,25 +43,23 @@ public class WebscocketAuthChannelInterceptor implements ChannelInterceptor {
         }
 
         StompCommand command = accessor.getCommand();
-
-        if (command == null) return message;
+        if (command == null) {
+            return message;
+        }
 
         if (command.equals(StompCommand.CONNECT)) {
             String header = accessor.getFirstNativeHeader("Authorization");
-
             if (header == null || !header.startsWith("Bearer ")) {
                 throw new IllegalArgumentException("Missing or invalid Authorization header");
             }
 
             String token = header.substring(7);
-
             if (token.isEmpty()) {
                 throw new IllegalArgumentException("Missing or invalid Authorization header");
             }
 
             String identifier = jwtService.extractUsername(token);
             UserDetails user = userDetailsServiceImpl.loadUserByUsername(identifier);
-
             if (!jwtService.isTokenValid(token, identifier)) {
                 throw new UsernameNotFoundException("Invalid token");
             }
@@ -71,59 +71,69 @@ public class WebscocketAuthChannelInterceptor implements ChannelInterceptor {
                             user.getAuthorities());
 
             accessor.setUser(authenticationToken);
+            chatPresenceService.registerSession(accessor.getSessionId(), user.getUsername());
             log.info("WS connect authorized sessionId={}", accessor.getSessionId());
         }
 
         if (command.equals(StompCommand.SEND) || command.equals(StompCommand.SUBSCRIBE)) {
             Principal principal = accessor.getUser();
-
             if (principal == null) {
                 throw new ErrorMessageException("Unauthorized websocket session", ErrorCodes.Unauthorized);
             }
 
-            validateChatMembership(principal.getName(), accessor.getDestination());
+            Long chatId = extractChatId(accessor.getDestination());
+            validateChatMembership(principal.getName(), chatId);
+
+            if (command.equals(StompCommand.SUBSCRIBE) && chatId != null) {
+                chatPresenceService.trackSubscribe(accessor.getSessionId(), chatId);
+            }
+        }
+
+        if (command.equals(StompCommand.UNSUBSCRIBE)) {
+            Long chatId = extractChatId(accessor.getDestination());
+            if (chatId != null) {
+                chatPresenceService.trackUnsubscribe(accessor.getSessionId(), chatId);
+            }
+        }
+
+        if (command.equals(StompCommand.DISCONNECT)) {
+            chatPresenceService.removeSession(accessor.getSessionId());
         }
 
         return message;
     }
 
-    private void validateChatMembership(String name, String destination) {
-        if (destination == null) {
-            throw new ErrorMessageException("Unauthorized websocket session", ErrorCodes.Unauthorized);
-        }
-
-        Long chatId = extractChatId(destination);
+    private void validateChatMembership(String name, Long chatId) {
         if (chatId == null) {
             return;
         }
-
         if (!chatRepository.existsByIdAndMemberIdentifier(chatId, name)) {
-            throw new ErrorMessageException("You are not member of this group", ErrorCodes.Unauthorized);
+            throw new ErrorMessageException("You are not a chat member", ErrorCodes.Unauthorized);
         }
     }
 
     private Long extractChatId(String destination) {
+        if (destination == null) {
+            return null;
+        }
         String[] prefixes = {"/topic/chats/", "/app/chats/"};
-
         for (String prefix : prefixes) {
-            if (destination.startsWith(prefix)) {
-                String suffix = destination.substring(prefix.length());
-
-                if (suffix.endsWith("/messages")) {
-                    suffix = suffix.substring(0, suffix.length() - "/messages".length());
-                }
-                if (suffix.contains("/")) {
-                    suffix = suffix.substring(0, suffix.indexOf('/'));
-                }
-
-                try {
-                    return Long.valueOf(suffix);
-                } catch (NumberFormatException e) {
-                    return null;
-                }
+            if (!destination.startsWith(prefix)) {
+                continue;
+            }
+            String suffix = destination.substring(prefix.length());
+            if (suffix.endsWith("/messages")) {
+                suffix = suffix.substring(0, suffix.length() - "/messages".length());
+            }
+            if (suffix.contains("/")) {
+                suffix = suffix.substring(0, suffix.indexOf('/'));
+            }
+            try {
+                return Long.valueOf(suffix);
+            } catch (NumberFormatException e) {
+                return null;
             }
         }
         return null;
     }
-
 }

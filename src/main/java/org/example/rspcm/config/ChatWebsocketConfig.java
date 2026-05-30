@@ -13,7 +13,7 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @RequiredArgsConstructor
 public class ChatWebsocketConfig implements WebSocketMessageBrokerConfigurer {
 
-    private final WebscocketAuthChannelInterceptor websocketAuthChannelInterceptor;
+    private final WebsocketAuthChannelInterceptor websocketAuthChannelInterceptor;
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
