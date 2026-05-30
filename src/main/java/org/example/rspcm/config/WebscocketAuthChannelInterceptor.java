@@ -103,7 +103,7 @@ public class WebscocketAuthChannelInterceptor implements ChannelInterceptor {
     }
 
     private Long extractChatId(String destination) {
-        String[] prefixes = {"/topic/chats", "/app/chats"};
+        String[] prefixes = {"/topic/chats/", "/app/chats/"};
 
         for (String prefix : prefixes) {
             if (destination.startsWith(prefix)) {
@@ -112,7 +112,9 @@ public class WebscocketAuthChannelInterceptor implements ChannelInterceptor {
                 if (suffix.endsWith("/messages")) {
                     suffix = suffix.substring(0, suffix.length() - "/messages".length());
                 }
-
+                if (suffix.contains("/")) {
+                    suffix = suffix.substring(0, suffix.indexOf('/'));
+                }
 
                 try {
                     return Long.valueOf(suffix);

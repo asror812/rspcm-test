@@ -2,6 +2,7 @@ package org.example.rspcm.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.example.rspcm.dto.ChatMessageRequest;
+import org.example.rspcm.dto.chat.ChatMessageResponse;
 import org.example.rspcm.service.ChatMessageService;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -15,10 +16,10 @@ public class ChatWebsocketController {
     private final ChatMessageService chatMessageService;
 
     @MessageMapping("/chats/{id}/messages")
-    public void sendMessage(
+    public ChatMessageResponse sendMessage(
             @DestinationVariable Long chatId,
             ChatMessageRequest request,
             Principal principal) {
-        chatMessageService.sendMessage(chatId, request, principal.getName());
+        return chatMessageService.sendMessage(chatId, request, principal.getName());
     }
 }
