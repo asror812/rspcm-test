@@ -36,8 +36,27 @@ Important env vars:
 - `INMEMORY_ADMIN_USERNAME`
 - `INMEMORY_ADMIN_PASSWORD`
 - `INMEMORY_ADMIN_FULL_NAME`
+- `APP_UPLOAD_DIR`
 
 Also configure datasource and mail settings in your active profile file (`application-local.yaml` for local development).
+
+## File Upload Storage
+
+- Local development:
+  - `app.upload-dir=uploads`
+  - Files are stored under:
+    - `uploads/chats/`
+    - `uploads/groups/`
+    - `uploads/users/`
+
+- Production:
+  - `app.upload-dir=/opt/backend/uploads` (or `/var/app/uploads`)
+  - Keep uploads outside the JAR directory so redeploying `app.jar` does not remove uploaded files.
+  - App auto-creates:
+    - `uploads/chats/`
+    - `uploads/groups/`
+    - `uploads/users/`
+    - `uploads/images/`
 
 ## Run Locally
 

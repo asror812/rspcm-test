@@ -186,7 +186,7 @@ public class DataInitializer implements CommandLineRunner {
                 Set.of(teacherPhysics, teacherProgramming),
                 Set.of(l1Student1, l1Student2, l1Student3, l1Student4, l1Student5)
         );
-        seedTeacherGroupChats();
+        seedStudyGroupStudentChats();
 
         ensureMinimumQuestions(math, teacherMath, 10);
         ensureMinimumQuestions(physics, teacherPhysics, 10);
@@ -443,24 +443,29 @@ public class DataInitializer implements CommandLineRunner {
         studyGroupRepository.save(group);
     }
 
-    private void seedTeacherGroupChats() {
+    private void seedStudyGroupStudentChats() {
         List<StudyGroup> groups = studyGroupRepository.findAll();
         for (StudyGroup group : groups) {
-            for (User teacher : group.getTeachers()) {
-                String chatTitle = "Teacher " + teacher.getFirstName() + " - " + group.getName();
-                Chat chat = chatRepository.findByStudyGroupIdAndTypeAndTitle(group.getId(), ChatType.TEACHER_GROUP, chatTitle)
-                        .orElseGet(() -> {
-                            Chat created = new Chat();
-                            created.setTitle(chatTitle);
-                            created.setStudyGroup(group);
-                            created.setType(ChatType.TEACHER_GROUP);
-                            return chatRepository.save(created);
-                        });
+            String chatTitle = "Group " + group.getName();
 
-                ensureChatMember(chat, teacher, ChatMemberRole.TEACHER);
-                for (User student : group.getStudents()) {
-                    ensureChatMember(chat, student, ChatMemberRole.STUDENT);
-                }
+            Chat chat = chatRepository.findByStudyGroupIdAndTypeAndTitle(group.getId(), ChatType.STUDENT_GROUP, chatTitle)
+                    .orElseGet(() -> {
+                        List<Chat> existingGroupChats = chatRepository.findAllByStudyGroupIdAndTypeOrderByIdAsc(group.getId(), ChatType.STUDENT_GROUP);
+                        if (!existingGroupChats.isEmpty()) {
+                            Chat existing = existingGroupChats.get(0);
+                            existing.setTitle(chatTitle);
+                            return chatRepository.save(existing);
+                        }
+                        Chat created = new Chat();
+                        created.setTitle(chatTitle);
+                        created.setStudyGroup(group);
+                        created.setType(ChatType.STUDENT_GROUP);
+                        return chatRepository.save(created);
+                    });
+
+            chatMemberRepository.deleteByChatIdAndRole(chat.getId(), ChatMemberRole.TEACHER);
+            for (User student : group.getStudents()) {
+                ensureChatMember(chat, student, ChatMemberRole.STUDENT);
             }
         }
     }

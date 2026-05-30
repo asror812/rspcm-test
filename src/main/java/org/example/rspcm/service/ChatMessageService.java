@@ -2,12 +2,14 @@ package org.example.rspcm.service;
 
 import lombok.RequiredArgsConstructor;
 import org.example.rspcm.dto.ChatMessageRequest;
+import org.example.rspcm.dto.chat.ChatAttachmentResponse;
 import org.example.rspcm.dto.chat.ChatMessageResponse;
 import org.example.rspcm.dto.chat.ChatSummaryResponse;
 import org.example.rspcm.exception.ErrorCodes;
 import org.example.rspcm.exception.ErrorMessageException;
 import org.example.rspcm.exception.NotFoundException;
 import org.example.rspcm.model.entity.Chat;
+import org.example.rspcm.model.entity.ChatAttachment;
 import org.example.rspcm.model.entity.ChatMessage;
 import org.example.rspcm.model.entity.User;
 import org.example.rspcm.repository.ChatMemberRepository;
@@ -17,6 +19,7 @@ import org.example.rspcm.repository.UserRepository;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
@@ -33,6 +36,7 @@ public class ChatMessageService {
     private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final ChatPresenceService chatPresenceService;
+    private final FileStorageService fileStorageService;
 
     @Transactional
     public ChatMessageResponse sendMessage(Long chatId, ChatMessageRequest request, String name) {
@@ -56,6 +60,43 @@ public class ChatMessageService {
         message.setChat(chat);
         message.setSender(sender);
         message.setContent(request.getMessage().trim());
+        ChatMessage saved = repository.save(message);
+        ChatMessageResponse response = toMessageResponse(saved, name);
+        messagingTemplate.convertAndSend("/topic/chats/" + chatId + "/messages", response);
+        return response;
+    }
+
+    @Transactional
+    public ChatMessageResponse sendMessageWithAttachment(Long chatId, String content, MultipartFile file, String name) {
+        String text = content == null ? null : content.trim();
+        if ((text == null || text.isEmpty()) && (file == null || file.isEmpty())) {
+            throw new ErrorMessageException("Message or attachment is required", ErrorCodes.BadRequest);
+        }
+
+        User sender = userRepository.findByEmailAndEnabledTrueAndDeletedFalse(name)
+                .or(() -> userRepository.findByUniversityIdAndEnabledTrueAndDeletedFalse(name))
+                .orElseThrow(() -> new NotFoundException("User not found: " + name));
+        Chat chat = chatRepository.findById(chatId)
+                .orElseThrow(() -> new NotFoundException("Chat not found: " + chatId));
+        ensureChatMembership(chatId, name);
+
+        ChatMessage message = new ChatMessage();
+        message.setChat(chat);
+        message.setSender(sender);
+        message.setContent(text);
+
+        if (file != null && !file.isEmpty()) {
+            FileStorageService.StoredFile storedFile = fileStorageService.storeChatFile(file);
+            ChatAttachment attachment = new ChatAttachment();
+            attachment.setMessage(message);
+            attachment.setFileName(storedFile.getFileName());
+            attachment.setStoredName(storedFile.getStoredName());
+            attachment.setContentType(storedFile.getContentType());
+            attachment.setSize(storedFile.getSize());
+            attachment.setFilePath(storedFile.getAbsolutePath());
+            message.getAttachments().add(attachment);
+        }
+
         ChatMessage saved = repository.save(message);
         ChatMessageResponse response = toMessageResponse(saved, name);
         messagingTemplate.convertAndSend("/topic/chats/" + chatId + "/messages", response);
@@ -106,6 +147,20 @@ public class ChatMessageService {
         response.setSenderName(message.getSender().getFirstName() + " " + message.getSender().getLastName());
         response.setContent(message.getContent());
         response.setMine(name.equals(message.getSender().getEmail()) || name.equals(message.getSender().getUniversityId()));
+        response.setAttachments(message.getAttachments().stream()
+                .map(this::toAttachmentResponse)
+                .toList());
+        return response;
+    }
+
+    private ChatAttachmentResponse toAttachmentResponse(ChatAttachment attachment) {
+        ChatAttachmentResponse response = new ChatAttachmentResponse();
+        response.setId(attachment.getId());
+        response.setFileName(attachment.getFileName());
+        response.setStoredName(attachment.getStoredName());
+        response.setContentType(attachment.getContentType());
+        response.setSize(attachment.getSize());
+        response.setUrl("/api/files/chats/" + attachment.getStoredName());
         return response;
     }
 

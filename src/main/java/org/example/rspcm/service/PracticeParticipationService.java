@@ -367,8 +367,7 @@ public class PracticeParticipationService {
         if (myMember.getRole() == PracticeMemberRole.LEADER) {
             PracticeParticipationMember nextLeader = activeMembers.stream()
                     .filter(member -> !member.getUser().getId().equals(user.getId()))
-                    .sorted(Comparator.comparing(member -> member.getStatus() == PracticeParticipationMemberStatus.ACCEPTED ? 0 : 1))
-                    .findFirst()
+                    .min(Comparator.comparing(member -> member.getStatus() == PracticeParticipationMemberStatus.ACCEPTED ? 0 : 1))
                     .orElseThrow(() -> new ErrorMessageException("Новый лидер не найден", ErrorCodes.BadRequest));
             nextLeader.setRole(PracticeMemberRole.LEADER);
             participationMemberRepository.save(nextLeader);
@@ -455,8 +454,7 @@ public class PracticeParticipationService {
 
         PracticeParticipationMember nextLeader = activeMembers.stream()
                 .filter(member -> !member.getUser().getId().equals(user.getId()))
-                .sorted(Comparator.comparing(member -> member.getStatus() == PracticeParticipationMemberStatus.ACCEPTED ? 0 : 1))
-                .findFirst()
+                .min(Comparator.comparing(member -> member.getStatus() == PracticeParticipationMemberStatus.ACCEPTED ? 0 : 1))
                 .orElseThrow(() -> new ErrorMessageException("Новый лидер не найден", ErrorCodes.BadRequest));
 
         nextLeader.setRole(PracticeMemberRole.LEADER);

@@ -16,6 +16,7 @@ public class AppProperties {
     private Mail mail = new Mail();
     private Admin admin = new Admin();
     private Swagger swagger = new Swagger();
+    private String uploadDir;
 
     @Getter
     @Setter
@@ -50,4 +51,5 @@ public class AppProperties {
     public static class Swagger {
         private String panelToken;
     }
+
 }

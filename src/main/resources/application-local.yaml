@@ -29,3 +29,6 @@ spring:
           auth: true
           starttls:
             enable: true
+
+app:
+  upload-dir: uploads

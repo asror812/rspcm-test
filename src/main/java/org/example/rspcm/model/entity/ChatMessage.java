@@ -6,6 +6,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
@@ -25,6 +28,9 @@ public class ChatMessage {
     @JoinColumn(name = "sender_id",nullable = false)
     private User sender;
 
-    @Column(nullable = false, length = 300)
+    @Column(length = 2000)
     private String content;
+
+    @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ChatAttachment> attachments = new ArrayList<>();
 }

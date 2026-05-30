@@ -33,3 +33,6 @@ spring:
           auth: true
           starttls:
             enable: true
+
+app:
+  upload-dir: /opt/backend/uploads

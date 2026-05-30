@@ -10,6 +10,7 @@ import java.util.Optional;
 
 public interface ChatRepository extends JpaRepository<Chat, Long> {
     Optional<Chat> findByStudyGroupIdAndTypeAndTitle(Long studyGroupId, ChatType type, String title);
+    List<Chat> findAllByStudyGroupIdAndTypeOrderByIdAsc(Long studyGroupId, ChatType type);
 
     @Query("""
             select (count(cm) > 0)

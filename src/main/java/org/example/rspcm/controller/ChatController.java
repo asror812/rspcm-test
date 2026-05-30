@@ -6,6 +6,7 @@ import org.example.rspcm.dto.ChatMessageRequest;
 import org.example.rspcm.dto.chat.ChatMessageResponse;
 import org.example.rspcm.dto.chat.ChatSummaryResponse;
 import org.example.rspcm.service.ChatMessageService;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -34,5 +35,14 @@ public class ChatController {
             @Valid @RequestBody ChatMessageRequest request,
             Principal principal) {
         return chatMessageService.sendMessage(chatId, request, principal.getName());
+    }
+
+    @PostMapping(path = "/{chatId}/messages/attachment", consumes = "multipart/form-data")
+    public ChatMessageResponse sendMessageWithAttachment(
+            @PathVariable Long chatId,
+            @RequestParam(value = "content", required = false) String content,
+            @RequestPart("file") MultipartFile file,
+            Principal principal) {
+        return chatMessageService.sendMessageWithAttachment(chatId, content, file, principal.getName());
     }
 }
