@@ -54,7 +54,7 @@ public class PracticeParticipationController {
 
     @GetMapping("/me")
     @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<List<MyPracticeParticipationResponse>> getMyParticipations(
+    public ResponseEntity<List<MyPracticeParticipationResponse>> getMyParticipation(
             @AuthenticationPrincipal User user
     ) {
         return ResponseEntity.ok(practiceParticipationService.getMyParticipations(user));
