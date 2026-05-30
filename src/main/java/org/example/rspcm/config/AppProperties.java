@@ -17,6 +17,7 @@ public class AppProperties {
     private Admin admin = new Admin();
     private Swagger swagger = new Swagger();
     private String uploadDir;
+    private Firebase firebase = new Firebase();
 
     @Getter
     @Setter
@@ -50,6 +51,12 @@ public class AppProperties {
     @Setter
     public static class Swagger {
         private String panelToken;
+    }
+
+    @Getter
+    @Setter
+    public static class Firebase {
+        private String credentialsPath;
     }
 
 }

@@ -28,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +40,7 @@ public class PracticeSubmissionService {
     private final TeacherProfileRepository teacherProfileRepository;
     private final ExamRepository examRepository;
     private final SummaryMapper summaryMapper;
+    private final FcmService fcmService;
 
     public PracticeSubmissionResponse getByParticipation(Long participationId, User user) {
         PracticeParticipation participation = findParticipation(participationId);
@@ -98,7 +100,11 @@ public class PracticeSubmissionService {
 
         submission.setStatus(PracticeSubmissionStatus.GRADED);
         submission.setTeacherComment(request.teacherComment());
-        return toResponse(submissionRepository.save(submission));
+        PracticeSubmissionResponse result = toResponse(submissionRepository.save(submission));
+
+        notifyParticipationMembers(submission, "Практика проверена",
+                "Ваша работа по практике «" + getPracticeName(submission) + "» оценена преподавателем.");
+        return result;
     }
 
     @Transactional
@@ -112,7 +118,11 @@ public class PracticeSubmissionService {
 
         submission.setStatus(PracticeSubmissionStatus.RETURNED);
         submission.setTeacherComment(request.teacherComment());
-        return toResponse(submissionRepository.save(submission));
+        PracticeSubmissionResponse result = toResponse(submissionRepository.save(submission));
+
+        notifyParticipationMembers(submission, "Практика возвращена на доработку",
+                "Ваша работа по практике «" + getPracticeName(submission) + "» возвращена. Проверьте комментарий преподавателя.");
+        return result;
     }
 
     private PracticeParticipation findParticipation(Long participationId) {
@@ -175,6 +185,25 @@ public class PracticeSubmissionService {
 
     private boolean isTeacher(User user) {
         return user.getRoles().stream().anyMatch(role -> role.getRoleName() == RoleName.ROLE_TEACHER);
+    }
+
+    private void notifyParticipationMembers(PracticeSubmission submission, String title, String body) {
+        try {
+            List<User> members = participationMemberRepository
+                    .findByPracticeParticipationId(submission.getExamParticipation().getId())
+                    .stream()
+                    .filter(m -> m.getStatus() == org.example.rspcm.model.enums.PracticeParticipationMemberStatus.ACCEPTED)
+                    .map(org.example.rspcm.model.entity.PracticeParticipationMember::getUser)
+                    .toList();
+            fcmService.sendToUsers(members, title, body);
+        } catch (Exception e) {
+            // notification failure must never break the main flow
+        }
+    }
+
+    private String getPracticeName(PracticeSubmission submission) {
+        if (submission.getExamParticipation().getExamPractice() == null) return "практики";
+        return submission.getExamParticipation().getExamPractice().getPractice().getName();
     }
 
     private PracticeSubmissionResponse toResponse(PracticeSubmission submission) {
