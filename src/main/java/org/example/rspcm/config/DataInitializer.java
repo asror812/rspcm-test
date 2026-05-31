@@ -108,7 +108,7 @@ public class DataInitializer implements CommandLineRunner {
         createOrUpdateUser("k1.anvar.rasulov@rspcm.local", "202400101", "Anvar Rasulov", "123", Set.of(RoleName.ROLE_STUDENT), roles);
         createOrUpdateUser("k1.alisher.nazarov@rspcm.local", "202400102", "Alisher Nazarov", "123", Set.of(RoleName.ROLE_STUDENT), roles);
         createOrUpdateUser("k1.axror.karimov@rspcm.local", "202400103", "Axror Karimov", "123", Set.of(RoleName.ROLE_STUDENT), roles);
-        createOrUpdateUser("k1.asror.abdullayev@rspcm.local", "202400104", "Asror Abdullayeva", "123", Set.of(RoleName.ROLE_STUDENT), roles);
+        createOrUpdateUser("k1.asror.abdullayev@rspcm.local", "202400104", "Asror Ruzimurodov", "123", Set.of(RoleName.ROLE_STUDENT), roles);
         createOrUpdateUser("k1.abror.rahimov@rspcm.local", "202400105", "Abror Rahimov", "123", Set.of(RoleName.ROLE_STUDENT), roles);
 
         // L1 group students (second five)
