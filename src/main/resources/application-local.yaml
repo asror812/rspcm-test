@@ -32,3 +32,5 @@ spring:
 
 app:
   upload-dir: uploads
+  firebase:
+    credentials-path: src/main/resources/firebase-service-account.json
