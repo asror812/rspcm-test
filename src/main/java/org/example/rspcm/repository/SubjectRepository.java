@@ -13,5 +13,6 @@ import java.util.Optional;
 public interface SubjectRepository extends JpaRepository<Subject, Long> {
     Page<Subject> findAllBy(Pageable pageable);
     List<Subject> findDistinctByTeachersId(Long teacherId);
+    boolean existsByIdAndTeachersId(Long subjectId, Long teacherId);
     Optional<Subject> findByName(String name);
 }

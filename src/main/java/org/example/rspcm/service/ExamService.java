@@ -18,7 +18,6 @@ import org.example.rspcm.repository.ExamQuestionRepository;
 import org.example.rspcm.repository.ExamRepository;
 import org.example.rspcm.repository.StudyGroupRepository;
 import org.example.rspcm.repository.SubjectRepository;
-import org.example.rspcm.repository.TeacherProfileRepository;
 import org.example.rspcm.repository.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -40,7 +39,6 @@ public class ExamService {
     private final SubjectRepository subjectRepository;
     private final UserRepository userRepository;
     private final ExamMapper examMapper;
-    private final TeacherProfileRepository teacherProfileRepository;
     private final ExamQuestionRepository examQuestionRepository;
 
     public Page<ExamResponse> findAll(
@@ -52,7 +50,9 @@ public class ExamService {
                     .map(examMapper::toResponse);
         }
 
-        validateTeacherSubjectAccess(user.getId(), subjectId);
+        if (!own) {
+            validateTeacherSubjectAccess(user.getId(), subjectId);
+        }
 
         return examRepository.searchAll(user.getId(), examType, examStatus, own, subjectId, query, pageable)
                     .map(examMapper::toResponse);
@@ -105,9 +105,6 @@ public class ExamService {
     public ExamResponse create(User user, ExamRequest request) {
         validateExamRequest(request);
         Subject subject = resolveSubject(request.subjectId());
-        if (subject == null) {
-            throw new ErrorMessageException("Необходимо указать subjectId", ErrorCodes.BadRequest);
-        }
 
         validateTeacherSubjectAccess(user.getId(), subject.getId());
 
@@ -133,9 +130,7 @@ public class ExamService {
         validateTeacherSubjectAccess(user.getId(), exam.getSubject() == null ? null : exam.getSubject().getId());
 
         Subject subject = resolveSubject(request.subjectId());
-        if (subject == null) {
-            throw new ErrorMessageException("Необходимо указать subjectId", ErrorCodes.BadRequest);
-        }
+
         validateTeacherSubjectAccess(user.getId(), subject.getId());
 
         examMapper.updateEntity(
@@ -183,11 +178,7 @@ public class ExamService {
     }
 
     private void validateTeacherSubjectAccess(Long userId, Long subjectId) {
-        if (subjectId == null) {
-            throw new ErrorMessageException("Необходимо указать фильтр по предмету", ErrorCodes.BadRequest);
-        }
-
-        boolean teachesSubject = teacherProfileRepository.existsByUserIdAndTeachingSubjectsId(userId, subjectId);
+        boolean teachesSubject = subjectRepository.existsByIdAndTeachersId(subjectId, userId);
         if (!teachesSubject) {
             throw new ErrorMessageException("Вы можете просматривать только экзамены по закреплённым за вами предметам", ErrorCodes.Forbidden);
         }
@@ -244,9 +235,6 @@ public class ExamService {
     }
 
     private Subject resolveSubject(Long subjectId) {
-        if (subjectId == null) {
-            return null;
-        }
         return subjectRepository.findById(subjectId)
                 .orElseThrow(() -> new NotFoundException("Предмет не найден: " + subjectId));
     }

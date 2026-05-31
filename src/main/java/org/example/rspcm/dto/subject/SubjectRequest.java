@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import java.util.Set;
 
 public record SubjectRequest(
-        @NotBlank String name,
+        @NotBlank(message = "Поле не должно быть пустым") String name,
         String description,
         Set<Long> teacherIds
 ) {

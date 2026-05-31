@@ -1,5 +1,6 @@
 package org.example.rspcm.mapper;
 
+import org.example.rspcm.dto.common.SubjectSummary;
 import org.example.rspcm.dto.common.UserSummary;
 import org.example.rspcm.dto.practice.PracticeRequest;
 import org.example.rspcm.dto.practice.PracticeResponse;
@@ -17,6 +18,7 @@ public class PracticeMapper {
     private final SummaryMapper summaryMapper;
 
     public PracticeResponse toResponse(Practice practice) {
+        SubjectSummary subject = summaryMapper.toSubjectSummary(practice.getSubject());
         UserSummary createdBy = summaryMapper.toUserSummary(practice.getCreatedBy());
 
         return new PracticeResponse(
@@ -28,6 +30,7 @@ public class PracticeMapper {
                 practice.getWorkMode(),
                 practice.isSchedulingRequired(),
                 practice.getAllowedSubmissionTypes(),
+                subject,
                 createdBy
         );
     }

@@ -7,9 +7,9 @@ import jakarta.validation.constraints.NotEmpty;
 import java.util.Set;
 
 public record UserUpdateRequest(
-        @NotBlank String firstName,
-        @NotBlank String lastName,
-        @NotEmpty Set<RoleName> roles,
+        @NotBlank(message = "Поле не должно быть пустым") String firstName,
+        @NotBlank(message = "Поле не должно быть пустым") String lastName,
+        @NotEmpty(message = "Набор ролей не должен быть пустым") Set<RoleName> roles,
         boolean enabled
 ) {
 }

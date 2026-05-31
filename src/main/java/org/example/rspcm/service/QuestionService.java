@@ -13,13 +13,10 @@ import org.example.rspcm.model.enums.RoleName;
 import org.example.rspcm.repository.QuestionRepository;
 import org.example.rspcm.repository.SubjectRepository;
 import lombok.RequiredArgsConstructor;
-import org.example.rspcm.repository.TeacherProfileRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 import static org.example.rspcm.model.enums.RoleName.ROLE_ADMIN;
 
@@ -30,7 +27,6 @@ public class QuestionService {
     private final QuestionRepository questionRepository;
     private final SubjectRepository subjectRepository;
     private final QuestionMapper questionMapper;
-    private final TeacherProfileRepository teacherProfileRepository;
 
     @Transactional
     public Question create(QuestionRequest request, User user) {
@@ -52,8 +48,7 @@ public class QuestionService {
         Subject subject = subjectRepository.findById(request.subjectId())
                 .orElseThrow(() -> new NotFoundException("Предмет не найден: " + request.subjectId()));
 
-        boolean teachesSubject = teacherProfileRepository
-                .existsByUserIdAndTeachingSubjectsId(user.getId(), request.subjectId());
+        boolean teachesSubject = subjectRepository.existsByIdAndTeachersId(request.subjectId(), user.getId());
 
         if (!teachesSubject) {
             throw new ErrorMessageException("Преподаватель может создавать вопросы только по предметам, которые он ведёт", ErrorCodes.Forbidden);
@@ -97,8 +92,7 @@ public class QuestionService {
             );
         }
 
-        boolean teachesSubject = teacherProfileRepository
-                .existsByUserIdAndTeachingSubjectsId(user.getId(), request.subjectId());
+        boolean teachesSubject = subjectRepository.existsByIdAndTeachersId(request.subjectId(), user.getId());
 
         if (!teachesSubject) {
             throw new ErrorMessageException("Преподаватель может создавать вопросы только по предметам, которые он ведёт", ErrorCodes.Forbidden);
@@ -119,7 +113,7 @@ public class QuestionService {
             throw new ErrorMessageException("Необходимо указать фильтр по предмету", ErrorCodes.BadRequest);
         }
 
-        boolean teachesSubject = teacherProfileRepository.existsByUserIdAndTeachingSubjectsId(userId, subjectId);
+        boolean teachesSubject = subjectRepository.existsByIdAndTeachersId(subjectId, userId);
         if (!teachesSubject) {
             throw new ErrorMessageException("Вы можете просматривать только экзамены по закреплённым за вами предметам", ErrorCodes.Forbidden);
         }
@@ -135,8 +129,7 @@ public class QuestionService {
             return;
         }
 
-        boolean teachesSubject = teacherProfileRepository
-                .existsByUserIdAndTeachingSubjectsId(user.getId(), question.getSubject().getId());
+        boolean teachesSubject = subjectRepository.existsByIdAndTeachersId(question.getSubject().getId(), user.getId());
 
         if (!teachesSubject) {
             throw new ErrorMessageException(

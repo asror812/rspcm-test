@@ -7,9 +7,9 @@ import jakarta.validation.constraints.NotNull;
 import java.util.Set;
 
 public record GroupRequest(
-        @NotBlank String name,
+        @NotBlank(message = "Поле не должно быть пустым") String name,
         String description,
-        @NotNull GroupLanguage language,
+        @NotNull(message = "Обязательное поле") GroupLanguage language,
         Set<Long> subjectIds,
         Set<Long> teacherIds,
         Set<Long> studentIds

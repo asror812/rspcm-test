@@ -5,6 +5,6 @@ import jakarta.validation.constraints.NotEmpty;
 import java.util.Set;
 
 public record PracticeAssignGroupsRequest(
-        @NotEmpty Set<Long> groupIds
+        @NotEmpty(message = "Список групп не должен быть пустым") Set<Long> groupIds
 ) {
 }

@@ -4,7 +4,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 
 public record StudentProfileUpdateRequest(
-        @Min(1) @Max(8) Integer course,
+        @Min(value = 1, message = "Значение должно быть не меньше {value}") @Max(value = 8, message = "Значение должно быть не больше {value}") Integer course,
         Long groupId
 ) {
 }

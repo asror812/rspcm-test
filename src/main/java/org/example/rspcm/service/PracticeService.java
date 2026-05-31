@@ -14,7 +14,6 @@ import org.example.rspcm.repository.PracticeRepository;
 import org.example.rspcm.mapper.PracticeMapper;
 import lombok.RequiredArgsConstructor;
 import org.example.rspcm.repository.SubjectRepository;
-import org.example.rspcm.repository.TeacherProfileRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -28,7 +27,6 @@ public class PracticeService {
 
     private final PracticeRepository practiceRepository;
     private final PracticeMapper practiceMapper;
-    private final TeacherProfileRepository teacherProfileRepository;
     private final SubjectRepository subjectRepository;
 
     public PracticeResponse create(PracticeRequest request, User user) {
@@ -53,7 +51,10 @@ public class PracticeService {
                     .map(practiceMapper::toResponse);
         }
 
-        validateTeacherSubjectAccess(userId, subjectId);
+        // When fetching own practices the teacher implicitly owns them — no subject filter required
+        if (!own) {
+            validateTeacherSubjectAccess(userId, subjectId);
+        }
 
         return practiceRepository.searchAll(query, own, subjectId, userId, pageable)
                 .map(practiceMapper::toResponse);
@@ -134,9 +135,9 @@ public class PracticeService {
             throw new ErrorMessageException("Необходимо указать фильтр по предмету", ErrorCodes.BadRequest);
         }
 
-        boolean teachesSubject = teacherProfileRepository.existsByUserIdAndTeachingSubjectsId(userId, subjectId);
+        boolean teachesSubject = subjectRepository.existsByIdAndTeachersId(subjectId, userId);
         if (!teachesSubject) {
-            throw new ErrorMessageException("Вы можете просматривать только экзамены по закреплённым за вами предметам", ErrorCodes.Forbidden);
+            throw new ErrorMessageException("Вы можете работать только с практиками по закреплённым за вами предметам", ErrorCodes.Forbidden);
         }
     }
 

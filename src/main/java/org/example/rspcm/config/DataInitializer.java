@@ -122,6 +122,7 @@ public class DataInitializer implements CommandLineRunner {
         createOrUpdateUser("math.teacher@rspcm.local", "202400301", "Math Teacher", "123", Set.of(RoleName.ROLE_TEACHER), roles);
         createOrUpdateUser("physics.teacher@rspcm.local", "202400302", "Physics Teacher", "123", Set.of(RoleName.ROLE_TEACHER), roles);
         createOrUpdateUser("programming.teacher@rspcm.local", "202400303", "Programming Teacher", "123", Set.of(RoleName.ROLE_TEACHER), roles);
+        createOrUpdateUser("multi.teacher@rspcm.local", "202400304", "Multi Subject Teacher", "123", Set.of(RoleName.ROLE_TEACHER), roles);
     }
 
     private void seedAcademicRelations() {
@@ -140,6 +141,7 @@ public class DataInitializer implements CommandLineRunner {
         User teacherMath = getUser("math.teacher@rspcm.local");
         User teacherPhysics = getUser("physics.teacher@rspcm.local");
         User teacherProgramming = getUser("programming.teacher@rspcm.local");
+        User teacherMulti = getUser("multi.teacher@rspcm.local");
 
 
         Subject math = createOrUpdateSubject("Математика", "Алгебра и основы математического анализа.");
@@ -149,6 +151,7 @@ public class DataInitializer implements CommandLineRunner {
         assignTeacherProfile(teacherMath, "PhD", Set.of(math));
         assignTeacherProfile(teacherPhysics, "MSc", Set.of(physics));
         assignTeacherProfile(teacherProgramming, "MSc", Set.of(programming));
+        assignTeacherProfile(teacherMulti, "MSc", Set.of(physics, programming));
 
         assignStudentProfile(k1Student1, 1);
         assignStudentProfile(k1Student2, 1);
@@ -170,6 +173,12 @@ public class DataInitializer implements CommandLineRunner {
         programming.setTeachers(new HashSet<>(Set.of(teacherProgramming)));
         subjectRepository.save(programming);
 
+        physics.getTeachers().add(teacherMulti);
+        subjectRepository.save(physics);
+
+        programming.getTeachers().add(teacherMulti);
+        subjectRepository.save(programming);
+
         createOrUpdateGroup(
                 "K1",
                 "K1 guruhi",
@@ -183,7 +192,7 @@ public class DataInitializer implements CommandLineRunner {
                 "L1 guruhi",
                 GroupLanguage.RU,
                 Set.of(physics, programming),
-                Set.of(teacherPhysics, teacherProgramming),
+                Set.of(teacherPhysics, teacherProgramming, teacherMulti),
                 Set.of(l1Student1, l1Student2, l1Student3, l1Student4, l1Student5)
         );
         seedStudyGroupStudentChats();
@@ -256,7 +265,6 @@ public class DataInitializer implements CommandLineRunner {
         User k1Student2 = getUser("k1.alisher.nazarov@rspcm.local");
         User k1Student3 = getUser("k1.axror.karimov@rspcm.local");
         User k1Student4 = getUser("k1.asror.abdullayev@rspcm.local");
-        User k1Student5 = getUser("k1.abror.rahimov@rspcm.local");
         User l1Student1 = getUser("l1.bahrom.rasulov@rspcm.local");
         User l1Student2 = getUser("l1.bahodir.nazarov@rspcm.local");
         User l1Student3 = getUser("l1.bobur.karimov@rspcm.local");
@@ -776,22 +784,6 @@ public class DataInitializer implements CommandLineRunner {
 
     private void backfillExamAndExamQuestionAuditData(User fallbackUser) {
         // create-only mode: do not mutate existing records
-    }
-
-    private List<QuestionOption> buildClosedOptions(Question question) {
-        List<QuestionOption> options = new ArrayList<>();
-        options.add(option(question, "Да", true, 1));
-        options.add(option(question, "Нет", false, 2));
-        return options;
-    }
-
-    private List<QuestionOption> buildMultipleChoiceOptions(Question question) {
-        List<QuestionOption> options = new ArrayList<>();
-        options.add(option(question, "Вариант 1", true, 1));
-        options.add(option(question, "Вариант 2", false, 2));
-        options.add(option(question, "Вариант 3", true, 3));
-        options.add(option(question, "Вариант 4", false, 4));
-        return options;
     }
 
     private QuestionOption option(Question question, String text, boolean correct, int orderIndex) {

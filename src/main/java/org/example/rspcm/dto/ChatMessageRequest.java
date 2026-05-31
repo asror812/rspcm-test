@@ -8,7 +8,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class ChatMessageRequest {
-    @NotBlank
-    @Size(max = 300)
+    @NotBlank(message = "Сообщение не должно быть пустым")
+    @Size(max = 300, message = "Сообщение не должно превышать {max} символов")
     private String message;
 }

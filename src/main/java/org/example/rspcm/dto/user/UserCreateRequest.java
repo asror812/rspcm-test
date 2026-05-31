@@ -9,11 +9,11 @@ import jakarta.validation.constraints.Size;
 import java.util.Set;
 
 public record UserCreateRequest(
-        @NotBlank String firstName,
-        @NotBlank String lastName,
-        @NotBlank @Email String email,
-        @NotBlank @Size(min = 6) String password,
-        @NotEmpty Set<RoleName> roles,
+        @NotBlank(message = "Поле не должно быть пустым") String firstName,
+        @NotBlank(message = "Поле не должно быть пустым") String lastName,
+        @NotBlank(message = "Поле не должно быть пустым") @Email(message = "Некорректный формат электронной почты") String email,
+        @NotBlank(message = "Пароль не должен быть пустым") @Size(min = 6, message = "Пароль должен содержать минимум {min} символов") String password,
+        @NotEmpty(message = "Набор ролей не должен быть пустым") Set<RoleName> roles,
         boolean enabled
 ) {
 }

@@ -7,9 +7,9 @@ import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 public record QuestionRequest(
-        @NotBlank String text,
-        @NotNull QuestionType type,
-        @NotNull Long subjectId,
+        @NotBlank(message = "Поле не должно быть пустым") String text,
+        @NotNull(message = "Обязательное поле") QuestionType type,
+        @NotNull(message = "Обязательное поле") Long subjectId,
         List<QuestionOptionRequest> options
 ) {
 }
