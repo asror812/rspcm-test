@@ -6,11 +6,13 @@ import org.example.rspcm.dto.ChatMessageRequest;
 import org.example.rspcm.dto.chat.ChatMessageResponse;
 import org.example.rspcm.dto.chat.ChatSummaryResponse;
 import org.example.rspcm.service.ChatMessageService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/chats")
@@ -22,6 +24,14 @@ public class ChatController {
     @GetMapping("/me")
     public List<ChatSummaryResponse> getMyChats(Principal principal) {
         return chatMessageService.getMyChats(principal.getName());
+    }
+
+    @PostMapping("/direct")
+    public ResponseEntity<ChatSummaryResponse> openDirectChat(
+            @RequestBody Map<String, Long> body,
+            Principal principal) {
+        Long targetUserId = body.get("userId");
+        return ResponseEntity.ok(chatMessageService.getOrCreateDirectChat(principal.getName(), targetUserId));
     }
 
     @GetMapping("/{chatId}/messages")

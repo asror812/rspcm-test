@@ -239,7 +239,13 @@ public class DataInitializer implements CommandLineRunner {
                         programming,
                         programming
                 ),
-                teacherProgramming
+                List.of(
+                        teacherMath,
+                        teacherPhysics,
+                        teacherProgramming,
+                        teacherProgramming,
+                        teacherProgramming
+                )
         );
 
         Exam practicalExam = createOrUpdateExam(
@@ -720,11 +726,12 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
-    private List<Practice> ensureMinimumPractices(List<String> taskNames, List<Subject> subjects, User createdBy) {
+    private List<Practice> ensureMinimumPractices(List<String> taskNames, List<Subject> subjects, List<User> creators) {
         List<Practice> tasks = new ArrayList<>();
         for (int index = 0; index < taskNames.size(); index++) {
             String taskName = taskNames.get(index);
             Subject subject = subjects.get(index);
+            User createdBy = creators.get(index);
             Practice task = practiceRepository.findAll().stream()
                     .filter(existing -> taskName.equals(existing.getName()))
                     .findFirst()

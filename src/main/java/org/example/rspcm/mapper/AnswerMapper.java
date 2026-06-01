@@ -48,7 +48,7 @@ public class AnswerMapper {
     }
 
     public void applySelectedOptions(StudentAnswer answer, List<QuestionOption> options) {
-        answer.setSelectedOptions(new ArrayList<>());
+        answer.getSelectedOptions().clear();
         for (QuestionOption option : options) {
             StudentAnswerOption selected = new StudentAnswerOption();
             selected.setStudentAnswer(answer);

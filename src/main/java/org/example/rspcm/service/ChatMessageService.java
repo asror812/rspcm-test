@@ -10,6 +10,7 @@ import org.example.rspcm.exception.ErrorMessageException;
 import org.example.rspcm.exception.NotFoundException;
 import org.example.rspcm.model.entity.Chat;
 import org.example.rspcm.model.entity.ChatAttachment;
+import org.example.rspcm.model.entity.ChatMember;
 import org.example.rspcm.model.entity.ChatMessage;
 import org.example.rspcm.model.entity.User;
 import org.example.rspcm.repository.ChatMemberRepository;
@@ -161,6 +162,50 @@ public class ChatMessageService {
         response.setContentType(attachment.getContentType());
         response.setSize(attachment.getSize());
         response.setUrl("/api/files/chats/" + attachment.getStoredName());
+        return response;
+    }
+
+    @Transactional
+    public ChatSummaryResponse getOrCreateDirectChat(String requesterName, Long targetUserId) {
+        User requester = userRepository.findByEmailAndEnabledTrueAndDeletedFalse(requesterName)
+                .or(() -> userRepository.findByUniversityIdAndEnabledTrueAndDeletedFalse(requesterName))
+                .orElseThrow(() -> new NotFoundException("User not found: " + requesterName));
+
+        User target = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new NotFoundException("Target user not found: " + targetUserId));
+
+        Set<Long> ids = Set.of(requester.getId(), target.getId());
+        List<Chat> existing = chatRepository.findDirectChatsBetween(ids);
+        Chat chat;
+        if (!existing.isEmpty()) {
+            chat = existing.get(0);
+        } else {
+            String title = target.getFirstName() + " " + target.getLastName();
+            chat = new Chat();
+            chat.setTitle(title.trim());
+            chat.setType(org.example.rspcm.model.enums.ChatType.DIRECT);
+            chat = chatRepository.save(chat);
+
+            ChatMember m1 = new ChatMember();
+            m1.setChat(chat);
+            m1.setUser(requester);
+            m1.setRole(org.example.rspcm.model.enums.ChatMemberRole.STUDENT);
+            chatMemberRepository.save(m1);
+
+            ChatMember m2 = new ChatMember();
+            m2.setChat(chat);
+            m2.setUser(target);
+            m2.setRole(org.example.rspcm.model.enums.ChatMemberRole.STUDENT);
+            chatMemberRepository.save(m2);
+        }
+
+        ChatSummaryResponse response = new ChatSummaryResponse();
+        response.setId(chat.getId());
+        response.setTitle(target.getFirstName() + " " + target.getLastName());
+        response.setType(chat.getType().name());
+        response.setLastMessage("");
+        response.setMemberCount(2);
+        response.setOnlineCount(0);
         return response;
     }
 

@@ -23,7 +23,7 @@ public class Chat {
     private String title;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "group_id", nullable = false)
+    @JoinColumn(name = "group_id", nullable = true)
     private StudyGroup studyGroup;
 
     @Column(nullable = false)

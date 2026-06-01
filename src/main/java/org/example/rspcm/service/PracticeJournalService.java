@@ -31,11 +31,6 @@ public class PracticeJournalService {
     private final PracticeJournalMapper practiceJournalMapper;
     private final TeacherProfileRepository teacherProfileRepository;
 
-    public List<PracticeLogbook> findMine() {
-        User student = currentUser();
-        return journalRepository.findByStudentId(student.getId());
-    }
-
     public List<PracticeJournalResponse> findMineResponse() {
         User student = currentUser();
         return journalRepository.findByStudentId(student.getId()).stream().map(practiceJournalMapper::toResponse).toList();
@@ -54,14 +49,6 @@ public class PracticeJournalService {
         }
 
         return journalRepository.findByPracticeId(practiceId).stream().map(practiceJournalMapper::toResponse).toList();
-    }
-
-    @Transactional
-    public PracticeLogbook submit(PracticeJournalRequest request) {
-        User student = currentUser();
-        PracticeLogbook savedLogbook = saveLogbookAndEntry(student, request);
-        return journalRepository.findById(savedLogbook.getId())
-                .orElseThrow(() -> new NotFoundException("Журнал практики не найден: " + savedLogbook.getId()));
     }
 
     public PracticeJournalResponse submitResponse(PracticeJournalRequest request) {

@@ -23,4 +23,7 @@ public interface StudyGroupRepository extends JpaRepository<StudyGroup, Long> {
 
     @Query("SELECT g FROM StudyGroup g JOIN g.teachers t WHERE g.id = :groupId AND t.id = :teacherId")
     Optional<StudyGroup> findByIdAndTeacherId(Long groupId, Long teacherId);
+
+    @Query("SELECT g FROM StudyGroup g JOIN g.students s WHERE g.id = :groupId AND s.id = :studentId")
+    Optional<StudyGroup> findByIdAndStudentId(Long groupId, Long studentId);
 }

@@ -1,6 +1,7 @@
 package org.example.rspcm.service;
 
 import lombok.RequiredArgsConstructor;
+import org.example.rspcm.dto.answer.AnswerRequest;
 import org.example.rspcm.dto.answer.AnswerResponse;
 import org.example.rspcm.dto.exam.student.StudentExamAnswerRequest;
 import org.example.rspcm.dto.exam.student.StudentExamAttemptResponse;
@@ -9,6 +10,7 @@ import org.example.rspcm.dto.exam.student.StudentExamQuestionResponse;
 import org.example.rspcm.exception.ErrorCodes;
 import org.example.rspcm.exception.ErrorMessageException;
 import org.example.rspcm.exception.NotFoundException;
+import org.example.rspcm.mapper.AnswerMapper;
 import org.example.rspcm.model.entity.*;
 import org.example.rspcm.model.enums.ExamAttemptStatus;
 import org.example.rspcm.model.enums.ExamStatus;
@@ -25,8 +27,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -37,7 +37,7 @@ public class StudentQuestionExamService {
     private final ExamAttemptRepository examAttemptRepository;
     private final AnswerRepository answerRepository;
     private final QuestionOptionRepository questionOptionRepository;
-    private final AnswerService answerService;
+    private final AnswerMapper answerMapper;
 
     @Transactional
     public StudentExamAttemptResponse startAttempt(Long examId, User user) {
@@ -122,20 +122,33 @@ public class StudentQuestionExamService {
             throw new ErrorMessageException("Вопрос не относится к этому экзамену", ErrorCodes.InvalidParams);
         }
 
+        AnswerRequest answerRequest = new AnswerRequest(examQuestionId, request.textAnswer(), request.selectedOptionIds());
+
         StudentAnswer existing = answerRepository
                 .findByStudentIdAndExamQuestionId(user.getId(), examQuestionId)
                 .orElse(null);
 
-        org.example.rspcm.dto.answer.AnswerRequest answerRequest = new org.example.rspcm.dto.answer.AnswerRequest(
-                examQuestionId,
-                request.textAnswer(),
-                request.selectedOptionIds()
-        );
-
+        StudentAnswer answer;
         if (existing == null) {
-            return answerService.createResponse(answerRequest);
+            answer = answerMapper.toEntity(answerRequest, examQuestion, user, LocalDateTime.now());
+        } else {
+            answer = existing;
+            answerMapper.updateEntity(answer, answerRequest, examQuestion, LocalDateTime.now());
         }
-        return answerService.update(existing.getId(), answerRequest);
+        applySelectedOptions(answer, request.selectedOptionIds());
+        return answerMapper.toResponse(answerRepository.save(answer));
+    }
+
+    private void applySelectedOptions(StudentAnswer answer, List<Long> optionIds) {
+        if (optionIds == null || optionIds.isEmpty()) {
+            answerMapper.applySelectedOptions(answer, List.of());
+            return;
+        }
+        List<QuestionOption> options = questionOptionRepository.findAllById(optionIds);
+        if (options.size() != optionIds.size()) {
+            throw new NotFoundException("Некоторые варианты ответа не найдены");
+        }
+        answerMapper.applySelectedOptions(answer, options);
     }
 
     @Transactional

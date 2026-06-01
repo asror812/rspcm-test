@@ -56,22 +56,6 @@ public class AnswerService {
         return answerMapper.toResponse(answer);
     }
 
-    @Transactional
-    public StudentAnswer create(AnswerRequest request, User user) {
-        ExamQuestion examQuestion = examQuestionRepository.findById(request.examQuestionId())
-                .orElseThrow(() -> new NotFoundException("Вопрос экзамена не найден: " + request.examQuestionId()));
-        validateStudentQuestionExamWrite(examQuestion, user);
-
-        StudentAnswer answer = answerMapper.toEntity(
-                request,
-                examQuestion,
-                user,
-                LocalDateTime.now()
-        );
-        applySelectedOptions(answer, request.selectedOptionIds());
-        return answerRepository.save(answer);
-    }
-
     public AnswerResponse createResponse(AnswerRequest request) {
         User user = currentUser();
         ExamQuestion examQuestion = examQuestionRepository.findById(request.examQuestionId())
@@ -101,13 +85,6 @@ public class AnswerService {
         );
         applySelectedOptions(answer, request.selectedOptionIds());
         return answerMapper.toResponse(answerRepository.save(answer));
-    }
-
-    @Transactional
-    public StudentAnswer score(Long id, AnswerScoreRequest request) {
-        StudentAnswer answer = findById(id);
-        answerMapper.applyScore(answer, request);
-        return answerRepository.save(answer);
     }
 
     public AnswerResponse scoreResponse(Long id, AnswerScoreRequest request) {

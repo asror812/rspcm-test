@@ -1,5 +1,6 @@
 package org.example.rspcm.service;
 
+import org.example.rspcm.dto.common.UserSummary;
 import org.example.rspcm.dto.group.AdminGroupResponse;
 import org.example.rspcm.dto.group.GroupRequest;
 import org.example.rspcm.dto.group.GroupResponse;
@@ -174,5 +175,13 @@ public class StudyGroupService {
     public List<StudentGroupResponse> findOwnStudentGroups(User user) {
         return groupRepository.findByStudentsId(user.getId()).stream()
                 .map(groupMapper::toStudentResponse).toList();
+    }
+
+    public List<UserSummary> findGroupMembersForStudent(Long groupId, User requestingStudent) {
+        StudyGroup group = groupRepository.findByIdAndStudentId(groupId, requestingStudent.getId())
+                .orElseThrow(() -> new NotFoundException("Группа не найдена: " + groupId));
+        return group.getStudents().stream()
+                .map(s -> new UserSummary(s.getId(), s.getFirstName(), s.getLastName(), s.getEmail()))
+                .toList();
     }
 }

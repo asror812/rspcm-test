@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public interface ChatRepository extends JpaRepository<Chat, Long> {
     Optional<Chat> findByStudyGroupIdAndTypeAndTitle(Long studyGroupId, ChatType type, String title);
@@ -31,4 +32,11 @@ public interface ChatRepository extends JpaRepository<Chat, Long> {
             order by c.id desc
             """)
     List<Chat> findAllByMemberIdentifier(String name);
+
+    @Query("""
+            select c from Chat c
+            where c.type = org.example.rspcm.model.enums.ChatType.DIRECT
+              and (select count(cm) from ChatMember cm where cm.chat.id = c.id and cm.user.id in :userIds) = 2
+            """)
+    List<Chat> findDirectChatsBetween(Set<Long> userIds);
 }
