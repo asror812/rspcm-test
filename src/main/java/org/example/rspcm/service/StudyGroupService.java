@@ -40,6 +40,7 @@ public class StudyGroupService {
     private final UserRepository userRepository;
     private final SubjectRepository subjectRepository;
     private final GroupMapper groupMapper;
+    private final GroupChatSyncService groupChatSyncService;
 
     public Page<AdminGroupResponse> findAllForAdmin(Pageable pageable) {
         return groupRepository.findAllBy(pageable).map(groupMapper::toAdminResponse);
@@ -61,7 +62,9 @@ public class StudyGroupService {
                 resolveUsers(request.teacherIds()),
                 resolveUsers(request.studentIds())
         );
-        return groupRepository.save(group);
+        StudyGroup saved = groupRepository.save(group);
+        groupChatSyncService.syncForGroup(saved);
+        return saved;
     }
 
     public GroupResponse createResponse(GroupRequest request) {
@@ -71,7 +74,9 @@ public class StudyGroupService {
                 resolveUsers(request.teacherIds()),
                 resolveUsers(request.studentIds())
         );
-        return groupMapper.toResponse(groupRepository.save(group));
+        StudyGroup saved = groupRepository.save(group);
+        groupChatSyncService.syncForGroup(saved);
+        return groupMapper.toResponse(saved);
     }
 
     @Transactional
@@ -84,7 +89,9 @@ public class StudyGroupService {
                 resolveUsers(request.teacherIds()),
                 resolveUsers(request.studentIds())
         );
-        return groupMapper.toResponse(groupRepository.save(group));
+        StudyGroup saved = groupRepository.save(group);
+        groupChatSyncService.syncForGroup(saved);
+        return groupMapper.toResponse(saved);
     }
 
     @Transactional
@@ -127,7 +134,8 @@ public class StudyGroupService {
         }
 
         group.setStudents(students);
-        groupRepository.save(group);
+        StudyGroup saved = groupRepository.save(group);
+        groupChatSyncService.syncForGroup(saved);
         return Map.of("imported", imported, "skipped", skipped);
     }
 

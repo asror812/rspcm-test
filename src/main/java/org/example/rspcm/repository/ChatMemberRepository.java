@@ -7,10 +7,13 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 public interface ChatMemberRepository extends JpaRepository<ChatMember, Long> {
     boolean existsByChatIdAndUserId(Long chatId, Long userId);
+    void deleteByChatId(Long chatId);
     void deleteByChatIdAndRole(Long chatId, ChatMemberRole role);
+    void deleteByChatIdAndRoleAndUserIdNotIn(Long chatId, ChatMemberRole role, Set<Long> userIds);
 
     @Query("""
             select cm.chat.id, count(cm.id)

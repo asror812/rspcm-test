@@ -173,10 +173,16 @@ public class PracticeSubmissionService {
         if (!isTeacher(user)) {
             throw new ErrorMessageException("Нет доступа", ErrorCodes.Forbidden);
         }
-        Long subjectId = exam.getSubject() == null ? null : exam.getSubject().getId();
-        if (subjectId == null || !teacherProfileRepository.existsByUserIdAndTeachingSubjectsId(user.getId(), subjectId)) {
-            throw new ErrorMessageException("Вы можете управлять submissions только по закреплённым за вами предметам", ErrorCodes.Forbidden);
+        // Exam creator always has full access to their own exam's submissions
+        if (exam.getCreatedBy() != null && exam.getCreatedBy().getId().equals(user.getId())) {
+            return;
         }
+        // Fallback: teacher assigned to the exam's subject also has access
+        Long subjectId = exam.getSubject() == null ? null : exam.getSubject().getId();
+        if (subjectId != null && teacherProfileRepository.existsByUserIdAndTeachingSubjectsId(user.getId(), subjectId)) {
+            return;
+        }
+        throw new ErrorMessageException("Нет доступа к сдачам этого экзамена", ErrorCodes.Forbidden);
     }
 
     private boolean isAdmin(User user) {
