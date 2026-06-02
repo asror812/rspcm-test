@@ -25,6 +25,20 @@ public class ExamController {
 
     private final ExamService examService;
 
+    @GetMapping("/my")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<Page<ExamResponse>> getMyExams(
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false) ExamType type,
+            @RequestParam(required = false) Long subjectId,
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "50") int size,
+            @AuthenticationPrincipal User user
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(examService.findMyExams(user, query, type, subjectId, pageable));
+    }
+
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<Page<ExamResponse>> getAll(
