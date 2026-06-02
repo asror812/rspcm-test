@@ -56,9 +56,9 @@ public class SubjectService {
         return subjectMapper.toResponse(findById(id));
     }
 
-    public SubjectResponse createResponse(SubjectRequest request) {
+    public void createResponse(SubjectRequest request) {
         Subject subject = subjectMapper.toEntity(request, resolveUsers(request.teacherIds()));
-        return subjectMapper.toResponse(subjectRepository.save(subject));
+        subjectMapper.toResponse(subjectRepository.save(subject));
     }
 
     @Transactional
