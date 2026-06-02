@@ -61,6 +61,7 @@ public class Practice {
     @Column(nullable = false)
     private boolean schedulingRequired;
 
+    @Builder.Default
     private boolean deleted = false;
 
     @Builder.Default
