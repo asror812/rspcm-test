@@ -3,6 +3,7 @@ package org.example.rspcm.controller;
 import lombok.RequiredArgsConstructor;
 import jakarta.validation.Valid;
 import org.example.rspcm.dto.ChatMessageRequest;
+import org.example.rspcm.dto.chat.ChatMemberResponse;
 import org.example.rspcm.dto.chat.ChatMessageResponse;
 import org.example.rspcm.dto.chat.ChatSummaryResponse;
 import org.example.rspcm.service.ChatMessageService;
@@ -32,6 +33,25 @@ public class ChatController {
             Principal principal) {
         Long targetUserId = body.get("userId");
         return ResponseEntity.ok(chatMessageService.getOrCreateDirectChat(principal.getName(), targetUserId));
+    }
+
+    @GetMapping("/{chatId}/members")
+    public List<ChatMemberResponse> getChatMembers(@PathVariable Long chatId, Principal principal) {
+        return chatMessageService.getChatMembers(chatId, principal.getName());
+    }
+
+    @GetMapping("/{chatId}/available-members")
+    public List<ChatMemberResponse> getAvailableMembers(@PathVariable Long chatId, Principal principal) {
+        return chatMessageService.getAvailableMembers(chatId, principal.getName());
+    }
+
+    @PostMapping("/{chatId}/members")
+    public ResponseEntity<Void> addMember(
+            @PathVariable Long chatId,
+            @RequestBody Map<String, Long> body,
+            Principal principal) {
+        chatMessageService.addMemberToChat(chatId, body.get("userId"), principal.getName());
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/{chatId}/messages")

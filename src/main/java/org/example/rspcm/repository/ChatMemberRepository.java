@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public interface ChatMemberRepository extends JpaRepository<ChatMember, Long> {
@@ -14,6 +15,11 @@ public interface ChatMemberRepository extends JpaRepository<ChatMember, Long> {
     void deleteByChatId(Long chatId);
     void deleteByChatIdAndRole(Long chatId, ChatMemberRole role);
     void deleteByChatIdAndRoleAndUserIdNotIn(Long chatId, ChatMemberRole role, Set<Long> userIds);
+
+    Optional<ChatMember> findByChatIdAndUserId(Long chatId, Long userId);
+
+    @Query("select cm from ChatMember cm join fetch cm.user where cm.chat.id = :chatId")
+    List<ChatMember> findByChatId(Long chatId);
 
     @Query("""
             select cm.chat.id, count(cm.id)

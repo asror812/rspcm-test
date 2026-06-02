@@ -27,6 +27,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.example.rspcm.dto.chat.ChatMemberResponse;
+import org.example.rspcm.model.enums.ChatMemberRole;
+import org.example.rspcm.model.enums.ChatType;
+import org.example.rspcm.repository.StudyGroupRepository;
+
 @Service
 @RequiredArgsConstructor
 public class ChatMessageService {
@@ -39,6 +44,7 @@ public class ChatMessageService {
     private final ChatPresenceService chatPresenceService;
     private final FileStorageService fileStorageService;
     private final MessageService messageService;
+    private final StudyGroupRepository studyGroupRepository;
 
     @Transactional
     public ChatMessageResponse sendMessage(Long chatId, ChatMessageRequest request, String name) {
@@ -208,6 +214,86 @@ public class ChatMessageService {
         response.setMemberCount(2);
         response.setOnlineCount(0);
         return response;
+    }
+
+    @Transactional
+    public void addMemberToChat(Long chatId, Long userId, String principalName) {
+        Chat chat = chatRepository.findById(chatId)
+                .orElseThrow(() -> new NotFoundException("Chat not found: " + chatId));
+
+        if (chat.getType() != ChatType.SUBJECT_GROUP && chat.getType() != ChatType.TEACHER_GROUP) {
+            throw new ErrorMessageException(messageService.get("error.chat.no.access"), ErrorCodes.Forbidden);
+        }
+
+        User principal = userRepository.findByEmailAndEnabledTrueAndDeletedFalse(principalName)
+                .or(() -> userRepository.findByUniversityIdAndEnabledTrueAndDeletedFalse(principalName))
+                .orElseThrow(() -> new NotFoundException("User not found: " + principalName));
+
+        boolean isTeacher = chatMemberRepository.findByChatIdAndUserId(chatId, principal.getId())
+                .map(cm -> cm.getRole() == ChatMemberRole.TEACHER)
+                .orElse(false);
+        if (!isTeacher) {
+            throw new ErrorMessageException(messageService.get("error.chat.no.access"), ErrorCodes.Forbidden);
+        }
+
+        if (chatMemberRepository.existsByChatIdAndUserId(chatId, userId)) {
+            return; // already a member
+        }
+
+        User newMember = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found: " + userId));
+
+        ChatMember cm = new ChatMember();
+        cm.setChat(chat);
+        cm.setUser(newMember);
+        cm.setRole(ChatMemberRole.STUDENT);
+        chatMemberRepository.save(cm);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ChatMemberResponse> getAvailableMembers(Long chatId, String principalName) {
+        Chat chat = chatRepository.findById(chatId)
+                .orElseThrow(() -> new NotFoundException("Chat not found: " + chatId));
+
+        ensureChatMembership(chatId, principalName);
+
+        Set<Long> existingMemberIds = chatMemberRepository.findByChatId(chatId).stream()
+                .map(cm -> cm.getUser().getId())
+                .collect(Collectors.toSet());
+
+        if (chat.getStudyGroup() == null) return List.of();
+
+        var group = studyGroupRepository.findById(chat.getStudyGroup().getId())
+                .orElseThrow(() -> new NotFoundException("Group not found"));
+
+        java.util.stream.Stream<org.example.rspcm.model.entity.User> candidates;
+        if (chat.getType() == ChatType.TEACHER_GROUP) {
+            candidates = group.getTeachers().stream();
+        } else {
+            candidates = java.util.stream.Stream.concat(
+                    group.getStudents().stream(),
+                    group.getTeachers().stream()
+            ).distinct();
+        }
+
+        return candidates
+                .filter(u -> !existingMemberIds.contains(u.getId()))
+                .filter(u -> u.isEnabled() && !u.isDeleted())
+                .map(u -> new ChatMemberResponse(u.getId(), u.getFirstName(), u.getLastName(), "STUDENT"))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ChatMemberResponse> getChatMembers(Long chatId, String name) {
+        ensureChatMembership(chatId, name);
+        return chatMemberRepository.findByChatId(chatId).stream()
+                .map(cm -> new ChatMemberResponse(
+                        cm.getUser().getId(),
+                        cm.getUser().getFirstName(),
+                        cm.getUser().getLastName(),
+                        cm.getRole().name()
+                ))
+                .toList();
     }
 
     private void ensureChatMembership(Long chatId, String name) {
