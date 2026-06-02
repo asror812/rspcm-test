@@ -7,6 +7,7 @@ import org.example.rspcm.dto.group.GroupResponse;
 import org.example.rspcm.mapper.SummaryMapper;
 import org.example.rspcm.mapper.GroupMapper;
 import org.example.rspcm.model.entity.PracticeSubmission;
+import org.example.rspcm.model.entity.StudyGroup;
 import org.example.rspcm.model.entity.User;
 import org.example.rspcm.model.enums.PracticeSubmissionStatus;
 import org.example.rspcm.model.enums.RoleName;
@@ -72,7 +73,7 @@ public class AdminDashboardService {
     private AdminRecentReportResponse toRecentReportResponse(PracticeSubmission submission) {
         var exam = submission.getExamParticipation().getExam();
         List<String> groupNames = exam.getGroups().stream()
-                .map(group -> group.getName())
+                .map(StudyGroup::getName)
                 .sorted()
                 .collect(Collectors.toList());
 
