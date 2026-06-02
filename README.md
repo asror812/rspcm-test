@@ -40,6 +40,16 @@ Important env vars:
 
 Also configure datasource and mail settings in your active profile file (`application-local.yaml` for local development).
 
+Firebase credentials:
+
+- Local development:
+  - `app.firebase.credentials-path=src/main/resources/firebase-service-account.json`
+- Production:
+  - `app.firebase.credentials-path=/opt/backend/firebase-service-account.json`
+  - Expected layout:
+    - `/opt/backend/app.jar`
+    - `/opt/backend/firebase-service-account.json`
+
 ## File Upload Storage
 
 - Local development:

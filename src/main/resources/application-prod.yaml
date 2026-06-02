@@ -36,3 +36,5 @@ spring:
 
 app:
   upload-dir: /opt/backend/uploads
+  firebase:
+    credentials-path: /opt/backend/firebase-service-account.json
