@@ -1,34 +1,34 @@
 spring:
   datasource:
-    hikari:
-      maximum-pool-size: 5
-      minimum-idle: 1
-      connection-timeout: 30000
-      validation-timeout: 5000
-      max-lifetime: 1200000
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
 
-    #url: ${DB_URL:jdbc:postgresql://157.230.232.117:5432/db}
-    #url: jdbc:postgresql://localhost:5432/db
-    #username: username
-    #password: password
-    username: rspcm
-    password: qwerty3875671
-    url: jdbc:postgresql://68.183.79.219:5432/rspcm
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX_SIZE:5}
+      minimum-idle: ${DB_POOL_MIN_IDLE:1}
+      connection-timeout: ${DB_CONNECTION_TIMEOUT:30000}
+      validation-timeout: ${DB_VALIDATION_TIMEOUT:5000}
+      max-lifetime: ${DB_MAX_LIFETIME:1200000}
 
   jpa:
     hibernate:
-      ddl-auto: update
-
+      ddl-auto: ${JPA_DDL_AUTO:validate}
     properties:
       hibernate:
-        format_sql: true
-    open-in-view: true
+        format_sql: ${HIBERNATE_FORMAT_SQL:false}
+    open-in-view: ${JPA_OPEN_IN_VIEW:false}
+
+  flyway:
+    enabled: ${FLYWAY_ENABLED:true}
+    locations: ${FLYWAY_LOCATIONS:classpath:db/migration}
+    baseline-on-migrate: ${FLYWAY_BASELINE_ON_MIGRATE:false}
 
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:asror0812@gmail.com}
-    password: ${MAIL_PASSWORD:mknb upzz zcxw fnzw}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
 
     properties:
       mail:
@@ -38,6 +38,10 @@ spring:
             enable: true
 
 app:
-  upload-dir: /opt/backend/uploads
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration-minutes: ${JWT_EXPIRATION_MINUTES}
+  upload-dir: ${APP_UPLOAD_DIR:/opt/backend/uploads}
+
   firebase:
-    credentials-path: /opt/backend/firebase-service-account.json
+    credentials-path: ${FIREBASE_CREDENTIALS_PATH:/opt/backend/firebase-service-account.json}

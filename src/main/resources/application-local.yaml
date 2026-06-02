@@ -31,6 +31,9 @@ spring:
             enable: true
 
 app:
+  jwt:
+    secret: local-dev-jwt-secret-change-me
+    expiration-minutes: 120
   upload-dir: uploads
   firebase:
     credentials-path: src/main/resources/firebase-service-account.json
