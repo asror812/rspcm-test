@@ -18,5 +18,4 @@ public enum ErrorCodes {
 
     private final int statusCode;
     private final String name;
-
 }
