@@ -29,6 +29,15 @@ jobs:
       - name: Build executable JAR with Gradle
         run: ./gradlew clean bootJar -x test --no-daemon
 
+      - name: Check SSH secret exists
+        run: |
+          if [ -z "${{ secrets.SSH_PRIVATE_KEY }}" ]; then
+            echo "SSH_PRIVATE_KEY is empty"
+            exit 1
+          else
+            echo "SSH_PRIVATE_KEY exists"
+          fi
+
       - name: Clean backend folder on server
         uses: appleboy/ssh-action@v1.0.3
         with:
