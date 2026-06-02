@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.rspcm.model.entity.PracticeParticipationMember;
 import org.example.rspcm.model.entity.User;
+import org.example.rspcm.model.enums.NotificationType;
 import org.example.rspcm.repository.PracticeParticipationMemberRepository;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ public class PracticeNotificationScheduler {
 
     private final PracticeParticipationMemberRepository memberRepository;
     private final FcmService fcmService;
+    private final NotificationService notificationService;
 
     /**
      * Every day at 19:00 — remind students who haven't written today's logbook entry
@@ -47,7 +49,14 @@ public class PracticeNotificationScheduler {
                     ? "Не забудьте записать, что вы сделали сегодня по практике «" + practiceNames.get(0) + "»."
                     : "Не забудьте записать выполненную работу по " + practiceNames.size() + " практикам.";
 
-            fcmService.sendToUser(user, "Запишите в дневник практики", body);
+            String title = "Запишите в дневник практики";
+            fcmService.sendToUser(user, title, body);
+            try {
+                Long referenceId = entry.getValue().get(0).getPracticeParticipation().getId();
+                notificationService.create(user, title, body, NotificationType.PRACTICE_REMINDER, referenceId);
+            } catch (Exception e) {
+                log.warn("Failed to persist logbook reminder notification for user {}", user.getId(), e);
+            }
         }
 
         log.info("Logbook reminders sent to {} students", byUser.size());
@@ -78,7 +87,14 @@ public class PracticeNotificationScheduler {
                     ? "До сдачи практики по экзамену «" + examTitles.get(0) + "» осталось 3 дня."
                     : "Через 3 дня заканчивается срок сдачи по " + examTitles.size() + " экзаменам.";
 
-            fcmService.sendToUser(user, "Срок сдачи через 3 дня", body);
+            String title = "Срок сдачи через 3 дня";
+            fcmService.sendToUser(user, title, body);
+            try {
+                Long referenceId = entry.getValue().get(0).getPracticeParticipation().getId();
+                notificationService.create(user, title, body, NotificationType.DEADLINE_REMINDER, referenceId);
+            } catch (Exception e) {
+                log.warn("Failed to persist deadline reminder notification for user {}", user.getId(), e);
+            }
         }
 
         log.info("Deadline reminders sent to {} students", byUser.size());

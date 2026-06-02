@@ -15,6 +15,7 @@ import org.example.rspcm.model.entity.PracticeSubmission;
 import org.example.rspcm.model.entity.User;
 import org.example.rspcm.model.enums.ExamType;
 import org.example.rspcm.model.enums.ExamStatus;
+import org.example.rspcm.model.enums.NotificationType;
 import org.example.rspcm.model.enums.PracticeMemberRole;
 import org.example.rspcm.model.enums.PracticeParticipationMemberStatus;
 import org.example.rspcm.model.enums.PracticeParticipationStatus;
@@ -51,6 +52,8 @@ public class PracticeParticipationService {
     private final SummaryMapper summaryMapper;
     private final ExamRepository examRepository;
     private final PracticeSubmissionRepository submissionRepository;
+    private final NotificationService notificationService;
+    private final FcmService fcmService;
 
     private void checkPracticeExam(Exam exam) {
         if (exam.getType() != ExamType.PRACTICE) {
@@ -150,6 +153,16 @@ public class PracticeParticipationService {
             }
         }
 
+        String practiceName = participation.getExamPractice() != null
+                ? participation.getExamPractice().getPractice().getName()
+                : "практики";
+        String inviterName = participation.getMembers().stream()
+                .filter(m -> m.getRole() == PracticeMemberRole.LEADER
+                        && m.getStatus() == PracticeParticipationMemberStatus.ACCEPTED)
+                .findFirst()
+                .map(m -> m.getUser().getFirstName() + " " + m.getUser().getLastName())
+                .orElse("Студент");
+
         for (Long studentId : studentIds) {
             User invitee = userRepository.findById(studentId)
                     .orElseThrow(() -> new NotFoundException("Пользователь не найден: " + studentId));
@@ -160,6 +173,15 @@ public class PracticeParticipationService {
             member.setRole(PracticeMemberRole.MEMBER);
             member.setStatus(PracticeParticipationMemberStatus.INVITED);
             participationMemberRepository.save(member);
+
+            // Persist + push notification for the invited student
+            try {
+                String title = "Приглашение в команду";
+                String body = inviterName + " приглашает вас в практику «" + practiceName + "»";
+                notificationService.create(invitee, title, body,
+                        NotificationType.TEAM_INVITATION, participation.getId());
+                fcmService.sendToUser(invitee, title, body);
+            } catch (Exception ignored) {}
         }
 
         participation.setStatus(PracticeParticipationStatus.WAITING_MEMBERS);

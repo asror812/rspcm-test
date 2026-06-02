@@ -12,6 +12,7 @@ import org.example.rspcm.model.entity.Exam;
 import org.example.rspcm.model.entity.PracticeParticipation;
 import org.example.rspcm.model.entity.PracticeSubmission;
 import org.example.rspcm.model.entity.User;
+import org.example.rspcm.model.enums.NotificationType;
 import org.example.rspcm.model.enums.PracticeMemberRole;
 import org.example.rspcm.model.enums.PracticeParticipationMemberStatus;
 import org.example.rspcm.model.enums.PracticeParticipationStatus;
@@ -41,6 +42,7 @@ public class PracticeSubmissionService {
     private final ExamRepository examRepository;
     private final SummaryMapper summaryMapper;
     private final FcmService fcmService;
+    private final NotificationService notificationService;
 
     public PracticeSubmissionResponse getByParticipation(Long participationId, User user) {
         PracticeParticipation participation = findParticipation(participationId);
@@ -86,7 +88,12 @@ public class PracticeSubmissionService {
         submission.setSubmittedAt(LocalDateTime.now());
         submission.setStatus(PracticeSubmissionStatus.SUBMITTED);
 
-        return toResponse(submissionRepository.save(submission));
+        PracticeSubmission saved = submissionRepository.save(submission);
+
+        // Notify the exam creator (teacher) that a submission arrived
+        notifyExamCreator(saved);
+
+        return toResponse(saved);
     }
 
     @Transactional
@@ -100,11 +107,14 @@ public class PracticeSubmissionService {
 
         submission.setStatus(PracticeSubmissionStatus.GRADED);
         submission.setTeacherComment(request.teacherComment());
-        PracticeSubmissionResponse result = toResponse(submissionRepository.save(submission));
+        PracticeSubmission saved = submissionRepository.save(submission);
 
-        notifyParticipationMembers(submission, "Практика проверена",
-                "Ваша работа по практике «" + getPracticeName(submission) + "» оценена преподавателем.");
-        return result;
+        String practiceName = getPracticeName(saved);
+        notifyParticipationMembers(saved, "Практика проверена",
+                "Ваша работа по практике «" + practiceName + "» оценена преподавателем.",
+                NotificationType.SUBMISSION_GRADED, saved.getId());
+
+        return toResponse(saved);
     }
 
     @Transactional
@@ -118,11 +128,14 @@ public class PracticeSubmissionService {
 
         submission.setStatus(PracticeSubmissionStatus.RETURNED);
         submission.setTeacherComment(request.teacherComment());
-        PracticeSubmissionResponse result = toResponse(submissionRepository.save(submission));
+        PracticeSubmission saved = submissionRepository.save(submission);
 
-        notifyParticipationMembers(submission, "Практика возвращена на доработку",
-                "Ваша работа по практике «" + getPracticeName(submission) + "» возвращена. Проверьте комментарий преподавателя.");
-        return result;
+        String practiceName = getPracticeName(saved);
+        notifyParticipationMembers(saved, "Практика возвращена на доработку",
+                "Ваша работа по практике «" + practiceName + "» возвращена. Проверьте комментарий.",
+                NotificationType.SUBMISSION_RETURNED, saved.getId());
+
+        return toResponse(saved);
     }
 
     private PracticeParticipation findParticipation(Long participationId) {
@@ -193,7 +206,8 @@ public class PracticeSubmissionService {
         return user.getRoles().stream().anyMatch(role -> role.getRoleName() == RoleName.ROLE_TEACHER);
     }
 
-    private void notifyParticipationMembers(PracticeSubmission submission, String title, String body) {
+    private void notifyParticipationMembers(PracticeSubmission submission, String title, String body,
+                                             NotificationType type, Long referenceId) {
         try {
             List<User> members = participationMemberRepository
                     .findByPracticeParticipationId(submission.getExamParticipation().getId())
@@ -202,6 +216,26 @@ public class PracticeSubmissionService {
                     .map(org.example.rspcm.model.entity.PracticeParticipationMember::getUser)
                     .toList();
             fcmService.sendToUsers(members, title, body);
+            for (User member : members) {
+                notificationService.create(member, title, body, type, referenceId);
+            }
+        } catch (Exception e) {
+            // notification failure must never break the main flow
+        }
+    }
+
+    private void notifyExamCreator(PracticeSubmission submission) {
+        try {
+            User creator = submission.getExamParticipation().getExam().getCreatedBy();
+            if (creator == null) return;
+            String practiceName = getPracticeName(submission);
+            String studentName = submission.getStudent().getFirstName()
+                    + " " + submission.getStudent().getLastName();
+            String title = "Новая сдача работы";
+            String body = studentName + " сдал(а) работу по практике «" + practiceName + "»";
+            fcmService.sendToUser(creator, title, body);
+            notificationService.create(creator, title, body,
+                    NotificationType.SUBMISSION_RECEIVED, submission.getId());
         } catch (Exception e) {
             // notification failure must never break the main flow
         }

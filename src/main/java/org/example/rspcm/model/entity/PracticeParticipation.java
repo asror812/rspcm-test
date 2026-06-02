@@ -8,6 +8,7 @@ import lombok.Setter;
 import org.example.rspcm.model.enums.PracticeParticipationStatus;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @AllArgsConstructor
@@ -38,4 +39,7 @@ public class PracticeParticipation {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PracticeParticipationStatus status;
+
+    @OneToMany(mappedBy = "practiceParticipation", fetch = FetchType.LAZY)
+    private List<PracticeParticipationMember> members;
 }
