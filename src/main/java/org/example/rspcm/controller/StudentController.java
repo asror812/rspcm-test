@@ -3,6 +3,7 @@ package org.example.rspcm.controller;
 import lombok.RequiredArgsConstructor;
 import org.example.rspcm.dto.exam.ExamResponse;
 import org.example.rspcm.dto.exam.ExamPracticeResponse;
+import org.example.rspcm.dto.exam.StudentExamListResponse;
 import org.example.rspcm.dto.exam.student.StudentExamAnswerRequest;
 import org.example.rspcm.dto.exam.student.StudentExamAttemptResponse;
 import org.example.rspcm.dto.exam.student.StudentExamQuestionResponse;
@@ -46,7 +47,7 @@ public class StudentController {
 
     @GetMapping("/my")
     @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<Page<ExamResponse>> getMyExams(
+    public ResponseEntity<Page<StudentExamListResponse>> getMyExams(
             @RequestParam(required = false) String query,
             @RequestParam(required = false) ExamType type,
             @RequestParam(required = false) Long subjectId,

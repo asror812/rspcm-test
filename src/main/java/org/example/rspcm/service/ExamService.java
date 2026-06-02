@@ -3,6 +3,7 @@ package org.example.rspcm.service;
 import lombok.RequiredArgsConstructor;
 import org.example.rspcm.dto.exam.ExamRequest;
 import org.example.rspcm.dto.exam.ExamResponse;
+import org.example.rspcm.dto.exam.StudentExamListResponse;
 import org.example.rspcm.exception.ErrorCodes;
 import org.example.rspcm.exception.ErrorMessageException;
 import org.example.rspcm.exception.NotFoundException;
@@ -11,11 +12,15 @@ import org.example.rspcm.model.entity.Exam;
 import org.example.rspcm.model.entity.StudyGroup;
 import org.example.rspcm.model.entity.Subject;
 import org.example.rspcm.model.entity.User;
+import org.example.rspcm.model.enums.ExamAttemptStatus;
 import org.example.rspcm.model.enums.ExamStatus;
 import org.example.rspcm.model.enums.ExamType;
 import org.example.rspcm.model.enums.RoleName;
+import org.example.rspcm.repository.ExamAttemptRepository;
 import org.example.rspcm.repository.ExamQuestionRepository;
 import org.example.rspcm.repository.ExamRepository;
+import org.example.rspcm.repository.PracticeParticipationRepository;
+import org.example.rspcm.repository.PracticeSubmissionRepository;
 import org.example.rspcm.repository.StudyGroupRepository;
 import org.example.rspcm.repository.SubjectRepository;
 import org.example.rspcm.repository.UserRepository;
@@ -40,6 +45,9 @@ public class ExamService {
     private final UserRepository userRepository;
     private final ExamMapper examMapper;
     private final ExamQuestionRepository examQuestionRepository;
+    private final ExamAttemptRepository examAttemptRepository;
+    private final PracticeSubmissionRepository practiceSubmissionRepository;
+    private final PracticeParticipationRepository practiceParticipationRepository;
 
     @Transactional(readOnly = true)
     public Page<ExamResponse> findAll(
@@ -61,7 +69,7 @@ public class ExamService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ExamResponse> findMyExams(
+    public Page<StudentExamListResponse> findMyExams(
             User user,
             String query,
             ExamType examType,
@@ -73,7 +81,34 @@ public class ExamService {
         }
         return examRepository.findStudentExams(user.getId(), examType, subjectId, query, pageable)
                 .map(examMapper::toResponse)
-                .map(this::sanitizeStudentExamResponse);
+                .map(this::sanitizeStudentExamResponse)
+                .map(r -> StudentExamListResponse.from(r, computeMyStatus(r, user.getId())));
+    }
+
+    private String computeMyStatus(ExamResponse exam, Long studentId) {
+        if (exam.type() == ExamType.QUESTION) {
+            return examAttemptRepository.findByExamIdAndStudentId(exam.id(), studentId)
+                    .map(attempt -> switch (attempt.getStatus()) {
+                        case STARTED -> "IN_PROGRESS";
+                        case SUBMITTED -> "SUBMITTED";
+                        case GRADED -> "GRADED";
+                        default -> "NOT_STARTED";
+                    })
+                    .orElse("NOT_STARTED");
+        } else {
+            // PRACTICE exam
+            return practiceSubmissionRepository.findByExamParticipationExamIdAndStudentId(exam.id(), studentId)
+                    .map(sub -> switch (sub.getStatus()) {
+                        case SUBMITTED -> "SUBMITTED";
+                        case RETURNED -> "RETURNED";
+                        case GRADED -> "GRADED";
+                        default -> "NOT_STARTED";
+                    })
+                    .orElseGet(() -> practiceParticipationRepository
+                            .findByExamIdAndMembersUserId(exam.id(), studentId)
+                            .map(p -> "IN_PROGRESS")
+                            .orElse("NOT_STARTED"));
+        }
     }
 
     @Transactional(readOnly = true)

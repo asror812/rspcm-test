@@ -19,4 +19,6 @@ public interface PracticeParticipationRepository extends JpaRepository<PracticeP
     Page<PracticeParticipation> findByExamIdAndStatus(Long examId, PracticeParticipationStatus status, Pageable pageable);
 
     Optional<PracticeParticipation> findByExamIdAndExamPracticeIsNotNull(Long examId);
+
+    Optional<PracticeParticipation> findByExamIdAndMembersUserId(Long examId, Long userId);
 }

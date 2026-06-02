@@ -23,6 +23,8 @@ public interface PracticeSubmissionRepository extends JpaRepository<PracticeSubm
 
     long countByStatus(PracticeSubmissionStatus status);
 
+    Optional<PracticeSubmission> findByExamParticipationExamIdAndStudentId(Long examId, Long studentId);
+
     @EntityGraph(attributePaths = {"examParticipation", "examParticipation.exam", "examParticipation.examPractice", "examParticipation.examPractice.practice", "student"})
     Page<PracticeSubmission> findBySubmittedAtIsNotNullOrderBySubmittedAtDesc(Pageable pageable);
 }
