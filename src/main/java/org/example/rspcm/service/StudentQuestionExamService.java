@@ -15,6 +15,7 @@ import org.example.rspcm.model.entity.*;
 import org.example.rspcm.model.enums.ExamAttemptStatus;
 import org.example.rspcm.model.enums.ExamStatus;
 import org.example.rspcm.model.enums.ExamType;
+import org.example.rspcm.model.enums.QuestionType;
 import org.example.rspcm.model.enums.RoleName;
 import org.example.rspcm.repository.AnswerRepository;
 import org.example.rspcm.repository.ExamAttemptRepository;
@@ -157,9 +158,48 @@ public class StudentQuestionExamService {
         if (attempt.getStatus() != ExamAttemptStatus.STARTED) {
             throw new ErrorMessageException("Экзамен уже сдан", ErrorCodes.AlreadyExists);
         }
-        attempt.setStatus(ExamAttemptStatus.SUBMITTED);
         attempt.setSubmittedAt(LocalDateTime.now());
+
+        List<ExamQuestion> questions = examQuestionRepository.findByExamId(examId);
+        List<StudentAnswer> answers = answerRepository.findByStudentIdAndExamQuestionExamId(user.getId(), examId);
+
+        // Auto-grade CLOSED and MULTIPLE_CHOICE questions
+        for (ExamQuestion eq : questions) {
+            QuestionType type = eq.getQuestion().getType();
+            if (type == QuestionType.CLOSED || type == QuestionType.MULTIPLE_CHOICE) {
+                answers.stream()
+                        .filter(a -> a.getExamQuestion().getId().equals(eq.getId()))
+                        .findFirst()
+                        .ifPresent(a -> {
+                            autoGrade(a, eq);
+                            answerRepository.save(a);
+                        });
+            }
+        }
+
+        // If no OPEN questions — mark attempt as GRADED immediately
+        boolean hasOpenQuestions = questions.stream()
+                .anyMatch(eq -> eq.getQuestion().getType() == QuestionType.OPEN);
+        attempt.setStatus(hasOpenQuestions ? ExamAttemptStatus.SUBMITTED : ExamAttemptStatus.GRADED);
+
         return toAttemptResponse(examAttemptRepository.save(attempt));
+    }
+
+    private void autoGrade(StudentAnswer answer, ExamQuestion examQuestion) {
+        List<Long> correctOptionIds = examQuestion.getQuestion().getOptions().stream()
+                .filter(QuestionOption::isCorrect)
+                .map(QuestionOption::getId)
+                .sorted()
+                .toList();
+
+        List<Long> selectedIds = answer.getSelectedOptions().stream()
+                .map(link -> link.getQuestionOption().getId())
+                .sorted()
+                .toList();
+
+        boolean isCorrect = correctOptionIds.equals(selectedIds);
+        answer.setCorrect(isCorrect);
+        answer.setScore(isCorrect ? examQuestion.getScore() : 0);
     }
 
     private StudentExamQuestionResponse toQuestionResponse(ExamQuestion examQuestion, List<StudentAnswer> answers) {
@@ -262,6 +302,16 @@ public class StudentQuestionExamService {
     private StudentExamAttemptResponse toAttemptResponse(ExamAttempt attempt) {
         LocalDateTime deadline = resolveAttemptDeadline(attempt);
         long remainingSeconds = deadline == null ? Long.MAX_VALUE : java.time.Duration.between(LocalDateTime.now(), deadline).getSeconds();
+
+        Integer totalScore = null;
+        if (attempt.getStatus() == ExamAttemptStatus.GRADED) {
+            totalScore = answerRepository
+                    .findByStudentIdAndExamQuestionExamId(attempt.getStudent().getId(), attempt.getExam().getId())
+                    .stream()
+                    .mapToInt(a -> a.getScore() == null ? 0 : a.getScore())
+                    .sum();
+        }
+
         return new StudentExamAttemptResponse(
                 attempt.getExam().getId(),
                 attempt.getStudent().getId(),
@@ -269,7 +319,8 @@ public class StudentQuestionExamService {
                 attempt.getStartedAt(),
                 attempt.getSubmittedAt(),
                 deadline,
-                Math.max(0L, remainingSeconds)
+                Math.max(0L, remainingSeconds),
+                totalScore
         );
     }
 }

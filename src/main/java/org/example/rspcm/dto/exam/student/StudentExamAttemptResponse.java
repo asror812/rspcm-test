@@ -11,6 +11,7 @@ public record StudentExamAttemptResponse(
         LocalDateTime startedAt,
         LocalDateTime submittedAt,
         LocalDateTime attemptDeadlineAt,
-        Long remainingSeconds
+        Long remainingSeconds,
+        Integer totalScore
 ) {
 }

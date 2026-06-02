@@ -7,10 +7,13 @@ import org.example.rspcm.exception.ErrorCodes;
 import org.example.rspcm.exception.ErrorMessageException;
 import org.example.rspcm.exception.NotFoundException;
 import org.example.rspcm.model.entity.*;
+import org.example.rspcm.model.enums.ExamAttemptStatus;
 import org.example.rspcm.model.enums.ExamType;
+import org.example.rspcm.model.enums.QuestionType;
 import org.example.rspcm.model.enums.RoleName;
 import org.example.rspcm.mapper.AnswerMapper;
 import org.example.rspcm.repository.AnswerRepository;
+import org.example.rspcm.repository.ExamAttemptRepository;
 import org.example.rspcm.repository.ExamQuestionRepository;
 import org.example.rspcm.repository.QuestionOptionRepository;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +31,7 @@ public class AnswerService {
 
     private final AnswerRepository answerRepository;
     private final ExamQuestionRepository examQuestionRepository;
+    private final ExamAttemptRepository examAttemptRepository;
     private final QuestionOptionRepository questionOptionRepository;
     private final AnswerMapper answerMapper;
 
@@ -87,10 +91,44 @@ public class AnswerService {
         return answerMapper.toResponse(answerRepository.save(answer));
     }
 
+    @Transactional
     public AnswerResponse scoreResponse(Long id, AnswerScoreRequest request) {
         StudentAnswer answer = findById(id);
         answerMapper.applyScore(answer, request);
-        return answerMapper.toResponse(answerRepository.save(answer));
+        StudentAnswer saved = answerRepository.save(answer);
+
+        tryFinalizeAttempt(saved);
+
+        return answerMapper.toResponse(saved);
+    }
+
+    /**
+     * After a teacher grades an OPEN answer, check whether all OPEN questions
+     * in the same exam attempt are now graded. If so, transition the attempt to GRADED.
+     */
+    private void tryFinalizeAttempt(StudentAnswer gradedAnswer) {
+        Exam exam = gradedAnswer.getExamQuestion().getExam();
+        User student = gradedAnswer.getStudent();
+
+        examAttemptRepository.findByExamIdAndStudentId(exam.getId(), student.getId())
+                .filter(a -> a.getStatus() == ExamAttemptStatus.SUBMITTED)
+                .ifPresent(attempt -> {
+                    List<ExamQuestion> openQuestions = examQuestionRepository.findByExamId(exam.getId())
+                            .stream()
+                            .filter(eq -> eq.getQuestion().getType() == QuestionType.OPEN)
+                            .toList();
+
+                    boolean allGraded = openQuestions.stream().allMatch(eq ->
+                            answerRepository.findByStudentIdAndExamQuestionId(student.getId(), eq.getId())
+                                    .map(a -> a.getScore() != null)
+                                    .orElse(false)
+                    );
+
+                    if (allGraded) {
+                        attempt.setStatus(ExamAttemptStatus.GRADED);
+                        examAttemptRepository.save(attempt);
+                    }
+                });
     }
 
     @Transactional
