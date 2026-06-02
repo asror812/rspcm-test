@@ -61,6 +61,7 @@ public class PracticeParticipationService {
         }
     }
 
+    @Transactional(readOnly = true)
     public Page<PracticeParticipationResponse> findAll(
             Long examId,
             PracticeParticipationStatus status,
@@ -79,6 +80,7 @@ public class PracticeParticipationService {
                 .map(this::toResponse);
     }
 
+    @Transactional(readOnly = true)
     public PracticeParticipationResponse findById(Long id, User user) {
         PracticeParticipation participation = findEntityById(id);
         validateAccess(user, participation.getExam());
@@ -246,6 +248,7 @@ public class PracticeParticipationService {
         return toResponse(practiceParticipationRepository.save(participation));
     }
 
+    @Transactional(readOnly = true)
     public MyPracticeParticipationResponse getMyParticipationByExam(Long examId, User user) {
         if (!isStudent(user)) {
             throw new ErrorMessageException("Нет доступа", ErrorCodes.Forbidden);
@@ -267,6 +270,7 @@ public class PracticeParticipationService {
         return toMyParticipationResponse(member.getPracticeParticipation());
     }
 
+    @Transactional(readOnly = true)
     public List<MyPracticeParticipationResponse> getMyParticipations(User user) {
         if (!isStudent(user)) {
             throw new ErrorMessageException("Нет доступа", ErrorCodes.Forbidden);
@@ -286,6 +290,7 @@ public class PracticeParticipationService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<MyTeamInvitationResponse> getMyTeamInvitations(User user) {
         if (!isStudent(user)) {
             throw new ErrorMessageException("Нет доступа", ErrorCodes.Forbidden);
@@ -299,6 +304,7 @@ public class PracticeParticipationService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<UserSummary> getAvailableStudentsForInvite(Long participationId, User user) {
         PracticeParticipation participation = findEntityById(participationId);
         requireLeader(user, participation);
