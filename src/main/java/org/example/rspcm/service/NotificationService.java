@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class NotificationService {
 
     private final NotificationRepository repository;
+    private final MessageService messageService;
 
     // ── Read ──────────────────────────────────────────────────────────────────
 
@@ -41,7 +42,7 @@ public class NotificationService {
         Notification n = repository.findById(notificationId)
                 .orElseThrow(() -> new NotFoundException("Уведомление не найдено: " + notificationId));
         if (!n.getRecipient().getId().equals(user.getId())) {
-            throw new ErrorMessageException("Нет доступа", ErrorCodes.Forbidden);
+            throw new ErrorMessageException(messageService.get("error.no.access"), ErrorCodes.Forbidden);
         }
         n.setRead(true);
         return toResponse(repository.save(n));

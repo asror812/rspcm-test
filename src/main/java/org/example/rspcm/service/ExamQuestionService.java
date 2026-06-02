@@ -29,12 +29,13 @@ public class ExamQuestionService {
     private final QuestionRepository questionRepository;
     private final ExamQuestionMapper examQuestionMapper;
     private final TeacherProfileRepository teacherProfileRepository;
+    private final MessageService messageService;
 
     public ExamQuestionResponse create(ExamQuestionRequest request, User user) {
         validateRequest(request);
 
         var exam = examRepository.findById(request.examId())
-                .orElseThrow(() -> new NotFoundException("Экзамен не найден: " + request.examId()));
+                .orElseThrow(() -> new NotFoundException(messageService.get("error.exam.not.found", request.examId())));
 
         checkForDuplicate(exam, request.questionId());
         validateQuestionCapacityAndScoreForCreate(exam, request.score());
@@ -43,7 +44,7 @@ public class ExamQuestionService {
 
         if (exam.getQuestions().stream()
                 .anyMatch(eq -> eq.getOrderIndex().equals(request.orderIndex()))) {
-            throw new ErrorMessageException("Этот orderIndex уже существует в экзамене", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.order.index.exists"), ErrorCodes.BadRequest);
         }
 
         ExamQuestion examQuestion = examQuestionMapper.toEntity(
@@ -60,7 +61,7 @@ public class ExamQuestionService {
     @Transactional(readOnly = true)
     public Page<ExamQuestionResponse> findAll(Long examId, Long subjectId, boolean own, User user, Pageable pageable) {
         var exam = examRepository.findById(examId)
-                .orElseThrow(() -> new NotFoundException("Экзамен не найден: " + examId));
+                .orElseThrow(() -> new NotFoundException(messageService.get("error.exam.not.found", examId)));
 
         validateTeacherAccess(user, exam);
 
@@ -98,7 +99,7 @@ public class ExamQuestionService {
 
     @Transactional
     public void delete(Long id, User user) {
-        ExamQuestion examQuestion = examQuestionRepository.findById(id).orElseThrow(() -> new NotFoundException("Экзамен не найден: " + id));
+        ExamQuestion examQuestion = examQuestionRepository.findById(id).orElseThrow(() -> new NotFoundException(messageService.get("error.exam.not.found", id)));
 
         validateTeacherAccess(user, examQuestion.getExam());
         examQuestionRepository.delete(findById(id));
@@ -106,20 +107,20 @@ public class ExamQuestionService {
 
     private void validateRequest(ExamQuestionRequest request) {
         if (request.orderIndex() <= 0) {
-            throw new ErrorMessageException("orderIndex должен быть больше 0", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.order.index.positive"), ErrorCodes.BadRequest);
         }
     }
 
     private Exam validateExamTypeForQuestion(Long examId) {
         var exam = examRepository.findById(examId)
-                .orElseThrow(() -> new NotFoundException("Экзамен не найден: " + examId));
+                .orElseThrow(() -> new NotFoundException(messageService.get("error.exam.not.found", examId)));
 
         if (exam.getStatus() != ExamStatus.DRAFT) {
-            throw new ErrorMessageException("Экзамен можно обновлять только в статусе DRAFT", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.exam.not.draft"), ErrorCodes.BadRequest);
         }
 
         if (exam.getType() != ExamType.QUESTION) {
-            throw new ErrorMessageException("Вопросы можно добавлять только в экзамен типа QUESTION", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.question.exam.type"), ErrorCodes.BadRequest);
         }
 
         return exam;
@@ -128,7 +129,7 @@ public class ExamQuestionService {
     private void checkForDuplicate(Exam exam, Long questionId) {
         boolean exists = examQuestionRepository.existsByExamIdAndQuestionId(exam.getId(), questionId);
         if (exists) {
-            throw new ErrorMessageException("Этот вопрос уже добавлен в экзамен", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.question.already.in.exam"), ErrorCodes.BadRequest);
         }
     }
 
@@ -136,7 +137,7 @@ public class ExamQuestionService {
         long currentCount = examQuestionRepository.countByExamId(exam.getId());
 
         if (exam.getTaskLimit() != null && currentCount >= exam.getTaskLimit()) {
-            throw new ErrorMessageException("В этом экзамене уже достаточно вопросов", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.exam.enough.questions"), ErrorCodes.BadRequest);
         }
 
         Integer currentTotalScore = examQuestionRepository.sumScoreByExamId(exam.getId());
@@ -151,7 +152,7 @@ public class ExamQuestionService {
     private void validateQuestionCapacityForUpdate(Long examId, Integer limit, Long examQuestionId) {
         long currentCount = examQuestionRepository.countByExamIdAndIdNot(examId, examQuestionId);
         if (limit != null && currentCount >= limit) {
-            throw new ErrorMessageException("В этом экзамене уже достаточно вопросов", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.exam.enough.questions"), ErrorCodes.BadRequest);
         }
     }
 
@@ -159,15 +160,15 @@ public class ExamQuestionService {
         if (isAdmin(user)) return;
 
         if (!isTeacher(user))
-            throw new ErrorMessageException("Недопустимое действие", ErrorCodes.Forbidden);
+            throw new ErrorMessageException(messageService.get("error.forbidden"), ErrorCodes.Forbidden);
 
         if (exam.getSubject() == null) {
-            throw new ErrorMessageException("К экзамену не привязан предмет", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.exam.no.subject"), ErrorCodes.BadRequest);
         }
 
         boolean teaches = teacherProfileRepository.existsByUserIdAndTeachingSubjectsId(user.getId(), exam.getSubject().getId());
         if (!teaches) {
-            throw new ErrorMessageException("Вы можете управлять экзаменами только по закреплённым за вами предметам", ErrorCodes.Forbidden);
+            throw new ErrorMessageException(messageService.get("error.exam.access.denied"), ErrorCodes.Forbidden);
         }
     }
 

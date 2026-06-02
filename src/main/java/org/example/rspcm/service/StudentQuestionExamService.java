@@ -39,6 +39,7 @@ public class StudentQuestionExamService {
     private final AnswerRepository answerRepository;
     private final QuestionOptionRepository questionOptionRepository;
     private final AnswerMapper answerMapper;
+    private final MessageService messageService;
 
     @Transactional
     public StudentExamAttemptResponse startAttempt(Long examId, User user) {
@@ -53,11 +54,11 @@ public class StudentQuestionExamService {
                         .build());
 
         if (attempt.getStatus() == ExamAttemptStatus.SUBMITTED || attempt.getStatus() == ExamAttemptStatus.GRADED) {
-            throw new ErrorMessageException("Экзамен уже сдан", ErrorCodes.AlreadyExists);
+            throw new ErrorMessageException(messageService.get("error.exam.already.submitted"), ErrorCodes.AlreadyExists);
         }
 
         if (isExpired(exam)) {
-            throw new ErrorMessageException("Срок экзамена истёк", ErrorCodes.InvalidParams);
+            throw new ErrorMessageException(messageService.get("error.exam.deadline.passed"), ErrorCodes.InvalidParams);
         }
 
         if (attempt.getId() == null) {
@@ -86,11 +87,11 @@ public class StudentQuestionExamService {
         ExamAttempt attempt = requireStartedAttempt(examId, user.getId());
 
         if (attempt.getStatus() != ExamAttemptStatus.STARTED) {
-            throw new ErrorMessageException("Экзамен сдан", ErrorCodes.InvalidParams);
+            throw new ErrorMessageException(messageService.get("error.exam.already.submitted"), ErrorCodes.InvalidParams);
         }
         if (isAttemptExpired(attempt)) {
             finalizeAttempt(attempt);
-            throw new ErrorMessageException("Время экзамена истекло. Попытка отправлена автоматически", ErrorCodes.InvalidParams);
+            throw new ErrorMessageException(messageService.get("error.exam.time.expired.auto"), ErrorCodes.InvalidParams);
         }
 
         List<StudentAnswer> answers = answerRepository.findByStudentIdAndExamQuestionExamId(user.getId(), examId);
@@ -106,21 +107,21 @@ public class StudentQuestionExamService {
         resolvePublishedQuestionExam(examId, user);
         ExamAttempt attempt = requireStartedAttempt(examId, user.getId());
         if (attempt.getStatus() != ExamAttemptStatus.STARTED) {
-            throw new ErrorMessageException("Экзамен сдан", ErrorCodes.InvalidParams);
+            throw new ErrorMessageException(messageService.get("error.exam.already.submitted"), ErrorCodes.InvalidParams);
         }
         if (isAttemptExpired(attempt)) {
             finalizeAttempt(attempt);
-            throw new ErrorMessageException("Время экзамена истекло. Попытка отправлена автоматически", ErrorCodes.InvalidParams);
+            throw new ErrorMessageException(messageService.get("error.exam.time.expired.auto"), ErrorCodes.InvalidParams);
         }
 
         if (isExpired(attempt.getExam())) {
-            throw new ErrorMessageException("Срок экзамена истёк", ErrorCodes.InvalidParams);
+            throw new ErrorMessageException(messageService.get("error.exam.deadline.passed"), ErrorCodes.InvalidParams);
         }
 
         ExamQuestion examQuestion = examQuestionRepository.findById(examQuestionId)
                 .orElseThrow(() -> new NotFoundException("Вопрос экзамена не найден: " + examQuestionId));
         if (!examQuestion.getExam().getId().equals(examId)) {
-            throw new ErrorMessageException("Вопрос не относится к этому экзамену", ErrorCodes.InvalidParams);
+            throw new ErrorMessageException(messageService.get("error.question.not.for.exam"), ErrorCodes.InvalidParams);
         }
 
         AnswerRequest answerRequest = new AnswerRequest(examQuestionId, request.textAnswer(), request.selectedOptionIds());
@@ -147,7 +148,7 @@ public class StudentQuestionExamService {
         }
         List<QuestionOption> options = questionOptionRepository.findAllById(optionIds);
         if (options.size() != optionIds.size()) {
-            throw new NotFoundException("Некоторые варианты ответа не найдены");
+            throw new NotFoundException(messageService.get("error.answer.options.not.found"));
         }
         answerMapper.applySelectedOptions(answer, options);
     }
@@ -156,7 +157,7 @@ public class StudentQuestionExamService {
     public StudentExamAttemptResponse submitAttempt(Long examId, User user) {
         ExamAttempt attempt = requireStartedAttempt(examId, user.getId());
         if (attempt.getStatus() != ExamAttemptStatus.STARTED) {
-            throw new ErrorMessageException("Экзамен уже сдан", ErrorCodes.AlreadyExists);
+            throw new ErrorMessageException(messageService.get("error.exam.already.submitted"), ErrorCodes.AlreadyExists);
         }
         attempt.setSubmittedAt(LocalDateTime.now());
 
@@ -235,15 +236,15 @@ public class StudentQuestionExamService {
     private Exam resolvePublishedQuestionExam(Long examId, User user) {
         ensureStudent(user);
         Exam exam = examRepository.findById(examId)
-                .orElseThrow(() -> new NotFoundException("Экзамен не найден: " + examId));
+                .orElseThrow(() -> new NotFoundException(messageService.get("error.exam.not.found", examId)));
         if (exam.getType() != ExamType.QUESTION) {
-            throw new ErrorMessageException("Этот экзамен не относится к типу QUESTION", ErrorCodes.InvalidParams);
+            throw new ErrorMessageException(messageService.get("error.exam.not.question.type"), ErrorCodes.InvalidParams);
         }
         if (exam.getStatus() != ExamStatus.PUBLISHED) {
-            throw new NotFoundException("Экзамен не найден: " + examId);
+            throw new NotFoundException(messageService.get("error.exam.not.found", examId));
         }
         if (!isAssignedToStudent(exam, user.getId())) {
-            throw new NotFoundException("Экзамен не найден: " + examId);
+            throw new NotFoundException(messageService.get("error.exam.not.found", examId));
         }
         return exam;
     }
@@ -295,7 +296,7 @@ public class StudentQuestionExamService {
         boolean isStudent = user.getRoles().stream().map(Role::getRoleName)
                 .anyMatch(roleName -> roleName == RoleName.ROLE_STUDENT);
         if (!isStudent) {
-            throw new ErrorMessageException("Недопустимое действие", ErrorCodes.Forbidden);
+            throw new ErrorMessageException(messageService.get("error.forbidden"), ErrorCodes.Forbidden);
         }
     }
 

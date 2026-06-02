@@ -34,6 +34,7 @@ public class AnswerService {
     private final ExamAttemptRepository examAttemptRepository;
     private final QuestionOptionRepository questionOptionRepository;
     private final AnswerMapper answerMapper;
+    private final MessageService messageService;
 
     public List<AnswerResponse> findAll() {
         return answerRepository.findAll().stream().map(answerMapper::toResponse).toList();
@@ -144,7 +145,7 @@ public class AnswerService {
         }
         List<QuestionOption> options = questionOptionRepository.findAllById(optionIds);
         if (options.size() != optionIds.size()) {
-            throw new NotFoundException("Некоторые варианты ответа не найдены");
+            throw new NotFoundException(messageService.get("error.answer.options.not.found"));
         }
         answerMapper.applySelectedOptions(answer, options);
     }
@@ -158,7 +159,7 @@ public class AnswerService {
             return;
         }
         if (!answer.getStudent().getId().equals(currentUser.getId())) {
-            throw new ErrorMessageException("У вас нет доступа к этому ответу", ErrorCodes.Forbidden);
+            throw new ErrorMessageException(messageService.get("error.answer.no.access"), ErrorCodes.Forbidden);
         }
     }
 

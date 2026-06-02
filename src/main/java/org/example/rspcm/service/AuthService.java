@@ -50,11 +50,12 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final RoleService roleService;
     private final UserProfileSyncService userProfileSyncService;
+    private final MessageService messageService;
 
     @Transactional
     public String register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.email())) {
-            throw new ErrorMessageException("Email уже существует", ErrorCodes.AlreadyExists);
+            throw new ErrorMessageException(messageService.get("error.email.exists"), ErrorCodes.AlreadyExists);
         }
 
         User user = User.builder()
@@ -70,40 +71,40 @@ public class AuthService {
         userProfileSyncService.sync(savedUser);
         sendOtp(savedUser.getEmail());
 
-        return "Ro'yxatdan o'tish yakunlandi. OTP emailingizga yuborildi.";
+        return messageService.get("success.register");
     }
 
     @Transactional
     public String resendOtp(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException("Пользователь не найден"));
+                .orElseThrow(() -> new NotFoundException(messageService.get("error.user.not.found")));
 
         if (user.isEnabled()) {
-            throw new ErrorMessageException("Этот аккаунт уже подтверждён", ErrorCodes.AlreadyExists);
+            throw new ErrorMessageException(messageService.get("error.account.already.confirmed"), ErrorCodes.AlreadyExists);
         }
 
         sendOtp(email);
-        return "Yangi OTP yuborildi.";
+        return messageService.get("success.otp.resent");
     }
 
     @Transactional
     public String verifyOtp(VerifyOtpRequest request) {
         OtpVerification otp = otpRepository
                 .findFirstByEmailAndCodeAndUsedFalseOrderByIdDesc(request.email(), request.code())
-                .orElseThrow(() -> new ErrorMessageException("Неверный OTP", ErrorCodes.InvalidParams));
+                .orElseThrow(() -> new ErrorMessageException(messageService.get("error.otp.invalid"), ErrorCodes.InvalidParams));
 
         if (otp.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new ErrorMessageException("Срок действия OTP истёк", ErrorCodes.InvalidParams);
+            throw new ErrorMessageException(messageService.get("error.otp.expired"), ErrorCodes.InvalidParams);
         }
 
         User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new NotFoundException("Пользователь не найден"));
+                .orElseThrow(() -> new NotFoundException(messageService.get("error.user.not.found")));
         user.setEnabled(true);
         otp.setUsed(true);
         userRepository.save(user);
         otpRepository.save(otp);
 
-        return "Akkaunt muvaffaqiyatli tasdiqlandi.";
+        return messageService.get("success.account.confirmed");
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -112,7 +113,7 @@ public class AuthService {
             authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.identifier(), request.password()));
         } catch (BadCredentialsException | UsernameNotFoundException ex) {
-            throw new ErrorMessageException("Неверный email или пароль", ErrorCodes.InvalidParams);
+            throw new ErrorMessageException(messageService.get("error.invalid.credentials"), ErrorCodes.InvalidParams);
         }
 
         SecurityContextHolder.getContext().setAuthentication(authentication);

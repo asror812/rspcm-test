@@ -9,6 +9,7 @@ import org.example.rspcm.repository.ChatRepository;
 import org.example.rspcm.security.JwtService;
 import org.example.rspcm.security.UserDetailsServiceImpl;
 import org.example.rspcm.service.ChatPresenceService;
+import org.example.rspcm.service.MessageService;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompCommand;
@@ -31,6 +32,7 @@ public class WebsocketAuthChannelInterceptor implements ChannelInterceptor {
     private final UserDetailsServiceImpl userDetailsServiceImpl;
     private final ChatRepository chatRepository;
     private final ChatPresenceService chatPresenceService;
+    private final MessageService messageService;
 
     @Override
     public Message<?> preSend(
@@ -78,7 +80,7 @@ public class WebsocketAuthChannelInterceptor implements ChannelInterceptor {
         if (command.equals(StompCommand.SEND) || command.equals(StompCommand.SUBSCRIBE)) {
             Principal principal = accessor.getUser();
             if (principal == null) {
-                throw new ErrorMessageException("Unauthorized websocket session", ErrorCodes.Unauthorized);
+                throw new ErrorMessageException(messageService.get("error.websocket.unauthorized"), ErrorCodes.Unauthorized);
             }
 
             Long chatId = extractChatId(accessor.getDestination());
@@ -108,7 +110,7 @@ public class WebsocketAuthChannelInterceptor implements ChannelInterceptor {
             return;
         }
         if (!chatRepository.existsByIdAndMemberIdentifier(chatId, name)) {
-            throw new ErrorMessageException("You are not a chat member", ErrorCodes.Unauthorized);
+            throw new ErrorMessageException(messageService.get("error.chat.not.member"), ErrorCodes.Unauthorized);
         }
     }
 

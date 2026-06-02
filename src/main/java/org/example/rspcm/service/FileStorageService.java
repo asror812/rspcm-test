@@ -20,15 +20,16 @@ import java.util.UUID;
 public class FileStorageService {
 
     private final AppProperties appProperties;
+    private final MessageService messageService;
 
     public StoredFile storeChatFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
-            throw new ErrorMessageException("Attachment file is empty", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.file.empty"), ErrorCodes.BadRequest);
         }
 
         String uploadDir = appProperties.getUploadDir();
         if (uploadDir == null || uploadDir.isBlank()) {
-            throw new ErrorMessageException("Upload directory is not configured", ErrorCodes.InvalidParams);
+            throw new ErrorMessageException(messageService.get("error.upload.not.configured"), ErrorCodes.InvalidParams);
         }
 
         String originalName = StringUtils.cleanPath(file.getOriginalFilename() == null ? "file" : file.getOriginalFilename());
@@ -46,7 +47,7 @@ public class FileStorageService {
             Files.createDirectories(chatDir);
             Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
-            throw new ErrorMessageException("Failed to store file", ErrorCodes.InternalServerError);
+            throw new ErrorMessageException(messageService.get("error.file.store.failed"), ErrorCodes.InternalServerError);
         }
 
         StoredFile stored = new StoredFile();

@@ -30,6 +30,7 @@ public class SubjectService {
     private final UserRepository userRepository;
     private final SubjectMapper subjectMapper;
     private final SummaryMapper summaryMapper;
+    private final MessageService messageService;
 
     @Transactional(readOnly = true)
     public Page<SubjectResponse> findAll(Pageable pageable) {
@@ -79,7 +80,7 @@ public class SubjectService {
         }
         List<User> users = userRepository.findAllById(ids);
         if (users.size() != ids.size()) {
-            throw new NotFoundException("Некоторые преподаватели не найдены");
+            throw new NotFoundException(messageService.get("error.teachers.not.found"));
         }
         return new HashSet<>(users);
     }

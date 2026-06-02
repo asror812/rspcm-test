@@ -37,14 +37,15 @@ public class TeacherExamAttemptService {
     private final AnswerRepository answerRepository;
     private final TeacherProfileRepository teacherProfileRepository;
     private final SummaryMapper summaryMapper;
+    private final MessageService messageService;
 
     @Transactional(readOnly = true)
     public List<TeacherAttemptSummaryResponse> getAttemptsByExam(Long examId, User user) {
         var exam = examRepository.findById(examId)
-                .orElseThrow(() -> new NotFoundException("Экзамен не найден: " + examId));
+                .orElseThrow(() -> new NotFoundException(messageService.get("error.exam.not.found", examId)));
 
         if (exam.getType() != ExamType.QUESTION) {
-            throw new ErrorMessageException("Попытки доступны только для экзаменов типа QUESTION", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.attempt.question.only"), ErrorCodes.BadRequest);
         }
         validateAccess(user, exam.getSubject() == null ? null : exam.getSubject().getId(),
                 exam.getCreatedBy() == null ? null : exam.getCreatedBy().getId());
@@ -64,16 +65,16 @@ public class TeacherExamAttemptService {
     @Transactional(readOnly = true)
     public List<TeacherAttemptAnswerItem> getAttemptAnswers(Long examId, Long attemptId, User user) {
         var exam = examRepository.findById(examId)
-                .orElseThrow(() -> new NotFoundException("Экзамен не найден: " + examId));
+                .orElseThrow(() -> new NotFoundException(messageService.get("error.exam.not.found", examId)));
 
         validateAccess(user, exam.getSubject() == null ? null : exam.getSubject().getId(),
                 exam.getCreatedBy() == null ? null : exam.getCreatedBy().getId());
 
         ExamAttempt attempt = examAttemptRepository.findById(attemptId)
-                .orElseThrow(() -> new NotFoundException("Попытка не найдена: " + attemptId));
+                .orElseThrow(() -> new NotFoundException(messageService.get("error.attempt.not.found", attemptId)));
 
         if (!attempt.getExam().getId().equals(examId)) {
-            throw new NotFoundException("Попытка не найдена: " + attemptId);
+            throw new NotFoundException(messageService.get("error.attempt.not.found", attemptId));
         }
 
         List<StudentAnswer> answers = answerRepository
@@ -147,13 +148,13 @@ public class TeacherExamAttemptService {
     private void validateAccess(User user, Long subjectId, Long createdById) {
         if (isAdmin(user)) return;
         if (!isTeacher(user)) {
-            throw new ErrorMessageException("Нет доступа", ErrorCodes.Forbidden);
+            throw new ErrorMessageException(messageService.get("error.no.access"), ErrorCodes.Forbidden);
         }
         // Exam creator always has access
         if (createdById != null && createdById.equals(user.getId())) return;
         // Teacher assigned to the subject has access
         if (subjectId != null && teacherProfileRepository.existsByUserIdAndTeachingSubjectsId(user.getId(), subjectId)) return;
-        throw new ErrorMessageException("Нет доступа к этому экзамену", ErrorCodes.Forbidden);
+        throw new ErrorMessageException(messageService.get("error.no.access.exam"), ErrorCodes.Forbidden);
     }
 
     private boolean isAdmin(User user) {

@@ -28,6 +28,7 @@ public class PracticeService {
     private final PracticeRepository practiceRepository;
     private final PracticeMapper practiceMapper;
     private final SubjectRepository subjectRepository;
+    private final MessageService messageService;
 
     public PracticeResponse create(PracticeRequest request, User user) {
         Subject subject = resolveSubject(request.subjectId());
@@ -76,7 +77,7 @@ public class PracticeService {
     @Transactional(readOnly = true)
     public Practice findById(Long id, User user) {
         Practice practice = practiceRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Практика не найдена: " + id));
+                .orElseThrow(() -> new NotFoundException(messageService.get("error.practice.not.found", id)));
 
         if (isAdmin(user)) {
             return practice;
@@ -127,7 +128,7 @@ public class PracticeService {
 
     private Subject resolveSubject(Long subjectId) {
         if (subjectId == null) {
-            throw new ErrorMessageException("Необходимо указать subjectId", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.subject.id.required"), ErrorCodes.BadRequest);
         }
         return subjectRepository.findById(subjectId)
                 .orElseThrow(() -> new NotFoundException("Предмет не найден: " + subjectId));
@@ -135,12 +136,12 @@ public class PracticeService {
 
     private void validateTeacherSubjectAccess(Long userId, Long subjectId) {
         if (subjectId == null) {
-            throw new ErrorMessageException("Необходимо указать фильтр по предмету", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.subject.filter.required"), ErrorCodes.BadRequest);
         }
 
         boolean teachesSubject = subjectRepository.existsByIdAndTeachersId(subjectId, userId);
         if (!teachesSubject) {
-            throw new ErrorMessageException("Вы можете работать только с практиками по закреплённым за вами предметам", ErrorCodes.Forbidden);
+            throw new ErrorMessageException(messageService.get("error.subject.access.denied"), ErrorCodes.Forbidden);
         }
     }
 

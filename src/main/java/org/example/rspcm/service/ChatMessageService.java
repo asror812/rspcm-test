@@ -38,11 +38,12 @@ public class ChatMessageService {
     private final SimpMessagingTemplate messagingTemplate;
     private final ChatPresenceService chatPresenceService;
     private final FileStorageService fileStorageService;
+    private final MessageService messageService;
 
     @Transactional
     public ChatMessageResponse sendMessage(Long chatId, ChatMessageRequest request, String name) {
         if (request == null || request.getMessage() == null || request.getMessage().trim().isEmpty()) {
-            throw new ErrorMessageException("Message must not be empty", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.message.empty"), ErrorCodes.BadRequest);
         }
 
         User sender = userRepository.findByEmailAndEnabledTrueAndDeletedFalse(name)
@@ -54,7 +55,7 @@ public class ChatMessageService {
 
         boolean isMember = chatRepository.existsByIdAndMemberIdentifier(chatId, name);
         if (!isMember) {
-            throw new ErrorMessageException("No access to chat", ErrorCodes.Forbidden);
+            throw new ErrorMessageException(messageService.get("error.chat.no.access"), ErrorCodes.Forbidden);
         }
 
         ChatMessage message = new ChatMessage();
@@ -71,7 +72,7 @@ public class ChatMessageService {
     public ChatMessageResponse sendMessageWithAttachment(Long chatId, String content, MultipartFile file, String name) {
         String text = content == null ? null : content.trim();
         if ((text == null || text.isEmpty()) && (file == null || file.isEmpty())) {
-            throw new ErrorMessageException("Message or attachment is required", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.message.or.attachment.required"), ErrorCodes.BadRequest);
         }
 
         User sender = userRepository.findByEmailAndEnabledTrueAndDeletedFalse(name)
@@ -214,7 +215,7 @@ public class ChatMessageService {
                 .orElseThrow(() -> new NotFoundException("Chat not found: " + chatId));
 
         if (!chatRepository.existsByIdAndMemberIdentifier(chatId, name)) {
-            throw new ErrorMessageException("No access to chat", ErrorCodes.Forbidden);
+            throw new ErrorMessageException(messageService.get("error.chat.no.access"), ErrorCodes.Forbidden);
         }
     }
 }

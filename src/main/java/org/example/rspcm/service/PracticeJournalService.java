@@ -30,6 +30,7 @@ public class PracticeJournalService {
     private final PracticeRepository practiceRepository;
     private final PracticeJournalMapper practiceJournalMapper;
     private final TeacherProfileRepository teacherProfileRepository;
+    private final MessageService messageService;
 
     @Transactional(readOnly = true)
     public List<PracticeJournalResponse> findMineResponse() {
@@ -41,12 +42,12 @@ public class PracticeJournalService {
     public List<PracticeJournalResponse> findByPracticeResponse(Long practiceId) {
         User user = currentUser();
         Practice practice = practiceRepository.findById(practiceId)
-                .orElseThrow(() -> new NotFoundException("Практика не найдена: " + practiceId));
+                .orElseThrow(() -> new NotFoundException(messageService.get("error.practice.not.found", practiceId)));
 
         if (hasRole(user, RoleName.ROLE_TEACHER)) {
             Long subjectId = practice.getSubject() == null ? null : practice.getSubject().getId();
             if (subjectId == null || !teacherProfileRepository.existsByUserIdAndTeachingSubjectsId(user.getId(), subjectId)) {
-                throw new NotFoundException("Практика не найдена: " + practiceId);
+                throw new NotFoundException(messageService.get("error.practice.not.found", practiceId));
             }
         }
 
@@ -64,7 +65,7 @@ public class PracticeJournalService {
 
     private PracticeLogbook saveLogbookAndEntry(User student, PracticeJournalRequest request) {
         Practice practice = practiceRepository.findById(request.practiceId())
-                .orElseThrow(() -> new NotFoundException("Практика не найдена: " + request.practiceId()));
+                .orElseThrow(() -> new NotFoundException(messageService.get("error.practice.not.found", request.practiceId())));
 
         boolean isDraft = Boolean.TRUE.equals(request.draft());
         LocalDateTime now = LocalDateTime.now();

@@ -34,11 +34,12 @@ public class ExamPracticeService {
     private final PracticeRepository practiceRepository;
     private final TeacherProfileRepository teacherProfileRepository;
     private final SummaryMapper summaryMapper;
+    private final MessageService messageService;
 
     @Transactional(readOnly = true)
     public Page<ExamPracticeResponse> findAll(Long examId, User user, Pageable pageable) {
         if (examId == null) {
-            throw new ErrorMessageException("Необходимо указать examId", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.exam.id.required"), ErrorCodes.BadRequest);
         }
 
         Exam exam = resolveExam(examId);
@@ -51,15 +52,15 @@ public class ExamPracticeService {
         Exam exam = resolveExam(examId);
 
         if (exam.getType() != ExamType.PRACTICE) {
-            throw new ErrorMessageException("Практики доступны только для экзамена типа PRACTICE", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.exam.type.not.practice"), ErrorCodes.BadRequest);
         }
 
         if (exam.getStatus() != ExamStatus.PUBLISHED) {
-            throw new NotFoundException("Экзамен не найден: " + examId);
+            throw new NotFoundException(messageService.get("error.exam.not.found", examId));
         }
 
         if (!isAssignedToStudent(exam, user.getId())) {
-            throw new NotFoundException("Экзамен не найден: " + examId);
+            throw new NotFoundException(messageService.get("error.exam.not.found", examId));
         }
 
         return examPracticeRepository.findByExamId(examId, Pageable.unpaged())
@@ -81,10 +82,10 @@ public class ExamPracticeService {
         validateExamType(exam);
 
         Practice practice = practiceRepository.findById(request.practiceId())
-                .orElseThrow(() -> new NotFoundException("Практика не найдена: " + request.practiceId()));
+                .orElseThrow(() -> new NotFoundException(messageService.get("error.practice.not.found", request.practiceId())));
 
         if (examPracticeRepository.existsByExamIdAndPracticeId(exam.getId(), practice.getId())) {
-            throw new ErrorMessageException("Эта практика уже привязана к экзамену", ErrorCodes.AlreadyExists);
+            throw new ErrorMessageException(messageService.get("error.practice.already.linked"), ErrorCodes.AlreadyExists);
         }
 
         ExamPractice link = ExamPractice.builder()
@@ -105,10 +106,10 @@ public class ExamPracticeService {
         validateExamType(exam);
 
         Practice practice = practiceRepository.findById(request.practiceId())
-                .orElseThrow(() -> new NotFoundException("Практика не найдена: " + request.practiceId()));
+                .orElseThrow(() -> new NotFoundException(messageService.get("error.practice.not.found", request.practiceId())));
 
         if (examPracticeRepository.existsByExamIdAndPracticeIdAndIdNot(exam.getId(), practice.getId(), existing.getId())) {
-            throw new ErrorMessageException("Эта практика уже привязана к экзамену", ErrorCodes.AlreadyExists);
+            throw new ErrorMessageException(messageService.get("error.practice.already.linked"), ErrorCodes.AlreadyExists);
         }
 
         existing.setExam(exam);
@@ -130,12 +131,12 @@ public class ExamPracticeService {
 
     private Exam resolveExam(Long examId) {
         return examRepository.findById(examId)
-                .orElseThrow(() -> new NotFoundException("Экзамен не найден: " + examId));
+                .orElseThrow(() -> new NotFoundException(messageService.get("error.exam.not.found", examId)));
     }
 
     private void validateExamType(Exam exam) {
         if (exam.getType() != ExamType.PRACTICE) {
-            throw new ErrorMessageException("Практику можно привязать только к экзамену типа PRACTICE", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.exam.not.practice.type"), ErrorCodes.BadRequest);
         }
     }
 
@@ -144,16 +145,16 @@ public class ExamPracticeService {
             return;
         }
         if (!isTeacher(user)) {
-            throw new ErrorMessageException("Недопустимое действие", ErrorCodes.Forbidden);
+            throw new ErrorMessageException(messageService.get("error.forbidden"), ErrorCodes.Forbidden);
         }
 
         if (exam.getSubject() == null) {
-            throw new ErrorMessageException("К экзамену не привязан предмет", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.exam.no.subject"), ErrorCodes.BadRequest);
         }
 
         boolean teaches = teacherProfileRepository.existsByUserIdAndTeachingSubjectsId(user.getId(), exam.getSubject().getId());
         if (!teaches) {
-            throw new ErrorMessageException("Вы можете управлять экзаменами только по закреплённым за вами предметам", ErrorCodes.Forbidden);
+            throw new ErrorMessageException(messageService.get("error.exam.access.denied"), ErrorCodes.Forbidden);
         }
     }
 

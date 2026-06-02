@@ -41,6 +41,7 @@ public class StudyGroupService {
     private final SubjectRepository subjectRepository;
     private final GroupMapper groupMapper;
     private final GroupChatSyncService groupChatSyncService;
+    private final MessageService messageService;
 
     @Transactional(readOnly = true)
     public Page<AdminGroupResponse> findAllForAdmin(Pageable pageable) {
@@ -133,7 +134,7 @@ public class StudyGroupService {
                 }
             }
         } catch (IOException e) {
-            throw new ErrorMessageException("Ошибка чтения Excel файла: " + e.getMessage(), ErrorCodes.InvalidParams);
+            throw new ErrorMessageException(messageService.get("error.excel.read", e.getMessage()), ErrorCodes.InvalidParams);
         }
 
         group.setStudents(students);
@@ -148,7 +149,7 @@ public class StudyGroupService {
         }
         List<User> users = userRepository.findAllById(ids);
         if (users.size() != ids.size()) {
-            throw new NotFoundException("Некоторые пользователи не найдены");
+            throw new NotFoundException(messageService.get("error.users.not.found"));
         }
         return new HashSet<>(users);
     }
@@ -159,7 +160,7 @@ public class StudyGroupService {
         }
         List<Subject> subjects = subjectRepository.findAllById(ids);
         if (subjects.size() != ids.size()) {
-            throw new NotFoundException("Некоторые предметы не найдены");
+            throw new NotFoundException(messageService.get("error.subjects.not.found"));
         }
         return new HashSet<>(subjects);
     }

@@ -47,6 +47,7 @@ public class PracticeSubmissionService {
     private final SummaryMapper summaryMapper;
     private final FcmService fcmService;
     private final NotificationService notificationService;
+    private final MessageService messageService;
 
     @Transactional(readOnly = true)
     public PracticeSubmissionResponse getByParticipation(Long participationId, User user) {
@@ -68,7 +69,7 @@ public class PracticeSubmissionService {
     @Transactional(readOnly = true)
     public Page<PracticeSubmissionResponse> findAllByExam(Long examId, PracticeSubmissionStatus status, User user, Pageable pageable) {
         Exam exam = examRepository.findById(examId)
-                .orElseThrow(() -> new NotFoundException("Экзамен не найден: " + examId));
+                .orElseThrow(() -> new NotFoundException(messageService.get("error.exam.not.found", examId)));
         validateStaffAccess(user, exam);
 
         Page<PracticeSubmission> page = status == null
@@ -91,10 +92,10 @@ public class PracticeSubmissionService {
 
         // Only allow (re)submit when no previous submission or when RETURNED by teacher
         if (submission.getId() != null && submission.getStatus() == PracticeSubmissionStatus.SUBMITTED) {
-            throw new ErrorMessageException("Работа уже отправлена на проверку. Дождитесь ответа преподавателя.", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.submission.already.submitted"), ErrorCodes.BadRequest);
         }
         if (submission.getId() != null && submission.getStatus() == PracticeSubmissionStatus.GRADED) {
-            throw new ErrorMessageException("Работа уже проверена.", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.submission.already.graded"), ErrorCodes.BadRequest);
         }
 
         submission.setStudent(user);
@@ -143,7 +144,7 @@ public class PracticeSubmissionService {
         validateStaffAccess(user, submission.getExamParticipation().getExam());
 
         if (submission.getStatus() != PracticeSubmissionStatus.SUBMITTED) {
-            throw new ErrorMessageException("Оценивать можно только работы в статусе SUBMITTED", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.submission.not.submitted"), ErrorCodes.BadRequest);
         }
 
         submission.setStatus(PracticeSubmissionStatus.GRADED);
@@ -164,7 +165,7 @@ public class PracticeSubmissionService {
         validateStaffAccess(user, submission.getExamParticipation().getExam());
 
         if (submission.getStatus() == PracticeSubmissionStatus.RETURNED) {
-            throw new ErrorMessageException("Submission уже в статусе RETURNED", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.submission.already.returned"), ErrorCodes.BadRequest);
         }
 
         submission.setStatus(PracticeSubmissionStatus.RETURNED);
@@ -191,7 +192,7 @@ public class PracticeSubmissionService {
 
     private void validateLeaderSubmit(User user, PracticeParticipation participation) {
         if (participation.getStatus() != PracticeParticipationStatus.PRACTICE_CHOSEN || participation.getExamPractice() == null) {
-            throw new ErrorMessageException("Сначала нужно выбрать практику", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.practice.must.be.selected"), ErrorCodes.BadRequest);
         }
 
         boolean isAcceptedLeader = participationMemberRepository.existsByPracticeParticipationIdAndUserIdAndRoleAndStatus(
@@ -201,7 +202,7 @@ public class PracticeSubmissionService {
                 PracticeParticipationMemberStatus.ACCEPTED
         );
         if (!isAcceptedLeader) {
-            throw new ErrorMessageException("Только лидер участия может отправить submission", ErrorCodes.Forbidden);
+            throw new ErrorMessageException(messageService.get("error.leader.only.submit"), ErrorCodes.Forbidden);
         }
     }
 
@@ -216,7 +217,7 @@ public class PracticeSubmissionService {
                 PracticeParticipationMemberStatus.ACCEPTED
         );
         if (!isMember) {
-            throw new ErrorMessageException("Нет доступа", ErrorCodes.Forbidden);
+            throw new ErrorMessageException(messageService.get("error.no.access"), ErrorCodes.Forbidden);
         }
     }
 
@@ -225,7 +226,7 @@ public class PracticeSubmissionService {
             return;
         }
         if (!isTeacher(user)) {
-            throw new ErrorMessageException("Нет доступа", ErrorCodes.Forbidden);
+            throw new ErrorMessageException(messageService.get("error.no.access"), ErrorCodes.Forbidden);
         }
         // Exam creator always has full access to their own exam's submissions
         if (exam.getCreatedBy() != null && exam.getCreatedBy().getId().equals(user.getId())) {
@@ -236,7 +237,7 @@ public class PracticeSubmissionService {
         if (subjectId != null && teacherProfileRepository.existsByUserIdAndTeachingSubjectsId(user.getId(), subjectId)) {
             return;
         }
-        throw new ErrorMessageException("Нет доступа к сдачам этого экзамена", ErrorCodes.Forbidden);
+        throw new ErrorMessageException(messageService.get("error.no.access.submissions"), ErrorCodes.Forbidden);
     }
 
     private boolean isAdmin(User user) {

@@ -48,6 +48,7 @@ public class ExamService {
     private final ExamAttemptRepository examAttemptRepository;
     private final PracticeSubmissionRepository practiceSubmissionRepository;
     private final PracticeParticipationRepository practiceParticipationRepository;
+    private final MessageService messageService;
 
     @Transactional(readOnly = true)
     public Page<ExamResponse> findAll(
@@ -77,7 +78,7 @@ public class ExamService {
             Pageable pageable
     ) {
         if (!isStudent(user)) {
-            throw new ErrorMessageException("Недопустимое действие", ErrorCodes.Forbidden);
+            throw new ErrorMessageException(messageService.get("error.forbidden"), ErrorCodes.Forbidden);
         }
         return examRepository.findStudentExams(user.getId(), examType, subjectId, query, pageable)
                 .map(examMapper::toResponse)
@@ -114,7 +115,7 @@ public class ExamService {
     @Transactional(readOnly = true)
     public ExamResponse findById(Long id, User user) {
         Exam exam = examRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Экзамен не найден: " + id));
+                .orElseThrow(() -> new NotFoundException(messageService.get("error.exam.not.found", id)));
 
         if (isAdmin(user)) {
             return examMapper.toResponse(exam);
@@ -126,17 +127,17 @@ public class ExamService {
         }
 
         if (isStudent(user) && !isAssignedToStudent(exam, user.getId())) {
-            throw new NotFoundException("Экзамен не найден: " + id);
+            throw new NotFoundException(messageService.get("error.exam.not.found", id));
         }
 
         if (isStudent(user)) {
             if (exam.getStatus() != ExamStatus.PUBLISHED) {
-                throw new NotFoundException("Экзамен не найден: " + id);
+                throw new NotFoundException(messageService.get("error.exam.not.found", id));
             }
             return sanitizeStudentExamResponse(examMapper.toResponse(exam));
         }
 
-        throw new ErrorMessageException("Недопустимое действие", ErrorCodes.NotFound);
+        throw new ErrorMessageException(messageService.get("error.forbidden"), ErrorCodes.NotFound);
     }
 
     @Transactional
@@ -163,7 +164,7 @@ public class ExamService {
     public ExamResponse update(Long id, ExamRequest request, User user) {
         validateExamRequest(request);
         Exam exam = examRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Экзамен не найден: " + id));
+                .orElseThrow(() -> new NotFoundException(messageService.get("error.exam.not.found", id)));
 
         validateTeacherSubjectAccess(user.getId(), exam.getSubject() == null ? null : exam.getSubject().getId());
 
@@ -186,7 +187,7 @@ public class ExamService {
     @Transactional
     public void delete(Long id, User user) {
         Exam exam = examRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Экзамен не найден: " + id));
+                .orElseThrow(() -> new NotFoundException(messageService.get("error.exam.not.found", id)));
 
         if (isTeacher(user)) {
             validateTeacherSubjectAccess(user.getId(), exam.getSubject() == null ? null : exam.getSubject().getId());
@@ -198,7 +199,7 @@ public class ExamService {
     @Transactional
     public ExamResponse updateStatus(Long id, ExamStatus status, User user) {
         Exam exam = examRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Экзамен не найден: " + id));
+                .orElseThrow(() -> new NotFoundException(messageService.get("error.exam.not.found", id)));
 
         if (isTeacher(user)) {
             validateTeacherSubjectAccess(user.getId(), exam.getSubject() == null ? null : exam.getSubject().getId());
@@ -211,14 +212,14 @@ public class ExamService {
 
     private void validateExamRequest(ExamRequest request) {
         if (request.startAt() != null && request.endAt() != null && !request.endAt().isAfter(request.startAt())) {
-            throw new ErrorMessageException("endAt должен быть позже startAt", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.exam.end.before.start"), ErrorCodes.BadRequest);
         }
     }
 
     private void validateTeacherSubjectAccess(Long userId, Long subjectId) {
         boolean teachesSubject = subjectRepository.existsByIdAndTeachersId(subjectId, userId);
         if (!teachesSubject) {
-            throw new ErrorMessageException("Вы можете просматривать только экзамены по закреплённым за вами предметам", ErrorCodes.Forbidden);
+            throw new ErrorMessageException(messageService.get("error.exam.view.access.denied"), ErrorCodes.Forbidden);
         }
     }
 
@@ -283,7 +284,7 @@ public class ExamService {
         }
         List<StudyGroup> groups = groupRepository.findAllById(groupIds);
         if (groups.size() != groupIds.size()) {
-            throw new NotFoundException("Некоторые группы не найдены");
+            throw new NotFoundException(messageService.get("error.groups.not.found"));
         }
         return new HashSet<>(groups);
     }
@@ -294,7 +295,7 @@ public class ExamService {
         }
         List<User> students = userRepository.findAllById(studentIds);
         if (students.size() != studentIds.size()) {
-            throw new NotFoundException("Некоторые студенты не найдены");
+            throw new NotFoundException(messageService.get("error.students.not.found"));
         }
         return new HashSet<>(students);
     }

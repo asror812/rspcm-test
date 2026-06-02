@@ -27,6 +27,7 @@ public class QuestionService {
     private final QuestionRepository questionRepository;
     private final SubjectRepository subjectRepository;
     private final QuestionMapper questionMapper;
+    private final MessageService messageService;
 
     @Transactional
     public Question create(QuestionRequest request, User user) {
@@ -51,7 +52,7 @@ public class QuestionService {
         boolean teachesSubject = subjectRepository.existsByIdAndTeachersId(request.subjectId(), user.getId());
 
         if (!teachesSubject) {
-            throw new ErrorMessageException("Преподаватель может создавать вопросы только по предметам, которые он ведёт", ErrorCodes.Forbidden);
+            throw new ErrorMessageException(messageService.get("error.question.subject.access"), ErrorCodes.Forbidden);
         }
 
         Question question = questionMapper.toEntity(
@@ -98,7 +99,7 @@ public class QuestionService {
         boolean teachesSubject = subjectRepository.existsByIdAndTeachersId(request.subjectId(), user.getId());
 
         if (!teachesSubject) {
-            throw new ErrorMessageException("Преподаватель может создавать вопросы только по предметам, которые он ведёт", ErrorCodes.Forbidden);
+            throw new ErrorMessageException(messageService.get("error.question.subject.access"), ErrorCodes.Forbidden);
         }
 
         questionMapper.updateEntity(
@@ -113,12 +114,12 @@ public class QuestionService {
 
     private void validateTeacherSubjectAccess(Long userId, Long subjectId) {
         if (subjectId == null) {
-            throw new ErrorMessageException("Необходимо указать фильтр по предмету", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.subject.filter.required"), ErrorCodes.BadRequest);
         }
 
         boolean teachesSubject = subjectRepository.existsByIdAndTeachersId(subjectId, userId);
         if (!teachesSubject) {
-            throw new ErrorMessageException("Вы можете просматривать только экзамены по закреплённым за вами предметам", ErrorCodes.Forbidden);
+            throw new ErrorMessageException(messageService.get("error.exam.view.access.denied"), ErrorCodes.Forbidden);
         }
     }
 

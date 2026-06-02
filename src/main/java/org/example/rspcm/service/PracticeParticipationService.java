@@ -56,10 +56,11 @@ public class PracticeParticipationService {
     private final PracticeSubmissionAttemptRepository submissionAttemptRepository;
     private final NotificationService notificationService;
     private final FcmService fcmService;
+    private final MessageService messageService;
 
     private void checkPracticeExam(Exam exam) {
         if (exam.getType() != ExamType.PRACTICE) {
-            throw new ErrorMessageException("Participation создаётся только для экзаменов типа PRACTICE", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.participation.exam.type"), ErrorCodes.BadRequest);
         }
     }
 
@@ -70,7 +71,7 @@ public class PracticeParticipationService {
             User user,
             Pageable pageable
     ) {
-        Exam exam = examRepository.findById(examId).orElseThrow(() -> new NotFoundException("Экзамен не найден: " + examId));
+        Exam exam = examRepository.findById(examId).orElseThrow(() -> new NotFoundException(messageService.get("error.exam.not.found", examId)));
 
         validateAccess(user, exam);
 
@@ -100,22 +101,22 @@ public class PracticeParticipationService {
                 PracticeParticipationMemberStatus.ACCEPTED
         );
         if (!isLeader) {
-            throw new ErrorMessageException("Только лидер может приглашать участников", ErrorCodes.Forbidden);
+            throw new ErrorMessageException(messageService.get("error.leader.only.invite"), ErrorCodes.Forbidden);
         }
 
         ExamPractice examPractice = participation.getExamPractice();
         if (examPractice == null || examPractice.getPractice().getWorkMode() != WorkMode.TEAM) {
-            throw new ErrorMessageException("Приглашения доступны только для TEAM-практики", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.team.invite.individual"), ErrorCodes.BadRequest);
         }
 
         Integer teamSize = examPractice.getPractice().getTeamSize();
         if (teamSize == null || teamSize <= 1) {
-            throw new ErrorMessageException("Для TEAM-практики teamSize должен быть больше 1", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.team.size.one"), ErrorCodes.BadRequest);
         }
 
         Set<Long> studentIds = new HashSet<>(request.studentIds());
         if (studentIds.contains(user.getId())) {
-            throw new ErrorMessageException("Лидер не может пригласить самого себя", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.leader.self.invite"), ErrorCodes.BadRequest);
         }
 
         long activeMembers = participationMemberRepository.countByPracticeParticipationIdAndStatusNot(
@@ -123,7 +124,7 @@ public class PracticeParticipationService {
                 PracticeParticipationMemberStatus.REMOVED
         );
         if (activeMembers + studentIds.size() > teamSize) {
-            throw new ErrorMessageException("Количество участников превышает teamSize", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.team.size.exceeded"), ErrorCodes.BadRequest);
         }
 
         for (Long studentId : studentIds) {
@@ -131,11 +132,11 @@ public class PracticeParticipationService {
                     .orElseThrow(() -> new NotFoundException("Пользователь не найден: " + studentId));
 
             if (!isStudent(invitee)) {
-                throw new ErrorMessageException("Можно приглашать только студентов", ErrorCodes.BadRequest);
+                throw new ErrorMessageException(messageService.get("error.invite.student.only"), ErrorCodes.BadRequest);
             }
 
             if (!isAssignedToStudent(participation.getExam(), invitee.getId())) {
-                throw new ErrorMessageException("Приглашаемый студент не может участвовать в этом экзамене", ErrorCodes.BadRequest);
+                throw new ErrorMessageException(messageService.get("error.invite.not.eligible"), ErrorCodes.BadRequest);
             }
 
             boolean usedInAnotherParticipation = participationMemberRepository
@@ -146,14 +147,14 @@ public class PracticeParticipationService {
                             participation.getId()
                     );
             if (usedInAnotherParticipation) {
-                throw new ErrorMessageException("Студент уже в другой команде. Сначала нужно выйти из неё", ErrorCodes.BadRequest);
+                throw new ErrorMessageException(messageService.get("error.student.in.other.team"), ErrorCodes.BadRequest);
             }
 
             boolean alreadyInParticipation = participationMemberRepository
                     .findByPracticeParticipationIdAndUserId(participation.getId(), invitee.getId())
                     .isPresent();
             if (alreadyInParticipation) {
-                throw new ErrorMessageException("Этот студент уже состоит в данном participation", ErrorCodes.AlreadyExists);
+                throw new ErrorMessageException(messageService.get("error.student.already.in.participation"), ErrorCodes.AlreadyExists);
             }
         }
 
@@ -203,7 +204,7 @@ public class PracticeParticipationService {
                 .orElseThrow(() -> new NotFoundException("Участник участия не найден"));
 
         if (member.getStatus() != PracticeParticipationMemberStatus.INVITED) {
-            throw new ErrorMessageException("Принять можно только приглашение в статусе INVITED", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.accept.not.invited"), ErrorCodes.BadRequest);
         }
 
         member.setStatus(PracticeParticipationMemberStatus.ACCEPTED);
@@ -238,7 +239,7 @@ public class PracticeParticipationService {
                 .orElseThrow(() -> new NotFoundException("Участник участия не найден"));
 
         if (member.getStatus() != PracticeParticipationMemberStatus.INVITED) {
-            throw new ErrorMessageException("Отклонить можно только приглашение в статусе INVITED", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.reject.not.invited"), ErrorCodes.BadRequest);
         }
 
         member.setStatus(PracticeParticipationMemberStatus.DECLINED);
@@ -253,12 +254,12 @@ public class PracticeParticipationService {
     @Transactional(readOnly = true)
     public MyPracticeParticipationResponse getMyParticipationByExam(Long examId, User user) {
         if (!isStudent(user)) {
-            throw new ErrorMessageException("Нет доступа", ErrorCodes.Forbidden);
+            throw new ErrorMessageException(messageService.get("error.no.access"), ErrorCodes.Forbidden);
         }
 
         Exam exam = resolveExam(examId);
         if (!isAssignedToStudent(exam, user.getId())) {
-            throw new NotFoundException("Экзамен не найден: " + examId);
+            throw new NotFoundException(messageService.get("error.exam.not.found", examId));
         }
 
         PracticeParticipationMember member = participationMemberRepository
@@ -275,7 +276,7 @@ public class PracticeParticipationService {
     @Transactional(readOnly = true)
     public List<MyPracticeParticipationResponse> getMyParticipations(User user) {
         if (!isStudent(user)) {
-            throw new ErrorMessageException("Нет доступа", ErrorCodes.Forbidden);
+            throw new ErrorMessageException(messageService.get("error.no.access"), ErrorCodes.Forbidden);
         }
 
         List<PracticeParticipationMember> myMembers = participationMemberRepository
@@ -295,7 +296,7 @@ public class PracticeParticipationService {
     @Transactional(readOnly = true)
     public List<MyTeamInvitationResponse> getMyTeamInvitations(User user) {
         if (!isStudent(user)) {
-            throw new ErrorMessageException("Нет доступа", ErrorCodes.Forbidden);
+            throw new ErrorMessageException(messageService.get("error.no.access"), ErrorCodes.Forbidden);
         }
 
         List<PracticeParticipationMember> invitedMembers = participationMemberRepository
@@ -346,7 +347,7 @@ public class PracticeParticipationService {
                 .orElseThrow(() -> new NotFoundException("Участник участия не найден"));
 
         if (member.getRole() == PracticeMemberRole.LEADER) {
-            throw new ErrorMessageException("Нельзя удалить лидера", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.cannot.remove.leader"), ErrorCodes.BadRequest);
         }
 
         member.setStatus(PracticeParticipationMemberStatus.REMOVED);
@@ -359,7 +360,7 @@ public class PracticeParticipationService {
     @Transactional
     public void leaveMyTeam(Long participationId, User user) {
         if (!isStudent(user)) {
-            throw new ErrorMessageException("Только студент может покинуть команду", ErrorCodes.Forbidden);
+            throw new ErrorMessageException(messageService.get("error.leave.student.only"), ErrorCodes.Forbidden);
         }
 
         PracticeParticipation participation = findEntityById(participationId);
@@ -369,17 +370,17 @@ public class PracticeParticipationService {
                 .findByPracticeParticipationIdAndUserId(participationId, user.getId())
                 .orElseThrow(() -> new NotFoundException("Участник участия не найден"));
         if (myMember.getStatus() == PracticeParticipationMemberStatus.REMOVED) {
-            throw new ErrorMessageException("Вы уже покинули команду", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.already.left"), ErrorCodes.BadRequest);
         }
 
         Exam exam = participation.getExam();
         if (exam.getEndAt() != null && LocalDateTime.now().isAfter(exam.getEndAt())) {
-            throw new ErrorMessageException("Срок истёк", ErrorCodes.AlreadyExists);
+            throw new ErrorMessageException(messageService.get("error.deadline.passed"), ErrorCodes.AlreadyExists);
         }
 
         boolean hasSubmission = submissionRepository.findByExamParticipationId(participation.getId()).isPresent();
         if (hasSubmission) {
-            throw new ErrorMessageException("Нельзя покинуть команду при наличии submission", ErrorCodes.AlreadyExists);
+            throw new ErrorMessageException(messageService.get("error.leave.has.submission"), ErrorCodes.AlreadyExists);
         }
 
         List<PracticeParticipationMember> activeMembers = participationMemberRepository
@@ -423,7 +424,7 @@ public class PracticeParticipationService {
     @Transactional
     public void cancelMyParticipation(Long examId, User user) {
         if (!isStudent(user)) {
-            throw new ErrorMessageException("Только студент может отменить participation", ErrorCodes.Forbidden);
+            throw new ErrorMessageException(messageService.get("error.cancel.student.only"), ErrorCodes.Forbidden);
         }
 
         Exam exam = resolveExam(examId);
@@ -437,16 +438,16 @@ public class PracticeParticipationService {
 
         PracticeParticipation participation = myMember.getPracticeParticipation();
         if (participation.getExamPractice() == null) {
-            throw new ErrorMessageException("Практика ещё не выбрана", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.practice.not.selected"), ErrorCodes.BadRequest);
         }
 
         if (exam.getEndAt() != null && LocalDateTime.now().isAfter(exam.getEndAt())) {
-            throw new ErrorMessageException("Срок истёк", ErrorCodes.AlreadyExists);
+            throw new ErrorMessageException(messageService.get("error.deadline.passed"), ErrorCodes.AlreadyExists);
         }
 
         boolean hasSubmission = submissionRepository.findByExamParticipationId(participation.getId()).isPresent();
         if (hasSubmission) {
-            throw new ErrorMessageException("Нельзя отменить при наличии submission", ErrorCodes.AlreadyExists);
+            throw new ErrorMessageException(messageService.get("error.cancel.has.submission"), ErrorCodes.AlreadyExists);
         }
 
         WorkMode workMode = participation.getExamPractice().getPractice().getWorkMode();
@@ -457,7 +458,7 @@ public class PracticeParticipationService {
         }
 
         if (workMode != WorkMode.TEAM) {
-            throw new ErrorMessageException("Неизвестный режим работы", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.unknown.work.mode"), ErrorCodes.BadRequest);
         }
 
         List<PracticeParticipationMember> activeMembers = participationMemberRepository
@@ -512,7 +513,7 @@ public class PracticeParticipationService {
 
     private Exam resolveExam(Long examId) {
         return examRepository.findById(examId)
-                .orElseThrow(() -> new NotFoundException("Экзамен не найден: " + examId));
+                .orElseThrow(() -> new NotFoundException(messageService.get("error.exam.not.found", examId)));
     }
 
     private void requireLeader(User user, PracticeParticipation participation) {
@@ -523,20 +524,20 @@ public class PracticeParticipationService {
                 PracticeParticipationMemberStatus.ACCEPTED
         );
         if (!isLeader) {
-            throw new ErrorMessageException("Доступ только для лидера", ErrorCodes.Forbidden);
+            throw new ErrorMessageException(messageService.get("error.leader.only"), ErrorCodes.Forbidden);
         }
     }
 
     private void ensureTeamParticipation(PracticeParticipation participation) {
         ExamPractice examPractice = participation.getExamPractice();
         if (examPractice == null || examPractice.getPractice().getWorkMode() != WorkMode.TEAM) {
-            throw new ErrorMessageException("Операция доступна только для TEAM participation", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.team.operation"), ErrorCodes.BadRequest);
         }
     }
 
     private void validateAccess(User user, Exam exam) {
         if (!canAccess(user, exam)) {
-            throw new ErrorMessageException("Вы можете управлять экзаменами только по закреплённым за вами предметам", ErrorCodes.Forbidden);
+            throw new ErrorMessageException(messageService.get("error.exam.access.denied"), ErrorCodes.Forbidden);
         }
     }
 
@@ -661,23 +662,23 @@ public class PracticeParticipationService {
     @Transactional
     public PracticeParticipationResponse selectPractice(Long examId, Long examPracticeId, User user) {
         if (!isStudent(user)) {
-            throw new ErrorMessageException("Только студент может выбрать практику", ErrorCodes.Forbidden);
+            throw new ErrorMessageException(messageService.get("error.select.student.only"), ErrorCodes.Forbidden);
         }
 
         Exam exam = resolveExam(examId);
         checkPracticeExam(exam);
 
         if (exam.getStatus() != ExamStatus.PUBLISHED) {
-            throw new ErrorMessageException("Практику можно выбрать только для экзамена в статусе PUBLISHED", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.exam.must.be.published"), ErrorCodes.BadRequest);
         }
 
         if (!isAssignedToStudent(exam, user.getId())) {
-            throw new NotFoundException("Экзамен не найден: " + examId);
+            throw new NotFoundException(messageService.get("error.exam.not.found", examId));
         }
 
         ExamPractice examPractice = resolveExamPractice(examPracticeId);
         if (!examPractice.getExam().getId().equals(exam.getId())) {
-            throw new ErrorMessageException("Выбранная практика не относится к этому экзамену", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.practice.not.for.exam"), ErrorCodes.BadRequest);
         }
 
         var existingMembership = participationMemberRepository
@@ -718,12 +719,12 @@ public class PracticeParticipationService {
         }
 
         if (examPractice.getPractice().getWorkMode() != WorkMode.TEAM) {
-            throw new ErrorMessageException("Неизвестный режим работы", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.unknown.work.mode"), ErrorCodes.BadRequest);
         }
 
         Integer teamSize = examPractice.getPractice().getTeamSize();
         if (teamSize == null || teamSize <= 1) {
-            throw new ErrorMessageException("Для TEAM-практики teamSize должен быть больше 1", ErrorCodes.BadRequest);
+            throw new ErrorMessageException(messageService.get("error.team.size.one"), ErrorCodes.BadRequest);
         }
 
         PracticeParticipation participation = new PracticeParticipation();

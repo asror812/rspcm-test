@@ -41,6 +41,7 @@ public class ProfileService {
     private final StudentProfileMapper studentProfileMapper;
     private final TeacherProfileMapper teacherProfileMapper;
     private final PasswordEncoder passwordEncoder;
+    private final MessageService messageService;
 
     public StudentProfile getStudentProfile(Long userId) {
         return studentProfileRepository.findByUserId(userId)
@@ -83,7 +84,7 @@ public class ProfileService {
 
     public StudentProfileResponse updateMyStudentProfileResponse(Long userId, StudentProfileUpdateRequest request) {
         if (request.groupId() != null) {
-            throw new ErrorMessageException("Студент не может изменить свою группу", ErrorCodes.InvalidParams);
+            throw new ErrorMessageException(messageService.get("error.student.cannot.change.group"), ErrorCodes.InvalidParams);
         }
         StudentProfile profile = studentProfileRepository.findByUserId(userId)
                 .orElseGet(() -> studentProfileRepository.save(StudentProfile.builder().user(getUser(userId)).build()));
@@ -135,7 +136,7 @@ public class ProfileService {
         }
         List<Subject> subjects = subjectRepository.findAllById(ids);
         if (subjects.size() != ids.size()) {
-            throw new NotFoundException("Некоторые предметы не найдены");
+            throw new NotFoundException(messageService.get("error.subjects.not.found"));
         }
         return new HashSet<>(subjects);
     }
@@ -151,7 +152,7 @@ public class ProfileService {
     private void updateSelfEditableUserFields(User user, TeacherSelfProfileUpdateRequest request) {
         if (request.email() != null && !request.email().equals(user.getEmail())) {
             if (userRepository.existsByEmail(request.email())) {
-                throw new ErrorMessageException("Этот email уже существует", ErrorCodes.AlreadyExists);
+                throw new ErrorMessageException(messageService.get("error.email.exists.other"), ErrorCodes.AlreadyExists);
             }
             user.setEmail(request.email());
         }
@@ -163,7 +164,7 @@ public class ProfileService {
         if (request.newPassword() != null) {
             if (request.currentPassword() == null
                     || !passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
-                throw new ErrorMessageException("Текущий пароль неверный", ErrorCodes.InvalidParams);
+                throw new ErrorMessageException(messageService.get("error.password.current.wrong"), ErrorCodes.InvalidParams);
             }
             user.setPassword(passwordEncoder.encode(request.newPassword()));
         }

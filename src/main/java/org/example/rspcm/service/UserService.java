@@ -27,6 +27,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final UserProfileSyncService userProfileSyncService;
     private final UserMapper userMapper;
+    private final MessageService messageService;
 
     @Transactional(readOnly = true)
     public Page<UserResponse> findAll(Pageable pageable) {
@@ -45,7 +46,7 @@ public class UserService {
 
     public UserResponse createResponse(UserCreateRequest request) {
         if (userRepository.existsByEmail(request.email())) {
-            throw new ErrorMessageException("Email уже существует", ErrorCodes.AlreadyExists);
+            throw new ErrorMessageException(messageService.get("error.email.exists"), ErrorCodes.AlreadyExists);
         }
 
         User user = userMapper.toEntity(
