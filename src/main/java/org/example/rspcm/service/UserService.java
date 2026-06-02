@@ -30,14 +30,17 @@ public class UserService {
     private final UserProfileSyncService userProfileSyncService;
     private final UserMapper userMapper;
 
+    @Transactional(readOnly = true)
     public Page<UserResponse> findAll(Pageable pageable) {
         return userRepository.findAllBy(pageable).map(userMapper::toResponse);
     }
 
+    @Transactional(readOnly = true)
     public User findById(Long id) {
         return userRepository.findById(id).orElseThrow(() -> new NotFoundException("Пользователь не найден: " + id));
     }
 
+    @Transactional(readOnly = true)
     public UserResponse findResponseById(Long id) {
         return userMapper.toResponse(userRepository.findById(id).orElseThrow(() -> new NotFoundException("Пользователь не найден: " + id)));
     }
@@ -73,6 +76,7 @@ public class UserService {
         userRepository.delete(user);
     }
 
+    @Transactional(readOnly = true)
     public UserResponse getMe(User user) {
         return userMapper.toResponse(user);
     }

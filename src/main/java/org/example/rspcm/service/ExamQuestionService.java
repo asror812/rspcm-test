@@ -57,6 +57,7 @@ public class ExamQuestionService {
         return examQuestionMapper.toResponse(examQuestionRepository.save(examQuestion));
     }
 
+    @Transactional(readOnly = true)
     public Page<ExamQuestionResponse> findAll(Long examId, Long subjectId, boolean own, User user, Pageable pageable) {
         var exam = examRepository.findById(examId)
                 .orElseThrow(() -> new NotFoundException("Экзамен не найден: " + examId));
@@ -67,10 +68,12 @@ public class ExamQuestionService {
                 .map(examQuestionMapper::toResponse);
     }
 
+    @Transactional(readOnly = true)
     public ExamQuestion findById(Long id) {
         return examQuestionRepository.findById(id).orElseThrow(() -> new NotFoundException("Вопрос экзамена не найден: " + id));
     }
 
+    @Transactional(readOnly = true)
     public ExamQuestionResponse findResponseById(Long id) {
         return examQuestionMapper.toResponse(findById(id));
     }

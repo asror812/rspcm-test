@@ -17,6 +17,7 @@ import org.example.rspcm.repository.StudyGroupRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -32,6 +33,7 @@ public class AdminDashboardService {
     private final SummaryMapper summaryMapper;
 
 
+    @Transactional(readOnly = true)
     public AdminDashboardGeneralStatsResponse getGeneralStats() {
         Long studentCount = studentProfileRepository.count();
         Long groupCount = studyGroupRepository.count();
@@ -48,11 +50,13 @@ public class AdminDashboardService {
     }
 
 
+    @Transactional(readOnly = true)
     public Page<AdminRecentReportResponse> getRecentReports(User user, Pageable pageable) {
         return practiceSubmissionRepository.findBySubmittedAtIsNotNullOrderBySubmittedAtDesc(pageable)
                 .map(this::toRecentReportResponse);
     }
 
+    @Transactional(readOnly = true)
     public List<GroupResponse> getOwnStudyGroups(User user) {
         if (hasRole(user, RoleName.ROLE_ADMIN)) {
             return studyGroupRepository.findAll().stream().map(groupMapper::toResponse).toList();

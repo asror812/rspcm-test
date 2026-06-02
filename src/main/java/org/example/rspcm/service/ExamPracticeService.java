@@ -35,6 +35,7 @@ public class ExamPracticeService {
     private final TeacherProfileRepository teacherProfileRepository;
     private final SummaryMapper summaryMapper;
 
+    @Transactional(readOnly = true)
     public Page<ExamPracticeResponse> findAll(Long examId, User user, Pageable pageable) {
         if (examId == null) {
             throw new ErrorMessageException("Необходимо указать examId", ErrorCodes.BadRequest);
@@ -45,6 +46,7 @@ public class ExamPracticeService {
         return examPracticeRepository.findByExamId(examId, pageable).map(this::toResponse);
     }
 
+    @Transactional(readOnly = true)
     public List<ExamPracticeResponse> findAllForStudent(Long examId, User user) {
         Exam exam = resolveExam(examId);
 
@@ -65,6 +67,7 @@ public class ExamPracticeService {
                 .getContent();
     }
 
+    @Transactional(readOnly = true)
     public ExamPracticeResponse findById(Long id, User user) {
         ExamPractice examPractice = findEntityById(id);
         validateTeacherAccess(user, examPractice.getExam());

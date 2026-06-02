@@ -44,6 +44,7 @@ public class PracticeSubmissionService {
     private final FcmService fcmService;
     private final NotificationService notificationService;
 
+    @Transactional(readOnly = true)
     public PracticeSubmissionResponse getByParticipation(Long participationId, User user) {
         PracticeParticipation participation = findParticipation(participationId);
         validateCanView(user, participation);
@@ -53,12 +54,14 @@ public class PracticeSubmissionService {
         return toResponse(submission);
     }
 
+    @Transactional(readOnly = true)
     public PracticeSubmissionResponse getById(Long submissionId, User user) {
         PracticeSubmission submission = findSubmission(submissionId);
         validateCanView(user, submission.getExamParticipation());
         return toResponse(submission);
     }
 
+    @Transactional(readOnly = true)
     public Page<PracticeSubmissionResponse> findAllByExam(Long examId, PracticeSubmissionStatus status, User user, Pageable pageable) {
         Exam exam = examRepository.findById(examId)
                 .orElseThrow(() -> new NotFoundException("Экзамен не найден: " + examId));

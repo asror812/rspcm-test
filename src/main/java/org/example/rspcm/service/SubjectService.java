@@ -31,10 +31,12 @@ public class SubjectService {
     private final SubjectMapper subjectMapper;
     private final SummaryMapper summaryMapper;
 
+    @Transactional(readOnly = true)
     public Page<SubjectResponse> findAll(Pageable pageable) {
         return subjectRepository.findAllBy(pageable).map(subjectMapper::toResponse);
     }
 
+    @Transactional(readOnly = true)
     public List<SubjectSummary> findOwnSummaries() {
         Long teacherId = currentUser().getId();
         return subjectRepository.findDistinctByTeachersId(teacherId)
@@ -43,11 +45,13 @@ public class SubjectService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public Subject findById(Long id) {
         return subjectRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Предмет не найден: " + id));
     }
 
+    @Transactional(readOnly = true)
     public SubjectResponse findByIdResponse(Long id) {
         return subjectMapper.toResponse(findById(id));
     }

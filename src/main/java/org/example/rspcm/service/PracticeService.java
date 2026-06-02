@@ -42,6 +42,7 @@ public class PracticeService {
         return practiceMapper.toResponse(practiceRepository.save(practice));
     }
 
+    @Transactional(readOnly = true)
     public Page<PracticeResponse> findAll(
             String query, boolean own, Long subjectId,
             User user, Pageable pageable) {
@@ -60,6 +61,7 @@ public class PracticeService {
                 .map(practiceMapper::toResponse);
     }
 
+    @Transactional(readOnly = true)
     public PracticeResponse findResponseById(Long id, User user) {
         Practice practice = findById(id, user);
 
@@ -71,6 +73,7 @@ public class PracticeService {
         return practiceMapper.toResponse(practice);
     }
 
+    @Transactional(readOnly = true)
     public Practice findById(Long id, User user) {
         Practice practice = practiceRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Практика не найдена: " + id));

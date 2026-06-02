@@ -42,14 +42,17 @@ public class StudyGroupService {
     private final GroupMapper groupMapper;
     private final GroupChatSyncService groupChatSyncService;
 
+    @Transactional(readOnly = true)
     public Page<AdminGroupResponse> findAllForAdmin(Pageable pageable) {
         return groupRepository.findAllBy(pageable).map(groupMapper::toAdminResponse);
     }
 
+    @Transactional(readOnly = true)
     public StudyGroup findById(Long id) {
         return groupRepository.findById(id).orElseThrow(() -> new NotFoundException("Группа не найдена: " + id));
     }
 
+    @Transactional(readOnly = true)
     public AdminGroupResponse findAdminResponseById(Long id) {
         return groupMapper.toAdminResponse(groupRepository.findById(id).orElseThrow(() -> new NotFoundException("Группа не найдена: " + id)));
     }
@@ -169,22 +172,26 @@ public class StudyGroupService {
                 .orElse(null);
     }
 
+    @Transactional(readOnly = true)
     public List<TeacherGroupResponse> findOwnTeacherGroups(User user) {
         return groupRepository.findByTeachersId(user.getId()).stream()
                 .map(groupMapper::toTeacherResponse).toList();
     }
 
+    @Transactional(readOnly = true)
     public TeacherGroupResponse findOwnTeacherGroupById(Long groupId, User user) {
         StudyGroup group = groupRepository.findByIdAndTeacherId(groupId, user.getId())
                 .orElseThrow(() -> new NotFoundException("Группа не найдена: " + groupId));
         return groupMapper.toTeacherResponse(group);
     }
 
+    @Transactional(readOnly = true)
     public List<StudentGroupResponse> findOwnStudentGroups(User user) {
         return groupRepository.findByStudentsId(user.getId()).stream()
                 .map(groupMapper::toStudentResponse).toList();
     }
 
+    @Transactional(readOnly = true)
     public List<UserSummary> findGroupMembersForStudent(Long groupId, User requestingStudent) {
         StudyGroup group = groupRepository.findByIdAndStudentId(groupId, requestingStudent.getId())
                 .orElseThrow(() -> new NotFoundException("Группа не найдена: " + groupId));

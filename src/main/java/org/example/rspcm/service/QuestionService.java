@@ -63,6 +63,7 @@ public class QuestionService {
         return questionRepository.save(question);
     }
 
+    @Transactional(readOnly = true)
     public Page<QuestionResponse> findAll(Long subjectId, boolean own, User createdBy, Pageable pageable) {
         Long createdById = own ? createdBy.getId() : null;
 
@@ -70,11 +71,13 @@ public class QuestionService {
                 .map(questionMapper::toResponse);
     }
 
+    @Transactional(readOnly = true)
     public Question findById(Long id) {
         return questionRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Вопрос не найден: " + id));
     }
 
+    @Transactional(readOnly = true)
     public QuestionResponse findResponseById(Long id) {
         return questionMapper.toResponse(findById(id));
     }

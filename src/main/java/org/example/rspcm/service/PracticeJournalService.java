@@ -31,11 +31,13 @@ public class PracticeJournalService {
     private final PracticeJournalMapper practiceJournalMapper;
     private final TeacherProfileRepository teacherProfileRepository;
 
+    @Transactional(readOnly = true)
     public List<PracticeJournalResponse> findMineResponse() {
         User student = currentUser();
         return journalRepository.findByStudentId(student.getId()).stream().map(practiceJournalMapper::toResponse).toList();
     }
 
+    @Transactional(readOnly = true)
     public List<PracticeJournalResponse> findByPracticeResponse(Long practiceId) {
         User user = currentUser();
         Practice practice = practiceRepository.findById(practiceId)

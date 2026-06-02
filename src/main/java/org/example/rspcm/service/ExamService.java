@@ -41,6 +41,7 @@ public class ExamService {
     private final ExamMapper examMapper;
     private final ExamQuestionRepository examQuestionRepository;
 
+    @Transactional(readOnly = true)
     public Page<ExamResponse> findAll(
             User user, String query, ExamType examType, ExamStatus examStatus,
             boolean own, Long subjectId, Pageable pageable) {
@@ -75,6 +76,7 @@ public class ExamService {
                 .map(this::sanitizeStudentExamResponse);
     }
 
+    @Transactional(readOnly = true)
     public ExamResponse findById(Long id, User user) {
         Exam exam = examRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Экзамен не найден: " + id));
