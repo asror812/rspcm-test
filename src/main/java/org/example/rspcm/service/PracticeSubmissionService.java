@@ -1,6 +1,7 @@
 package org.example.rspcm.service;
 
 import lombok.RequiredArgsConstructor;
+import org.example.rspcm.dto.practice.PracticeSubmissionAttemptResponse;
 import org.example.rspcm.dto.practice.PracticeSubmissionResponse;
 import org.example.rspcm.dto.practice.PracticeSubmissionReviewRequest;
 import org.example.rspcm.dto.practice.PracticeSubmissionSubmitRequest;
@@ -11,6 +12,7 @@ import org.example.rspcm.mapper.SummaryMapper;
 import org.example.rspcm.model.entity.Exam;
 import org.example.rspcm.model.entity.PracticeParticipation;
 import org.example.rspcm.model.entity.PracticeSubmission;
+import org.example.rspcm.model.entity.PracticeSubmissionAttempt;
 import org.example.rspcm.model.entity.User;
 import org.example.rspcm.model.enums.NotificationType;
 import org.example.rspcm.model.enums.PracticeMemberRole;
@@ -20,6 +22,7 @@ import org.example.rspcm.model.enums.PracticeSubmissionStatus;
 import org.example.rspcm.model.enums.RoleName;
 import org.example.rspcm.repository.PracticeParticipationMemberRepository;
 import org.example.rspcm.repository.PracticeParticipationRepository;
+import org.example.rspcm.repository.PracticeSubmissionAttemptRepository;
 import org.example.rspcm.repository.PracticeSubmissionRepository;
 import org.example.rspcm.repository.TeacherProfileRepository;
 import org.example.rspcm.repository.ExamRepository;
@@ -36,6 +39,7 @@ import java.util.List;
 public class PracticeSubmissionService {
 
     private final PracticeSubmissionRepository submissionRepository;
+    private final PracticeSubmissionAttemptRepository submissionAttemptRepository;
     private final PracticeParticipationRepository participationRepository;
     private final PracticeParticipationMemberRepository participationMemberRepository;
     private final TeacherProfileRepository teacherProfileRepository;
@@ -85,6 +89,14 @@ public class PracticeSubmissionService {
                         .status(PracticeSubmissionStatus.RETURNED)
                         .build());
 
+        // Only allow (re)submit when no previous submission or when RETURNED by teacher
+        if (submission.getId() != null && submission.getStatus() == PracticeSubmissionStatus.SUBMITTED) {
+            throw new ErrorMessageException("Работа уже отправлена на проверку. Дождитесь ответа преподавателя.", ErrorCodes.BadRequest);
+        }
+        if (submission.getId() != null && submission.getStatus() == PracticeSubmissionStatus.GRADED) {
+            throw new ErrorMessageException("Работа уже проверена.", ErrorCodes.BadRequest);
+        }
+
         submission.setStudent(user);
         submission.setTextAnswer(request.textAnswer());
         submission.setFileUrl(request.fileUrl());
@@ -93,10 +105,36 @@ public class PracticeSubmissionService {
 
         PracticeSubmission saved = submissionRepository.save(submission);
 
-        // Notify the exam creator (teacher) that a submission arrived
+        // Record attempt history
+        int nextAttemptNumber = submissionAttemptRepository.countBySubmissionId(saved.getId()) + 1;
+        submissionAttemptRepository.save(PracticeSubmissionAttempt.builder()
+                .submission(saved)
+                .textAnswer(request.textAnswer())
+                .fileUrl(request.fileUrl())
+                .submittedAt(saved.getSubmittedAt())
+                .attemptNumber(nextAttemptNumber)
+                .build());
+
         notifyExamCreator(saved);
 
         return toResponse(saved);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PracticeSubmissionAttemptResponse> getHistory(Long submissionId, User user) {
+        PracticeSubmission submission = findSubmission(submissionId);
+        validateCanView(user, submission.getExamParticipation());
+        return submissionAttemptRepository
+                .findBySubmissionIdOrderByAttemptNumberAsc(submissionId)
+                .stream()
+                .map(a -> new PracticeSubmissionAttemptResponse(
+                        a.getId(),
+                        a.getAttemptNumber(),
+                        a.getTextAnswer(),
+                        a.getFileUrl(),
+                        a.getSubmittedAt()
+                ))
+                .toList();
     }
 
     @Transactional
@@ -250,6 +288,7 @@ public class PracticeSubmissionService {
     }
 
     private PracticeSubmissionResponse toResponse(PracticeSubmission submission) {
+        int attemptCount = submissionAttemptRepository.countBySubmissionId(submission.getId());
         return new PracticeSubmissionResponse(
                 submission.getId(),
                 submission.getExamParticipation().getId(),
@@ -260,7 +299,8 @@ public class PracticeSubmissionService {
                 submission.getFileUrl(),
                 submission.getSubmittedAt(),
                 submission.getStatus(),
-                submission.getTeacherComment()
+                submission.getTeacherComment(),
+                attemptCount
         );
     }
 }

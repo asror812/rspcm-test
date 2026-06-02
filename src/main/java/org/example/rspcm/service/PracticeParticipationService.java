@@ -25,6 +25,7 @@ import org.example.rspcm.repository.ExamPracticeRepository;
 import org.example.rspcm.repository.ExamRepository;
 import org.example.rspcm.repository.PracticeParticipationMemberRepository;
 import org.example.rspcm.repository.PracticeParticipationRepository;
+import org.example.rspcm.repository.PracticeSubmissionAttemptRepository;
 import org.example.rspcm.repository.PracticeSubmissionRepository;
 import org.example.rspcm.repository.UserRepository;
 import org.example.rspcm.repository.TeacherProfileRepository;
@@ -52,6 +53,7 @@ public class PracticeParticipationService {
     private final SummaryMapper summaryMapper;
     private final ExamRepository examRepository;
     private final PracticeSubmissionRepository submissionRepository;
+    private final PracticeSubmissionAttemptRepository submissionAttemptRepository;
     private final NotificationService notificationService;
     private final FcmService fcmService;
 
@@ -588,7 +590,8 @@ public class PracticeParticipationService {
                         submission.getFileUrl(),
                         submission.getSubmittedAt(),
                         submission.getStatus(),
-                        submission.getTeacherComment()
+                        submission.getTeacherComment(),
+                        submissionAttemptRepository.countBySubmissionId(submission.getId())
                 )
         );
     }

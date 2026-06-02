@@ -3,10 +3,13 @@ package org.example.rspcm.controller;
 
 import org.example.rspcm.dto.exam.ExamRequest;
 import org.example.rspcm.dto.exam.ExamResponse;
+import org.example.rspcm.dto.exam.teacher.TeacherAttemptAnswerItem;
+import org.example.rspcm.dto.exam.teacher.TeacherAttemptSummaryResponse;
 import org.example.rspcm.model.entity.User;
 import org.example.rspcm.model.enums.ExamStatus;
 import org.example.rspcm.model.enums.ExamType;
 import org.example.rspcm.service.ExamService;
+import org.example.rspcm.service.TeacherExamAttemptService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -18,12 +21,15 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/exams")
 public class ExamController {
 
     private final ExamService examService;
+    private final TeacherExamAttemptService teacherExamAttemptService;
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
@@ -84,5 +90,24 @@ public class ExamController {
             @AuthenticationPrincipal User user
     ) {
         return ResponseEntity.ok(examService.updateStatus(id, status, user));
+    }
+
+    @GetMapping("/{examId}/attempts")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    public ResponseEntity<List<TeacherAttemptSummaryResponse>> getAttempts(
+            @PathVariable Long examId,
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(teacherExamAttemptService.getAttemptsByExam(examId, user));
+    }
+
+    @GetMapping("/{examId}/attempts/{attemptId}/answers")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    public ResponseEntity<List<TeacherAttemptAnswerItem>> getAttemptAnswers(
+            @PathVariable Long examId,
+            @PathVariable Long attemptId,
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(teacherExamAttemptService.getAttemptAnswers(examId, attemptId, user));
     }
 }

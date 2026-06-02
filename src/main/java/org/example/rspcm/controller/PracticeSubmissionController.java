@@ -2,6 +2,7 @@ package org.example.rspcm.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.example.rspcm.dto.practice.PracticeSubmissionAttemptResponse;
 import org.example.rspcm.dto.practice.PracticeSubmissionResponse;
 import org.example.rspcm.dto.practice.PracticeSubmissionReviewRequest;
 import org.example.rspcm.dto.practice.PracticeSubmissionSubmitRequest;
@@ -12,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import java.util.List;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -79,6 +81,15 @@ public class PracticeSubmissionController {
             @AuthenticationPrincipal User user
     ) {
         return ResponseEntity.ok(submissionService.returnSubmission(submissionId, request, user));
+    }
+
+    @GetMapping("/{submissionId}/history")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
+    public ResponseEntity<List<PracticeSubmissionAttemptResponse>> getHistory(
+            @PathVariable Long submissionId,
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(submissionService.getHistory(submissionId, user));
     }
 
     @PatchMapping("/{submissionId}/grade")

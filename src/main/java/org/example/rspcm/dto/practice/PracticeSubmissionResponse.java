@@ -15,6 +15,7 @@ public record PracticeSubmissionResponse(
         String fileUrl,
         LocalDateTime submittedAt,
         PracticeSubmissionStatus status,
-        String teacherComment
+        String teacherComment,
+        int attemptCount
 ) {
 }
