@@ -59,6 +59,7 @@ public class ExamService {
 
     }
 
+    @Transactional(readOnly = true)
     public Page<ExamResponse> findMyExams(
             User user,
             String query,
