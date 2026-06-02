@@ -11,6 +11,7 @@ import org.example.rspcm.repository.ExamRepository;
 import org.example.rspcm.repository.StudentProfileRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
 import java.util.List;
@@ -24,6 +25,7 @@ public class StudentDashboardService {
     private final PracticeParticipationService practiceParticipationService;
     private final ExamRepository examRepository;
 
+    @Transactional(readOnly = true)
     public StudentDashboardResponse getMe(User user) {
         List<SubjectResponse> subjects = studentProfileRepository.findByUserId(user.getId())
                 .map(profile -> profile.getGroup() == null

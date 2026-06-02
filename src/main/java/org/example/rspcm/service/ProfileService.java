@@ -47,6 +47,7 @@ public class ProfileService {
                 .orElseThrow(() -> new NotFoundException("Профиль студента не найден: " + userId));
     }
 
+    @Transactional(readOnly = true)
     public StudentProfileResponse getStudentProfileResponse(Long userId) {
         return studentProfileMapper.toResponse(studentProfileRepository.findByUserId(userId)
                 .orElseThrow(() -> new NotFoundException("Профиль студента не найден: " + userId)));
@@ -57,6 +58,7 @@ public class ProfileService {
                 .orElseThrow(() -> new NotFoundException("Профиль преподавателя не найден: " + userId));
     }
 
+    @Transactional(readOnly = true)
     public TeacherProfileResponse getTeacherProfileResponse(Long userId) {
         return teacherProfileMapper.toResponse(teacherProfileRepository.findByUserId(userId)
                 .orElseThrow(() -> new NotFoundException("Профиль преподавателя не найден: " + userId)));
