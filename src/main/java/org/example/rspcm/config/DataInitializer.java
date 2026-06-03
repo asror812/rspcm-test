@@ -18,6 +18,7 @@ import org.example.rspcm.model.entity.Practice;
 import org.example.rspcm.model.entity.PracticeParticipation;
 import org.example.rspcm.model.entity.PracticeParticipationMember;
 import org.example.rspcm.model.entity.PracticeSubmission;
+import org.example.rspcm.model.entity.PracticeSubmissionAttempt;
 import org.example.rspcm.model.enums.ChatMemberRole;
 import org.example.rspcm.model.enums.ChatType;
 import org.example.rspcm.model.enums.GroupLanguage;
@@ -44,6 +45,7 @@ import org.example.rspcm.repository.PracticeRepository;
 import org.example.rspcm.repository.PracticeParticipationRepository;
 import org.example.rspcm.repository.PracticeParticipationMemberRepository;
 import org.example.rspcm.repository.PracticeSubmissionRepository;
+import org.example.rspcm.repository.PracticeSubmissionAttemptRepository;
 import org.example.rspcm.repository.ChatRepository;
 import org.example.rspcm.repository.ChatMemberRepository;
 import org.example.rspcm.service.GroupChatSyncService;
@@ -80,6 +82,7 @@ public class DataInitializer implements CommandLineRunner {
     private final PracticeParticipationRepository practiceParticipationRepository;
     private final PracticeParticipationMemberRepository practiceParticipationMemberRepository;
     private final PracticeSubmissionRepository practiceSubmissionRepository;
+    private final PracticeSubmissionAttemptRepository practiceSubmissionAttemptRepository;
     private final ChatRepository chatRepository;
     private final ChatMemberRepository chatMemberRepository;
     private final GroupChatSyncService groupChatSyncService;
@@ -261,6 +264,7 @@ public class DataInitializer implements CommandLineRunner {
 
         attachPracticesToExam(practicalExam, List.of(practices.get(2), practices.get(3), practices.get(4)));
         seedPracticeParticipations(practicalExam);
+        seedResubmissionScenario(practicalExam);
         backfillExamAndExamQuestionAuditData(getUser("admin@rspcm.local"));
     }
 
@@ -340,6 +344,94 @@ public class DataInitializer implements CommandLineRunner {
         // Additional member states for realism
         addMember(waitingMembers, l1Student4, PracticeMemberRole.MEMBER, PracticeParticipationMemberStatus.DECLINED);
         addMember(waitingMembers, l1Student5, PracticeMemberRole.MEMBER, PracticeParticipationMemberStatus.REMOVED);
+    }
+
+    private void seedResubmissionScenario(Exam practicalExam) {
+        User k1Student5 = getUser("k1.abror.rahimov@rspcm.local");
+
+        // Idempotency: skip if this student already has a submission in this exam
+        if (practiceSubmissionRepository
+                .findByExamParticipationExamIdAndStudentId(practicalExam.getId(), k1Student5.getId())
+                .isPresent()) {
+            return;
+        }
+
+        ExamPractice individualExamPractice = practicalExam.getPractices().stream()
+                .filter(link -> link.getPractice().getWorkMode() == WorkMode.INDIVIDUAL)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("INDIVIDUAL exam practice not found for resubmission scenario"));
+
+        // Participation: student selected the individual practice
+        PracticeParticipation participation = createParticipation(
+                practicalExam,
+                individualExamPractice,
+                PracticeParticipationStatus.PRACTICE_CHOSEN,
+                LocalDateTime.now().minusDays(10),
+                LocalDateTime.now().minusDays(10),
+                LocalDateTime.now().minusDays(9)
+        );
+        addMember(participation, k1Student5, PracticeMemberRole.LEADER, PracticeParticipationMemberStatus.ACCEPTED);
+
+        // Current submission — 3rd attempt, still waiting for teacher review
+        PracticeSubmission submission = PracticeSubmission.builder()
+                .examParticipation(participation)
+                .student(k1Student5)
+                .textAnswer(
+                    "Третья попытка. Полностью переработал архитектуру приложения. " +
+                    "Добавил юнит-тесты для всех сервисов, покрытие ~80%. " +
+                    "Разделил монолитный метод на несколько с чёткой ответственностью. " +
+                    "Добавил документацию Javadoc. Прошу проверить."
+                )
+                .fileUrl("https://example.com/submissions/abror-attempt-3.zip")
+                .submittedAt(LocalDateTime.now().minusDays(1))
+                .status(PracticeSubmissionStatus.SUBMITTED)
+                .teacherComment("Нет тестов, архитектура неудовлетворительная. Переработайте структуру классов и добавьте покрытие тестами.")
+                .build();
+        practiceSubmissionRepository.save(submission);
+
+        // Attempt 1 — returned
+        practiceSubmissionAttemptRepository.save(
+            PracticeSubmissionAttempt.builder()
+                .submission(submission)
+                .attemptNumber(1)
+                .textAnswer(
+                    "Первая попытка. Реализовал основную логику метода. " +
+                    "Использовал простой цикл для обхода данных."
+                )
+                .fileUrl("https://example.com/submissions/abror-attempt-1.zip")
+                .submittedAt(LocalDateTime.now().minusDays(8))
+                .build()
+        );
+
+        // Attempt 2 — also returned
+        practiceSubmissionAttemptRepository.save(
+            PracticeSubmissionAttempt.builder()
+                .submission(submission)
+                .attemptNumber(2)
+                .textAnswer(
+                    "Вторая попытка. Добавил обработку исключений и валидацию входных данных. " +
+                    "Переработал метод, но архитектура осталась прежней."
+                )
+                .fileUrl("https://example.com/submissions/abror-attempt-2.zip")
+                .submittedAt(LocalDateTime.now().minusDays(5))
+                .build()
+        );
+
+        // Attempt 3 — current, awaiting review
+        practiceSubmissionAttemptRepository.save(
+            PracticeSubmissionAttempt.builder()
+                .submission(submission)
+                .attemptNumber(3)
+                .textAnswer(
+                    "Третья попытка. Полностью переработал архитектуру приложения. " +
+                    "Добавил юнит-тесты для всех сервисов, покрытие ~80%. " +
+                    "Разделил монолитный метод на несколько с чёткой ответственностью. " +
+                    "Добавил документацию Javadoc. Прошу проверить."
+                )
+                .fileUrl("https://example.com/submissions/abror-attempt-3.zip")
+                .submittedAt(LocalDateTime.now().minusDays(1))
+                .build()
+        );
     }
 
     private PracticeParticipation createParticipation(
