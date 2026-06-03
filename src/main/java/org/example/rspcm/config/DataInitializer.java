@@ -545,6 +545,8 @@ public class DataInitializer implements CommandLineRunner {
             group.setSubjects(new HashSet<>(subjects));
             group.setTeachers(new HashSet<>(teachers));
             studyGroupRepository.save(group);
+            // Ensure every student's profile has group_id set (FK used by dashboard)
+            linkStudentProfilesToGroup(students, group);
             return;
         }
         StudyGroup newGroup = StudyGroup.builder()
@@ -556,6 +558,19 @@ public class DataInitializer implements CommandLineRunner {
                 .students(new HashSet<>(students))
                 .build();
         studyGroupRepository.save(newGroup);
+        // Set group_id on each student's profile so dashboard can read subjects
+        linkStudentProfilesToGroup(students, newGroup);
+    }
+
+    private void linkStudentProfilesToGroup(Set<User> students, StudyGroup group) {
+        for (User student : students) {
+            studentProfileRepository.findByUserId(student.getId()).ifPresent(profile -> {
+                if (!group.equals(profile.getGroup())) {
+                    profile.setGroup(group);
+                    studentProfileRepository.save(profile);
+                }
+            });
+        }
     }
 
     private void seedStudyGroupChats() {
