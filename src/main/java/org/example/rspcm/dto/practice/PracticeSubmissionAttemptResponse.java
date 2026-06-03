@@ -7,6 +7,7 @@ public record PracticeSubmissionAttemptResponse(
         int attemptNumber,
         String textAnswer,
         String fileUrl,
-        LocalDateTime submittedAt
+        LocalDateTime submittedAt,
+        String teacherComment
 ) {
 }

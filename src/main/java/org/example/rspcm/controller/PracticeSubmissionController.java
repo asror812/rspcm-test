@@ -2,6 +2,7 @@ package org.example.rspcm.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.example.rspcm.dto.practice.PracticeAttemptCommentRequest;
 import org.example.rspcm.dto.practice.PracticeSubmissionAttemptResponse;
 import org.example.rspcm.dto.practice.PracticeSubmissionResponse;
 import org.example.rspcm.dto.practice.PracticeSubmissionReviewRequest;
@@ -90,6 +91,16 @@ public class PracticeSubmissionController {
             @AuthenticationPrincipal User user
     ) {
         return ResponseEntity.ok(submissionService.getHistory(submissionId, user));
+    }
+
+    @PatchMapping("/attempts/{attemptId}/comment")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    public ResponseEntity<PracticeSubmissionAttemptResponse> commentOnAttempt(
+            @PathVariable Long attemptId,
+            @Valid @RequestBody PracticeAttemptCommentRequest request,
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(submissionService.commentOnAttempt(attemptId, request, user));
     }
 
     @PatchMapping("/{submissionId}/grade")

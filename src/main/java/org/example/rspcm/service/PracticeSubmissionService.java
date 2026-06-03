@@ -1,6 +1,7 @@
 package org.example.rspcm.service;
 
 import lombok.RequiredArgsConstructor;
+import org.example.rspcm.dto.practice.PracticeAttemptCommentRequest;
 import org.example.rspcm.dto.practice.PracticeSubmissionAttemptResponse;
 import org.example.rspcm.dto.practice.PracticeSubmissionResponse;
 import org.example.rspcm.dto.practice.PracticeSubmissionReviewRequest;
@@ -133,9 +134,28 @@ public class PracticeSubmissionService {
                         a.getAttemptNumber(),
                         a.getTextAnswer(),
                         a.getFileUrl(),
-                        a.getSubmittedAt()
+                        a.getSubmittedAt(),
+                        a.getTeacherComment()
                 ))
                 .toList();
+    }
+
+    @Transactional
+    public PracticeSubmissionAttemptResponse commentOnAttempt(Long attemptId, PracticeAttemptCommentRequest request, User user) {
+        PracticeSubmissionAttempt attempt = submissionAttemptRepository.findById(attemptId)
+                .orElseThrow(() -> new NotFoundException("Попытка не найдена: " + attemptId));
+        validateStaffAccess(user, attempt.getSubmission().getExamParticipation().getExam());
+
+        attempt.setTeacherComment(request.comment());
+        PracticeSubmissionAttempt saved = submissionAttemptRepository.save(attempt);
+        return new PracticeSubmissionAttemptResponse(
+                saved.getId(),
+                saved.getAttemptNumber(),
+                saved.getTextAnswer(),
+                saved.getFileUrl(),
+                saved.getSubmittedAt(),
+                saved.getTeacherComment()
+        );
     }
 
     @Transactional
@@ -150,6 +170,9 @@ public class PracticeSubmissionService {
         submission.setStatus(PracticeSubmissionStatus.GRADED);
         submission.setTeacherComment(request.teacherComment());
         PracticeSubmission saved = submissionRepository.save(submission);
+
+        // Also stamp teacher comment on the latest attempt
+        saveCommentOnLatestAttempt(saved, request.teacherComment());
 
         String practiceName = getPracticeName(saved);
         notifyParticipationMembers(saved, "Практика проверена",
@@ -172,12 +195,25 @@ public class PracticeSubmissionService {
         submission.setTeacherComment(request.teacherComment());
         PracticeSubmission saved = submissionRepository.save(submission);
 
+        // Also stamp teacher comment on the latest attempt
+        saveCommentOnLatestAttempt(saved, request.teacherComment());
+
         String practiceName = getPracticeName(saved);
         notifyParticipationMembers(saved, "Практика возвращена на доработку",
                 "Ваша работа по практике «" + practiceName + "» возвращена. Проверьте комментарий.",
                 NotificationType.SUBMISSION_RETURNED, saved.getId());
 
         return toResponse(saved);
+    }
+
+    private void saveCommentOnLatestAttempt(PracticeSubmission submission, String comment) {
+        if (comment == null || comment.isBlank()) return;
+        List<PracticeSubmissionAttempt> attempts =
+                submissionAttemptRepository.findBySubmissionIdOrderByAttemptNumberAsc(submission.getId());
+        if (attempts.isEmpty()) return;
+        PracticeSubmissionAttempt latest = attempts.get(attempts.size() - 1);
+        latest.setTeacherComment(comment);
+        submissionAttemptRepository.save(latest);
     }
 
     private PracticeParticipation findParticipation(Long participationId) {

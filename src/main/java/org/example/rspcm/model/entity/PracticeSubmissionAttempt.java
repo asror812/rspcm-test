@@ -32,4 +32,7 @@ public class PracticeSubmissionAttempt {
 
     @Column(nullable = false)
     private int attemptNumber;
+
+    @Column(length = 2000)
+    private String teacherComment;
 }

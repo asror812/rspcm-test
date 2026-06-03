@@ -188,8 +188,8 @@ public class DataInitializer implements CommandLineRunner {
                 "K1",
                 "K1 guruhi",
                 GroupLanguage.UZ,
-                Set.of(math, programming),
-                Set.of(teacherMath, teacherProgramming),
+                Set.of(math, physics, programming),
+                Set.of(teacherMath, teacherPhysics, teacherProgramming),
                 Set.of(k1Student1, k1Student2, k1Student3, k1Student4, k1Student5)
         );
         createOrUpdateGroup(
@@ -389,7 +389,7 @@ public class DataInitializer implements CommandLineRunner {
                 .build();
         practiceSubmissionRepository.save(submission);
 
-        // Attempt 1 — returned
+        // Attempt 1 — returned with teacher comment
         practiceSubmissionAttemptRepository.save(
             PracticeSubmissionAttempt.builder()
                 .submission(submission)
@@ -400,10 +400,11 @@ public class DataInitializer implements CommandLineRunner {
                 )
                 .fileUrl("https://example.com/submissions/abror-attempt-1.zip")
                 .submittedAt(LocalDateTime.now().minusDays(8))
+                .teacherComment("Нет тестов, архитектура неудовлетворительная. Переработайте структуру классов и добавьте покрытие тестами.")
                 .build()
         );
 
-        // Attempt 2 — also returned
+        // Attempt 2 — also returned with teacher comment
         practiceSubmissionAttemptRepository.save(
             PracticeSubmissionAttempt.builder()
                 .submission(submission)
@@ -414,6 +415,7 @@ public class DataInitializer implements CommandLineRunner {
                 )
                 .fileUrl("https://example.com/submissions/abror-attempt-2.zip")
                 .submittedAt(LocalDateTime.now().minusDays(5))
+                .teacherComment("Обработка ошибок есть, но архитектура не изменилась. Разделите монолитный метод на несколько с чёткой ответственностью.")
                 .build()
         );
 
@@ -537,10 +539,15 @@ public class DataInitializer implements CommandLineRunner {
             Set<User> teachers,
             Set<User> students
     ) {
-        if (studyGroupRepository.findByName(name).isPresent()) {
+        StudyGroup group = studyGroupRepository.findByName(name).orElse(null);
+        if (group != null) {
+            // Update subjects and teachers in case seed data changed
+            group.setSubjects(new HashSet<>(subjects));
+            group.setTeachers(new HashSet<>(teachers));
+            studyGroupRepository.save(group);
             return;
         }
-        StudyGroup group = StudyGroup.builder()
+        StudyGroup newGroup = StudyGroup.builder()
                 .name(name)
                 .description(description)
                 .language(language)
@@ -548,7 +555,7 @@ public class DataInitializer implements CommandLineRunner {
                 .teachers(new HashSet<>(teachers))
                 .students(new HashSet<>(students))
                 .build();
-        studyGroupRepository.save(group);
+        studyGroupRepository.save(newGroup);
     }
 
     private void seedStudyGroupChats() {
