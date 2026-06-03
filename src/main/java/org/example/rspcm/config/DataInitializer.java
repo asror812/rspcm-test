@@ -265,6 +265,7 @@ public class DataInitializer implements CommandLineRunner {
         attachPracticesToExam(practicalExam, List.of(practices.get(2), practices.get(3), practices.get(4)));
         seedPracticeParticipations(practicalExam);
         seedResubmissionScenario(practicalExam);
+        backfillMissingAttempts(practicalExam);
         backfillExamAndExamQuestionAuditData(getUser("admin@rspcm.local"));
     }
 
@@ -340,6 +341,16 @@ public class DataInitializer implements CommandLineRunner {
                 .teacherComment("Auto-seeded: looks good")
                 .build();
         practiceSubmissionRepository.save(submission);
+
+        // Seed the corresponding attempt record so history tab is not empty
+        practiceSubmissionAttemptRepository.save(PracticeSubmissionAttempt.builder()
+                .submission(submission)
+                .attemptNumber(1)
+                .textAnswer(submission.getTextAnswer())
+                .fileUrl(submission.getFileUrl())
+                .submittedAt(submission.getSubmittedAt())
+                .teacherComment("Работа выполнена. Оценка зачтена.")
+                .build());
 
         // Additional member states for realism
         addMember(waitingMembers, l1Student4, PracticeMemberRole.MEMBER, PracticeParticipationMemberStatus.DECLINED);
@@ -571,6 +582,25 @@ public class DataInitializer implements CommandLineRunner {
                 }
             });
         }
+    }
+
+    /**
+     * Backfill: for any seeded PracticeSubmission that has no attempts recorded,
+     * create attempt #1 from the submission's own fields so the history tab is not empty.
+     */
+    private void backfillMissingAttempts(Exam practicalExam) {
+        practiceSubmissionRepository.findAll().forEach(sub -> {
+            if (practiceSubmissionAttemptRepository.countBySubmissionId(sub.getId()) == 0) {
+                practiceSubmissionAttemptRepository.save(PracticeSubmissionAttempt.builder()
+                        .submission(sub)
+                        .attemptNumber(1)
+                        .textAnswer(sub.getTextAnswer() != null ? sub.getTextAnswer() : "")
+                        .fileUrl(sub.getFileUrl() != null ? sub.getFileUrl() : "")
+                        .submittedAt(sub.getSubmittedAt() != null ? sub.getSubmittedAt() : LocalDateTime.now())
+                        .teacherComment(sub.getTeacherComment() != null ? sub.getTeacherComment() : "")
+                        .build());
+            }
+        });
     }
 
     private void seedStudyGroupChats() {

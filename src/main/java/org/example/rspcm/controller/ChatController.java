@@ -7,6 +7,7 @@ import org.example.rspcm.dto.chat.ChatMemberResponse;
 import org.example.rspcm.dto.chat.ChatMessageResponse;
 import org.example.rspcm.dto.chat.ChatSummaryResponse;
 import org.example.rspcm.service.ChatMessageService;
+import org.example.rspcm.service.ChatPresenceService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.*;
@@ -21,6 +22,7 @@ import java.util.Map;
 public class ChatController {
 
     private final ChatMessageService chatMessageService;
+    private final ChatPresenceService chatPresenceService;
 
     @GetMapping("/me")
     public List<ChatSummaryResponse> getMyChats(Principal principal) {
@@ -52,6 +54,12 @@ public class ChatController {
             Principal principal) {
         chatMessageService.addMemberToChat(chatId, body.get("userId"), principal.getName());
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/{chatId}/online-count")
+    public Map<String, Integer> getOnlineCount(@PathVariable Long chatId, Principal principal) {
+        int count = chatPresenceService.onlineCounts(List.of(chatId)).getOrDefault(chatId, 0);
+        return Map.of("onlineCount", count);
     }
 
     @GetMapping("/{chatId}/messages")
