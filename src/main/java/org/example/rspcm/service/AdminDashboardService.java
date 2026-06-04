@@ -51,7 +51,7 @@ public class AdminDashboardService {
 
 
     @Transactional(readOnly = true)
-    public Page<AdminRecentReportResponse> getRecentReports(User user, Pageable pageable) {
+    public Page<AdminRecentReportResponse> getRecentReports(Pageable pageable) {
         return practiceSubmissionRepository.findBySubmittedAtIsNotNullOrderBySubmittedAtDesc(pageable)
                 .map(this::toRecentReportResponse);
     }
@@ -61,9 +61,11 @@ public class AdminDashboardService {
         if (hasRole(user, RoleName.ROLE_ADMIN)) {
             return studyGroupRepository.findAll().stream().map(groupMapper::toResponse).toList();
         }
+
         if (hasRole(user, RoleName.ROLE_TEACHER)) {
             return studyGroupRepository.findByTeachersId(user.getId()).stream().map(groupMapper::toResponse).toList();
         }
+
         if (hasRole(user, RoleName.ROLE_STUDENT)) {
             return studyGroupRepository.findByStudentsId(user.getId()).stream().map(groupMapper::toResponse).toList();
         }

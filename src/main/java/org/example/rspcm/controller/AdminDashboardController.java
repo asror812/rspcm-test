@@ -35,7 +35,7 @@ public class AdminDashboardController {
             @AuthenticationPrincipal User user,
             Pageable pageable
     ) {
-        return ResponseEntity.ok(dashboardService.getRecentReports(user, pageable));
+        return ResponseEntity.ok(dashboardService.getRecentReports(pageable));
     }
 
     @GetMapping("/groups")
