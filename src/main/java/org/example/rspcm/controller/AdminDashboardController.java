@@ -32,7 +32,6 @@ public class AdminDashboardController {
 
     @GetMapping("/recent-reports")
     public ResponseEntity<Page<AdminRecentReportResponse>> recentReports(
-            @AuthenticationPrincipal User user,
             Pageable pageable
     ) {
         return ResponseEntity.ok(dashboardService.getRecentReports(pageable));
